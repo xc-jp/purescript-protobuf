@@ -19,13 +19,15 @@ module Protobuf.Decode
 
 
 import Prelude
-import Effect (Effect)
+import Effect (Effect, liftEffect)
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
 import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.))
 import Data.TextEncoding (encodeUtf8)
+import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.ArrayBuffer.Typed as AT
 import Data.ArrayBuffer as AB
+import Data.ArrayBuffer.DataView as DV
 import Protobuf.Common (FieldNumber, WireType)
 
 -- | __double__
@@ -165,9 +167,36 @@ bool = do
     else fail $ "Expected bool, but got wire type " <> show wireType
 
 
+-- | __string__
+-- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+string :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber String)
+string = do
+  tag fieldNumber wireType <- tag
+  if wireType == 2
+    then do
+      len <- varint32
+      stringview <- Parse.takeN len
+      stringarray <- liftEffect $ mkTypedArray stringview
+      case decodeUtf8 stringarray of
+        Left err -> fail "string failed to decode UTF8"
+        Right s -> pure s
+    else fail $ "Expected string, but got wire type " <> show wireType
+ where
+  mkTypedArray :: DataView -> Effect Uint8Array
+  mkTypedArray dv = do
+    let buffer     = DV.buffer dv
+        byteOffset = DV.byteOffset dv
+        byteLength = DV.byteLength dv
+    AT.part buffer byteOffset byteLength
 
-
-
+-- | __bytes__
+-- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+bytes :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber DataView)
+bytes = do
+  tag fieldNumber wireType <- tag
+  if wireType == 2
+    then Parse.takeN =<< varint32
+    else fail $ "Expected bytes, but got wire type " <> show wireType
 
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
