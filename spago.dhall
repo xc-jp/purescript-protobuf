@@ -9,6 +9,7 @@
   , "arraybuffer-builder"
   , "uint"
   , "text-encoding"
+  , "longs"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
