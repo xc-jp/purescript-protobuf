@@ -1,6 +1,7 @@
 {
   "purescript.addSpagoSources": true,
   "purescript.buildCommand": "spago build --purs-args --json-errors ",
-  "purescript.sourcePath": "purs/",
-  "purescript.packagePath": ".spago/"
+  "purescript.sourcePath": "src/",
+  "purescript.packagePath": ".spago/",
+  "purescript.addNpmPath": true
 }

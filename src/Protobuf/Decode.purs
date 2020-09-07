@@ -15,23 +15,27 @@ module Protobuf.Decode
 , bool
 , string
 , bytes
-, tag32
+, module Protobuf.Decode32
+, module Protobuf.Decode64
 ) where
 
 import Prelude
-import Effect (Effect, liftEffect)
+import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
+import Control.Monad.Trans.Class (lift)
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
 import Data.UInt (UInt)
 import Data.UInt as UInt
-import Data.Long.Internal (Long, Signed, Unsigned)
-import Data.Long.Unsigned as ULong
-import Data.TextEncoding (encodeUtf8)
+import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, unsignedToSigned)
+import Data.Long as SLong
+import Data.Float32 (Float32)
 import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer.Types as AB
 import Data.ArrayBuffer.DataView as DV
-import Protobuf.Common (FieldNumber, WireType)
+import Data.TextDecoding (decodeUtf8)
 import Protobuf.Decode32 (varint32, zigzag32, tag32)
 import Protobuf.Decode64 (varint64, zigzag64)
 
@@ -50,7 +54,7 @@ float = Parse.anyFloat32le
 int32 :: forall m. MonadEffect m => ParserT DataView m Int
 int32 = do
   n <- varint64
-  case ULong.toInt (ULong.toSigned n) of
+  case SLong.toInt (unsignedToSigned n) of
     Just x -> pure x
     Nothing -> fail "int32 overflow. Please report this as a bug."
     -- But this is a problem with the Protobuf spec?
@@ -64,14 +68,14 @@ int32 = do
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 int64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
-int64 = ULong.toSigned <$> varint64
+int64 = unsignedToSigned <$> varint64
 
 -- | __uint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 uint32 :: forall m. MonadEffect m => ParserT DataView m UInt
 uint32 = do
   n <- varint64
-  case ULong.toInt (ULong.toSigned n) of
+  case SLong.toInt (unsignedToSigned n) of
     Just x -> pure $ UInt.fromInt x
     Nothing -> fail "uint32 overflow. Please report this as a bug."
     -- But this is a problem with the Protobuf spec?
@@ -126,15 +130,14 @@ bool = do
     then pure false
     else pure true
 
-
 -- | __string__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 string :: forall m. MonadEffect m => ParserT DataView m String
 string = do
-  stringview <- varint32 >>= Parse.takeN
-  stringarray <- liftEffect $ mkTypedArray stringview
+  stringview <- varint32 >>= UInt.toInt >>> Parse.takeN
+  stringarray <- lift $ liftEffect $ mkTypedArray stringview
   case decodeUtf8 stringarray of
-    Left err -> fail $ "string decodeUtf8 failed. " <> err
+    Left err -> fail $ "string decodeUtf8 failed. " <> show err
     Right s -> pure s
  where
   mkTypedArray :: DataView -> Effect Uint8Array
@@ -147,5 +150,5 @@ string = do
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 bytes :: forall m. MonadEffect m => ParserT DataView m DataView
-bytes = varint32 >>= Parse.takeN
+bytes = varint32 >>= UInt.toInt >>> Parse.takeN
 

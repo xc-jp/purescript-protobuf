@@ -6,44 +6,46 @@ module Protobuf.Decode32
 ) where
 
 import Prelude
-import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect)
+import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
-import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.))
+import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.), shr, shl)
 import Data.ArrayBuffer.Types (DataView)
 import Protobuf.Common (FieldNumber, WireType)
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
 zigzag32 :: UInt -> Int
-zigzag32 n = toInt $ (n `shr` 1) .^. (unegate (n .&. 1))
- where unegate = fromInt <<< negate <<< toInt
+zigzag32 n = toInt $ (n `shr` (fromInt 1)) .^. (unegate (n .&. (fromInt 1)))
+ where
+  unegate :: UInt -> UInt
+  unegate = fromInt <<< negate <<< toInt
     -- unegate x = complement x + (fromInt 1) -- TODO switch to this definition?
 
 tag32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber WireType)
 tag32 = do
   n <- varint32
-  pure $ Tuple (n `shr` 3) (toInt $ n .&. 3)
+  pure $ Tuple (n `shr` (fromInt 3)) (toInt $ n .&. (fromInt 3))
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
 varint32 :: forall m. MonadEffect m => ParserT DataView m UInt
 varint32 = do
-  n_0 <- Parse.anyUInt8
+  n_0 <- Parse.anyUint8
   if n_0 < u0x80
     then pure n_0
     else do
       let acc_0 = n_0 .&. u0x7F
-      n_1 <- Parse.anyUInt8
+      n_1 <- Parse.anyUint8
       if n_1 < u0x80
         then pure $ acc_0 .|. (n_1 `shl` u7)
         else do
           let acc_1 = ((n_1 .&. u0x7F) `shl` u7) .|. acc_0
-          n_2 <- Parse.anyUInt8
+          n_2 <- Parse.anyUint8
           if n_2 < u0x80
             then pure $ acc_1 .|. (n_2 `shl` u14)
             else do
               let acc_2 = ((n_2 .&. u0x7F) `shl` u14) .|. acc_1
-              n_3 <- Parse.anyUInt8
+              n_3 <- Parse.anyUint8
               if n_3 < u0x80
                 then pure $ acc_2 .|. (n_3 `shl` u21)
                 else do

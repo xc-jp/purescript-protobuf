@@ -5,45 +5,66 @@ module Protobuf.Decode64
 ) where
 
 import Prelude
-import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect)
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
-import Data.Long.Bits((.^.), (.&.), (.|.), complement)
-import Data.Long.Internal (Long, Unsigned, Signed, signedToUnsigned, unsafeFromInt)
+import Data.Long.Internal
+  ( Long
+  , Unsigned
+  , Signed
+  , signedToUnsigned
+  , unsignedToSigned
+  , signedLongFromInt
+  , unsafeFromInt
+  , and
+  , or
+  , xor
+  , complement
+  , shr
+  , shl
+  )
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Data.ArrayBuffer.Types (DataView)
-import Protobuf.Common (FieldNumber, WireType)
 
+-- | Bitwise AND.
+infixl 10 and as .&.
+
+-- | Bitwise OR.
+infixl 10 or as .|.
+
+-- | Bitwise XOR.
+infixl 10 xor as .^.
 
 fromInt :: UInt -> Long Unsigned
-fromInt x = unsafeFromInt <<< UInt.toInt
+fromInt = signedToUnsigned <<< signedLongFromInt <<< UInt.toInt
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
-zigzag64 :: Long Signed -> Long Unsigned
-zigzag64 n = signedToUnsigned $ (n `shr` 1) .^. (lnegate (n .&. 1))
- where lnegate x = complement x + (unsafeFromInt 1)
+zigzag64 :: Long Unsigned -> Long Signed
+zigzag64 n = let n' = unsignedToSigned n in (n' `shr` u1) .^. (lnegate (n' .&. u1))
+ where
+   lnegate x = complement x + u1
+   u1    = unsafeFromInt 1
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
 varint64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
 varint64 = do
-  n_0 <- fromInt <$> Parse.anyUInt8
+  n_0 <- fromInt <$> Parse.anyUint8
   if n_0 < u0x80
     then pure n_0
     else do
-      let acc_0 = n_0 .&. u0x7F
-      n_1 <- fromInt <$> Parse.anyUInt8
+      let acc_0 = n_0 `and` u0x7F
+      n_1 <- fromInt <$> Parse.anyUint8
       if n_1 < u0x80
         then pure $ acc_0 .|. (n_1 `shl` u7)
         else do
           let acc_1 = ((n_1 .&. u0x7F) `shl` u7) .|. acc_0
-          n_2 <- fromInt <$> Parse.anyUInt8
+          n_2 <- fromInt <$> Parse.anyUint8
           if n_2 < u0x80
             then pure $ acc_1 .|. (n_2 `shl` u14)
             else do
               let acc_2 = ((n_2 .&. u0x7F) `shl` u14) .|. acc_1
-              n_3 <- fromInt <$> Parse.anyUInt8
+              n_3 <- fromInt <$> Parse.anyUint8
               if n_3 < u0x80
                 then pure $ acc_2 .|. (n_3 `shl` u21)
                 else do
@@ -74,7 +95,9 @@ varint64 = do
                                     else do
                                       let acc_8 = ((n_8 .&. u0x7F) `shl` u56) .|. acc_7
                                       n_9 <- fromInt <$> Parse.anyUint8
-                                      pure $ acc_8 .|. (n_9 `shl` u63)
+                                      if n_9 < u0x02
+                                        then pure $ acc_8 .|. (n_9 `shl` u63)
+                                        else fail "varint64 overflow. Please report this as a bug."
  where
   u7    = unsafeFromInt 7
   u14   = unsafeFromInt 14
@@ -85,6 +108,6 @@ varint64 = do
   u49   = unsafeFromInt 49
   u56   = unsafeFromInt 56
   u63   = unsafeFromInt 63
+  u0x02 = unsafeFromInt 2
   u0x7F = unsafeFromInt 0x7F
   u0x80 = unsafeFromInt 0x80
-
