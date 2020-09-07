@@ -4,16 +4,32 @@ import Prelude
 
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
+-- import Control.Category (identity)
+import Data.Array (snoc)
+import Data.Foldable (foldl)
+import Data.Symbol (SProxy(..))
+import Data.Tuple (Tuple(..))
+import Data.Long.Unsigned (toInt)
+import Data.UInt (UInt)
+import Data.UInt as UInt
+
+import Text.Parsing.Parser (ParserT, fail)
+import Text.Parsing.Parser.Combinators (manyTill)
+import Text.Parsing.Parser.DataView (eof, takeN)
+
+import Record.Builder (build, modify)
+import Record.Builder as RecordB
 
 import Protobuf.Decode as Decode
-import Protobuf.Encode as Encode
+-- import Protobuf.Encode as Encode
 import Protobuf.Common (WireType)
 
 import Node.Process (stdin, stdout)
-import Node.Stream (read, writeString, uncork, onReadable)
+import Node.Stream (read, writeString, onReadable)
 import Node.Buffer (toArrayBuffer)
 import Node.Encoding (Encoding(..))
 import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.ArrayBuffer.Types (DataView)
 
 main :: Effect Unit
 main = do
@@ -25,25 +41,77 @@ main = do
         stdinab <- toArrayBuffer stdinbuf
         void $ writeString stdout UTF8 (show $ AB.byteLength stdinab) (pure unit)
 
-parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
+type CodeGeneratorRequestBuilder = RecordB.Builder CodeGeneratorRequestRow CodeGeneratorRequestRow
+
+parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequestRow
+parseCodeGeneratorRequest = do
+  builders <- manyTill parseField eof
+  pure $ build (foldl (>>>) identity builders) defaultCodeGeneratorRequest
+ where
+  parseField :: ParserT DataView Effect CodeGeneratorRequestBuilder
+  parseField = do
+    Tuple fieldNumber wireType <- Decode.tag32
+    case unit of
+      _ | fieldNumber == fn_CodeGeneratorRequestRow_file_to_generate -> do
+            x <- Decode.string
+            pure $ modify fs_CodeGeneratorRequestRow_file_to_generate $ flip snoc x
+        | fieldNumber == fn_CodeGeneratorRequestRow_parameter -> do
+            x <- Decode.string
+            pure $ modify fs_CodeGeneratorRequestRow_parameter $ const $ Just x
+        -- | fieldNumber == fn_CodeGeneratorRequestRow_proto_file -> do
+        --     x <- parseFileDescriptorProto
+        --     pure $ modify fs_CodeGeneratorRequestRow_proto_file $ flip snoc x
+        -- | fieldNumber == fn_CodeGeneratorRequestRow_compiler_version -> do
+        --     x <- parseVersion
+        --     pure $ modify fs_CodeGeneratorRequestRow_compiler_version $ const $ Just x
+      _ -> parseUnknownField wireType *> pure identity
+
+      -- IMPORTANT For embedded message fields, the parser merges multiple instances of the same field,
+      -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#optional
+
+      -- IMPORTANT In proto3, repeated fields of scalar numeric types are packed by default.
+      -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
+
+-- | We don't know what this is, so consume it and throw it away
+parseUnknownField :: WireType -> ParserT DataView Effect Unit
+parseUnknownField wireType = case wireType of
+  0 -> void Decode.varint64 -- varint
+  1 -> void $ takeN 8 -- 64-bit
+  2 -> do -- Length-delimited
+        len <- toInt <$> Decode.varint64
+        case len of
+          Nothing -> fail "WireType Length-delimited value was too long."
+          Just l -> void $ takeN l
+  5 -> void $ takeN 4 -- 32-bit
+  _ -> fail "Unknown WireType"
+
 -- https://pursuit.purescript.org/packages/purescript-record
 
 -- | Data type for a CodeGenerationRequest message.
 -- | https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
-data CodeGeneratorRequest = CodeGeneratorRequest
+-- data CodeGeneratorRequest = CodeGeneratorRequest CodeGeneratorRequestRow
+-- derive instance showCodeGeneratorRequest :: Show CodeGeneratorRequest
+type CodeGeneratorRequestRow =
   { file_to_generate :: Array String -- 1
   , parameter :: Maybe String -- 2
   , proto_file :: Array FileDescriptorProto -- 15
   , compiler_version :: Maybe Version -- 3
   }
-derive instance showCodeGeneratorRequest :: Show CodeGeneratorRequest
-
+defaultCodeGeneratorRequest :: CodeGeneratorRequestRow
 defaultCodeGeneratorRequest =
-  { file_to_generate = []
-  , parameter = Nothing
-  , proto_file = []
-  , compiler_version = Nothing
+  { file_to_generate: []
+  , parameter: Nothing
+  , proto_file: []
+  , compiler_version: Nothing
   }
+fs_CodeGeneratorRequestRow_file_to_generate = SProxy :: SProxy "file_to_generate"
+fs_CodeGeneratorRequestRow_parameter = SProxy :: SProxy "parameter"
+fs_CodeGeneratorRequestRow_proto_file = SProxy :: SProxy "proto_file"
+fs_CodeGeneratorRequestRow_compiler_version = SProxy :: SProxy "compiler_version"
+fn_CodeGeneratorRequestRow_file_to_generate = UInt.fromInt 1 :: UInt
+fn_CodeGeneratorRequestRow_parameter = UInt.fromInt 2 :: UInt
+fn_CodeGeneratorRequestRow_proto_file = UInt.fromInt 15 :: UInt
+fn_CodeGeneratorRequestRow_compiler_version = UInt.fromInt 3 :: UInt
 
 -- | The version number of protocol compiler.
 data Version = Version
@@ -52,7 +120,6 @@ data Version = Version
   , patch :: Maybe Int --3
   , suffix :: Maybe String -- 4
   }
-derive instance showVersion :: Show Version
 
 -- | Describes a complete .proto file.
 -- | https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.descriptor.pb
@@ -64,7 +131,7 @@ data FileDescriptorProto = FileDescriptorProto
   , public_dependency :: Array Int -- 10
   , message_type :: Array DescriptorProto -- 4
   , enum_type :: Array EnumDescriptorProto -- 5
-  , service :: Array ServiceDescriptorProto -- 6
+  -- TODO , service :: Array ServiceDescriptorProto -- 6
   , extension :: Array FileDescriptorProto -- 7
   -- TODO , options :: Maybe FileOptions -- 8
   -- TODO , source_code_info :: Maybe SourceCodeInfo -- 9
