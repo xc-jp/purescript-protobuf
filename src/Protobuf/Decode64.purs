@@ -1,256 +1,84 @@
--- | Primitive parsers for decoding Google Protocol Buffers.
-module Protobuf.Decode
-( double
-, float
-, int32
-, int64as32
-, uint32
-, uint64as32
-, sint32
-, sint64as32
-, fixed32
-, fixed64as32
-, sfixed32
-, sfixed64as32
-, bool
-, string
-, bytes
+-- | Primitive Long-based parsers for decoding Google Protocol Buffers.
+module Protobuf.Decode64
+( zigzag64
+, varint64
 )
-
 
 import Prelude
 import Effect (Effect, liftEffect)
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
-import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.))
-import Data.TextEncoding (encodeUtf8)
-import Data.ArrayBuffer.Types (DataView, Uint8Array)
-import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer as AB
-import Data.ArrayBuffer.DataView as DV
+import Data.Long.Unsigned (Long, Unsigned, Signed, toUnsigned, fromInt)
+import Data.Long.Bits((.^.), (.&.), (.|.), complement)
+import Data.Long as Long (fromInt)
+import Data.ArrayBuffer.Types (DataView)
 import Protobuf.Common (FieldNumber, WireType)
 
--- | __double__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-double :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Number)
-double = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 1
-    then Tuple fieldNumber <$> Parse.anyFloat64le
-    else fail $ "Expected double, but got wire type " <> show wireType
-
--- | __float__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-float :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Float32)
-float = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 5
-    then Tuple fieldNumber <$> Parse.anyFloat32le
-    else fail $ "Expected float, but got wire type " <> show wireType
-
--- | __int32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-int32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Int)
-int32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 0
-    then Tuple fieldNumber <$> map toInt varint32
-    -- TODO Will always fail on a negative number.
-    else fail $ "Expected int32, but got wire type " <> show wireType
-
--- | __int64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-int64as32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Int)
-int64as32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 0
-    then Tuple fieldNumber <$> map toInt varint32
-    -- TODO Will always fail on a negative number.
-    else fail $ "Expected int64, but got wire type " <> show wireType
-
--- | __uint32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-uint32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber UInt)
-uint32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 0
-    then Tuple fieldNumber <$> varint32
-    else fail $ "Expected uint32, but got wire type " <> show wireType
-
--- | __uint64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-uint64as32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber UInt)
-uint64as32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 0
-    then Tuple fieldNumber <$> varint32
-    else fail $ "Expected uint64, but got wire type " <> show wireType
-
--- | __sint32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sint32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Int)
-sint32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 0
-    then Tuple fieldNumber <$> map zigZag32 varint32
-    else fail $ "Expected sint32, but got wire type " <> show wireType
-
--- | We don't have `Int64` in Purescript, but this will decode an `Int`
--- | from a __sint64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sint64as32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Int)
-sint64as32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 0
-    then Tuple fieldNumber <$> map zigZag32 varint32
-    else fail $ "Expected sint64, but got wire type " <> show wireType
-
--- | __fixed32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-fixed32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber UInt)
-fixed32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 5
-    then Tuple fieldNumber <$> Parse.anyUint32le
-    else fail $ "Expected fixed32, but got wire type " <> show wireType
-
--- | We don't have `UInt64` in Purescript, but this will decode a `UInt`
--- | from a __fixed64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-fixed64as32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber UInt)
-fixed64as32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 1
-    then do
-      lowbits  <- Parse.anyUint32le
-      highbits <- Parse.anyUint32le
-      if highbits == fromInt 0
-        then pure $ Tuple fieldNumber lowbits
-        else fail $ "fixed64as32 overflow"
-    else fail $ "Expected fixed64, but got wire type " <> show wireType
-
--- | __sfixed32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sfixed32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Int)
-sfixed32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 5
-    then Tuple fieldNumber <$> Parse.anyInt32le
-    else fail $ "Expected sfixed32, but got wire type " <> show wireType
-
--- | We don't have `Int64` in Purescript, but this will decode a `Int`
--- | from an __sfixed64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sfixed64as32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Int)
-sfixed64as32 = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 1
-    then do
-      lowbits <- Parse.anyInt32le
-      highbits <- Parse.anyInt32le
-      if highbits == 0
-        then pure $ Tuple fieldNumber lowbits
-        else fail $ "sfixed64as32 overflow"
-    else fail $ "Expected sfixed64, but got wire type " <> show wireType
-
--- | __bool__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bool :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber Boolean)
-bool = do
-  Tuple fieldNumber wireType <- tag
-  if wireType == 0
-    then do
-      x <- varint32
-      if x == fromInt 0
-        then pure $ Tuple fieldNumber False
-        else pure $ Tuple fieldNumber True
-    else fail $ "Expected bool, but got wire type " <> show wireType
-
-
--- | __string__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-string :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber String)
-string = do
-  tag fieldNumber wireType <- tag
-  if wireType == 2
-    then do
-      len <- varint32
-      stringview <- Parse.takeN len
-      stringarray <- liftEffect $ mkTypedArray stringview
-      case decodeUtf8 stringarray of
-        Left err -> fail "string failed to decode UTF8"
-        Right s -> pure s
-    else fail $ "Expected string, but got wire type " <> show wireType
- where
-  mkTypedArray :: DataView -> Effect Uint8Array
-  mkTypedArray dv = do
-    let buffer     = DV.buffer dv
-        byteOffset = DV.byteOffset dv
-        byteLength = DV.byteLength dv
-    AT.part buffer byteOffset byteLength
-
--- | __bytes__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber DataView)
-bytes = do
-  tag fieldNumber wireType <- tag
-  if wireType == 2
-    then Parse.takeN =<< varint32
-    else fail $ "Expected bytes, but got wire type " <> show wireType
-
-
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
-zigZag32 :: UInt -> Int
-zigZag32 n = toInt $ (n `shr` 1) .^. (unegate (n .&. 1))
- where unegate = fromInt <<< negate << toInt
-    -- unegate x = complement x + (fromInt 1) -- TODO switch to this definition
-
-tag :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber WireType)
-tag = do
-  n <- varint32
-  pure $ Tuple (n `shr` 3) (toInt $ n .&. 3)
+zigzag64 :: Long Signed -> Long Unsigned
+zigzag64 n = toUnsigned $ (n `shr` 1) .^. (lnegate (n .&. 1))
+ where lnegate x = complement x + (Long.fromInt 1)
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
-varint32 :: forall m. MonadEffect m => ParserT DataView m UInt
-varint32 = do
-  n_0 <- anyUInt8
+varint64 :: forall m. MonadEffect m => ParserT DataView m UInt
+varint64 = do
+  n_0 <- fromInt <$> Parse.anyUInt8
   if n_0 < u0x80
     then pure n_0
     else do
-      n_1 <- anyUInt8
+      let acc_0 = n_0 .&. u0x7F
+      n_1 <- fromInt <$> Parse.anyUInt8
       if n_1 < u0x80
-        then pure $ (n_0 .&. u0x7F) .|. (n_1 `shl` u7)
+        then pure $ acc_0 .|. (n_1 `shl` u7)
         else do
-          n_2 <- anyUInt8
+          let acc_1 = ((n_1 .&. u0x7F) `shl` u7) .|. acc_0
+          n_2 <- fromInt <$> Parse.anyUInt8
           if n_2 < u0x80
-            then pure
-              $   (n_0 .&. u0x7F)
-              .|. ((n_1 .&. u0x7F) `shl` u7)
-              .|. (n_2 `shl` u14)
+            then pure $ acc_1 .|. (n_2 `shl` u14)
             else do
-              n_3 <- anyUInt8
+              let acc_2 = ((n_2 .&. u0x7F) `shl` u14) .|. acc_1
+              n_3 <- fromInt <$> Parse.anyUInt8
               if n_3 < u0x80
-                then pure
-                  $   (n_0 .&. u0x7F)
-                  .|. ((n_1 .&. u0x7F) `shl` u7)
-                  .|. ((n_2 .&. u0x7F) `shl` u14)
-                  .|. (n_3 `shl` u21)
+                then pure $ acc_2 .|. (n_3 `shl` u21)
                 else do
-                  n_4 <- anyUint8
-                  if n_4 < u0x10
-                    then pure
-                      $   (n_0 .&. u0x7F)
-                      .|. ((n_1 .&. u0x7F) `shl` u7)
-                      .|. ((n_2 .&. u0x7F) `shl` u14)
-                      .|. ((n_3 .&. u0x7F) `shl` u21)
-                      .|. ((n_4 `shl` u28)
-                    else fail "varint32 overflow"
+                  let acc_3 = ((n_3 .&. u0x7F) `shl` u21) .|. acc_2
+                  n_4 <- fromInt <$> Parse.anyUint8
+                  if n_4 < u0x80
+                    then pure $ acc_3 .|. (n_4 `shl` u28)
+                    else do
+                      let acc_4 = ((n_4 .&. u0x7F) `shl` u28) .|. acc_3
+                      n_5 <- fromInt <$> Parse.anyUint8
+                      if n_5 < u0x80
+                        then pure $ acc_4 .|. (n_5 `shl` u35)
+                        else do
+                          let acc_5 = ((n_5 .&. u0x7F) `shl` u35) .|. acc_4
+                          n_6 <- fromInt <$> Parse.anyUint8
+                          if n_6 < u0x80
+                            then pure $ acc_5 .|. (n_6 `shl` u42)
+                            else do
+                              let acc_6 = ((n_6 .&. u0x7F) `shl` u42) .|. acc_5
+                              n_7 <- fromInt <$> Parse.anyUint8
+                              if n_7 < u0x80
+                                then pure $ acc_6 .|. (n_7 `shl` u49)
+                                else do
+                                  let acc_7 = ((n_7 .&. u0x7F) `shl` u49) .|. acc_6
+                                  n_8 <- fromInt <$> Parse.anyUint8
+                                  if n_8 < u0x80
+                                    then pure $ acc_7 .|. (n_8 `shl` u56)
+                                    else do
+                                      let acc_8 = ((n_8 .&. u0x7F) `shl` u56) .|. acc_7
+                                      n_9 <- fromInt <$> Parse.anyUint8
+                                      pure $ acc_8 .|. (n_9 `shl` u63)
  where
   u7    = fromInt 7
   u14   = fromInt 14
   u21   = fromInt 21
   u28   = fromInt 28
-  u0x10 = fromInt 0x10
+  u35   = fromInt 35
+  u42   = fromInt 42
+  u49   = fromInt 49
+  u56   = fromInt 56
+  u63   = fromInt 63
   u0x7F = fromInt 0x7F
   u0x80 = fromInt 0x80
 
