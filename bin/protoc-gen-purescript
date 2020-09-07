@@ -1,0 +1,1 @@
+cd ..; spago run --quiet --main ProtocPlugin.Main --node-args "$@"

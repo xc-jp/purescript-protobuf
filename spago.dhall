@@ -10,6 +10,9 @@
   , "uint"
   , "text-encoding"
   , "longs"
+  , "node-streams"
+  , "node-process"
+  , "node-buffer"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

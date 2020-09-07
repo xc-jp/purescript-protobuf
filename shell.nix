@@ -16,6 +16,15 @@ pkgs.mkShell {
     easy-ps.spago
     pkgs.nodejs-13_x
     easy-ps.pulp
+    pkgs.protobuf3_9
   ];
+  shellHook = ''
+  export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
+  echo "Purescript Protobuf development environment."
+  echo "To generate Purescript files from .proto files, run this command:"
+  echo ""
+  echo "    protoc --purescript_out=\$OUT_DIR \$PROTO_FILES"
+  echo ""
+  '';
   LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507
 }
