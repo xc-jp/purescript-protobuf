@@ -16,33 +16,24 @@ module Protobuf.Decode
 , string
 , bytes
 , tag32
-)
-
+) where
 
 import Prelude
 import Effect (Effect, liftEffect)
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
 import Data.UInt (UInt)
-import Data.UInt as UInt (fromInt, toInt)
+import Data.UInt as UInt
 import Data.Long.Internal (Long, Signed, Unsigned)
-import Data.Long.Unsigned as ULong (toSigned, toInt)
+import Data.Long.Unsigned as ULong
 import Data.TextEncoding (encodeUtf8)
 import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer as AB
+import Data.ArrayBuffer.Types as AB
 import Data.ArrayBuffer.DataView as DV
 import Protobuf.Common (FieldNumber, WireType)
-
-import Protobuf.Decode32
-( varint32
-, zigzag32
-, tag32
-)
-import Protobuf.Decode64
-( varint64
-, zigzag64
-)
+import Protobuf.Decode32 (varint32, zigzag32, tag32)
+import Protobuf.Decode64 (varint64, zigzag64)
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -131,9 +122,9 @@ sfixed64 = fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
 bool :: forall m. MonadEffect m => ParserT DataView m Boolean
 bool = do
   x <- varint32
-  if x == fromInt 0
-    then pure False
-    else pure True
+  if x == UInt.fromInt 0
+    then pure false
+    else pure true
 
 
 -- | __string__
@@ -143,7 +134,7 @@ string = do
   stringview <- varint32 >>= Parse.takeN
   stringarray <- liftEffect $ mkTypedArray stringview
   case decodeUtf8 stringarray of
-    Left err -> fail "string failed to decode UTF8"
+    Left err -> fail $ "string decodeUtf8 failed. " <> err
     Right s -> pure s
  where
   mkTypedArray :: DataView -> Effect Uint8Array

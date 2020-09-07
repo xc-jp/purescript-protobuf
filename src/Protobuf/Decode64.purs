@@ -2,25 +2,31 @@
 module Protobuf.Decode64
 ( zigzag64
 , varint64
-)
+) where
 
 import Prelude
-import Effect (Effect, liftEffect)
+import Effect (Effect)
+import Effect.Class (liftEffect)
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
-import Data.Long.Unsigned (Long, Unsigned, Signed, toUnsigned, fromInt)
 import Data.Long.Bits((.^.), (.&.), (.|.), complement)
-import Data.Long as Long (fromInt)
+import Data.Long.Internal (Long, Unsigned, Signed, signedToUnsigned, unsafeFromInt)
+import Data.UInt (UInt)
+import Data.UInt as UInt
 import Data.ArrayBuffer.Types (DataView)
 import Protobuf.Common (FieldNumber, WireType)
 
+
+fromInt :: UInt -> Long Unsigned
+fromInt x = unsafeFromInt <<< UInt.toInt
+
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
 zigzag64 :: Long Signed -> Long Unsigned
-zigzag64 n = toUnsigned $ (n `shr` 1) .^. (lnegate (n .&. 1))
- where lnegate x = complement x + (Long.fromInt 1)
+zigzag64 n = signedToUnsigned $ (n `shr` 1) .^. (lnegate (n .&. 1))
+ where lnegate x = complement x + (unsafeFromInt 1)
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
-varint64 :: forall m. MonadEffect m => ParserT DataView m UInt
+varint64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
 varint64 = do
   n_0 <- fromInt <$> Parse.anyUInt8
   if n_0 < u0x80
@@ -70,15 +76,15 @@ varint64 = do
                                       n_9 <- fromInt <$> Parse.anyUint8
                                       pure $ acc_8 .|. (n_9 `shl` u63)
  where
-  u7    = fromInt 7
-  u14   = fromInt 14
-  u21   = fromInt 21
-  u28   = fromInt 28
-  u35   = fromInt 35
-  u42   = fromInt 42
-  u49   = fromInt 49
-  u56   = fromInt 56
-  u63   = fromInt 63
-  u0x7F = fromInt 0x7F
-  u0x80 = fromInt 0x80
+  u7    = unsafeFromInt 7
+  u14   = unsafeFromInt 14
+  u21   = unsafeFromInt 21
+  u28   = unsafeFromInt 28
+  u35   = unsafeFromInt 35
+  u42   = unsafeFromInt 42
+  u49   = unsafeFromInt 49
+  u56   = unsafeFromInt 56
+  u63   = unsafeFromInt 63
+  u0x7F = unsafeFromInt 0x7F
+  u0x80 = unsafeFromInt 0x80
 

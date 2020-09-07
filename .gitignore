@@ -6,3 +6,5 @@ node_modules
 # Generated files
 .psci
 output
+.spago
+

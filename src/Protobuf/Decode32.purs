@@ -3,10 +3,11 @@ module Protobuf.Decode32
 ( zigzag32
 , tag32
 , varint32
-)
+) where
 
 import Prelude
-import Effect (Effect, liftEffect)
+import Effect (Effect)
+import Effect.Class (liftEffect)
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
 import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.))
@@ -16,11 +17,11 @@ import Protobuf.Common (FieldNumber, WireType)
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
 zigzag32 :: UInt -> Int
 zigzag32 n = toInt $ (n `shr` 1) .^. (unegate (n .&. 1))
- where unegate = fromInt <<< negate << toInt
+ where unegate = fromInt <<< negate <<< toInt
     -- unegate x = complement x + (fromInt 1) -- TODO switch to this definition?
 
 tag32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber WireType)
-tag = do
+tag32 = do
   n <- varint32
   pure $ Tuple (n `shr` 3) (toInt $ n .&. 3)
 

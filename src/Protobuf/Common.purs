@@ -1,5 +1,6 @@
 module Protobuf.Common
 ( FieldNumber
+, WireType
 )
 where
 

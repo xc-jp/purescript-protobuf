@@ -20,6 +20,7 @@ where
 
 import Prelude
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Data.ArrayBuffer.Builder as Builder
 import Data.UInt (UInt)
 import Data.Long (toUnsigned, lowBits, highBits)
@@ -27,22 +28,15 @@ import Data.Long.Unsigned as LU
 import Data.Long.Unsigned (Long, Unsigned)
 import Data.TextEncoding (encodeUtf8)
 import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer as AB
+import Data.ArrayBuffer.Types as AB
 import Protobuf.Common (FieldNumber)
 
 -- We have a special varint32 for encoding varints which we're just going
 -- to assume fit in the 32-bit range. There is no "32-bit varint" in protobuf.
 -- This is a performance optimization, and probably misguided, but we're
 -- horrified at the thought of using so many Longs in our program.
-import Protobuf.Encode32
-( zigzag32
-, tag32
-, varint32
-)
-import Protobuf.Encode64
-( zigzag64
-, varint64
-)
+import Protobuf.Encode32 (zigzag32, tag32, varint32)
+import Protobuf.Encode64 (zigzag64, varint64)
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)

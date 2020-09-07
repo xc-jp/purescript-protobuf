@@ -27,28 +27,24 @@ varint32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
 varint32 n_0 = do
   let group_0 = n_0 .&. u0x7F
       n_1     = n_0 `zshr` u7
-  in
   if n_1 == u0
     then Builder.putUint8 group_0
     else do
       Builder.putUint8 $  u0x80 .|. group_0
       let group_1 = n_1 .&. u0x7F
           n_2     = n_1 `zshr` u7
-      in
       if n_2 == u0
         then Builder.putUint8 group_1
         else do
           Builder.putUint8 $ u0x80 .|. group_1
           let group_2 = n_2 .&. u0x7F
               n_3     = n_2 `zshr` u7
-          in
           if n_3 == u0
             then Builder.putUint8 group_2
             else do
               Builder.putUint8 $ u0x80 .| group_2
               let group_3 = n_3 .&. u0x7F
                   n_4     = n_3 `zshr` u7
-              in
               if n_4 == u0
                 then Builder.putUint8 group_3
                 else do
