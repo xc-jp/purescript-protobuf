@@ -11,13 +11,13 @@ import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.Generic.Rep(class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Long.Unsigned (toInt)
+-- import Data.Long.Unsigned (toInt)
 import Data.UInt (UInt)
 import Data.UInt as UInt
 
 import Text.Parsing.Parser (ParserT, fail, runParserT)
 import Text.Parsing.Parser.Combinators (manyTill)
-import Text.Parsing.Parser.DataView (eof, takeN)
+import Text.Parsing.Parser.DataView (eof)
 
 import Record.Builder (build, modify)
 import Record.Builder as RecordB
@@ -34,6 +34,11 @@ import Node.Encoding (Encoding(..))
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Types (DataView)
 
+import Protobuf.Runtime
+  ( parseMessage
+  , parseFieldUnknown
+  )
+
 main :: Effect Unit
 main = do
   onReadable stdin $ do
@@ -47,30 +52,30 @@ main = do
         request <- runParserT stdinview parseCodeGeneratorRequest
         void $ writeString stderr UTF8 (show request) (pure unit)
 
-type CodeGeneratorRequestBuilder = RecordB.Builder CodeGeneratorRequestR CodeGeneratorRequestR
+-- parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
+-- parseCodeGeneratorRequest = do
+--   builders <- manyTill parseField eof
+--   pure $ CodeGeneratorRequest $ build (foldl (>>>) identity builders) defaultCodeGeneratorRequest
+--  where
+--   parseField :: ParserT DataView Effect (RecordB.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
+--   parseField = do
+--     Tuple fieldNumber wireType <- Decode.tag32
+--     case unit of
+--       _ | fieldNumber == fn_CodeGeneratorRequest_file_to_generate -> do
+--             x <- Decode.string
+--             pure $ modify fs_CodeGeneratorRequest_file_to_generate $ flip snoc x
+--         | fieldNumber == fn_CodeGeneratorRequest_parameter -> do
+--             x <- Decode.string
+--             pure $ modify fs_CodeGeneratorRequest_parameter $ const $ Just x
+--         -- | fieldNumber == fn_CodeGeneratorRequest_proto_file -> do
+--         --     x <- parseFileDescriptorProto
+--         --     pure $ modify fs_CodeGeneratorRequest_proto_file $ flip snoc x
+--         -- | fieldNumber == fn_CodeGeneratorRequest_compiler_version -> do
+--         --     x <- parseVersion
+--         --     pure $ modify fs_CodeGeneratorRequest_compiler_version $ const $ Just x
+--       _ -> parseFieldUnknown wireType
 
-parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
-parseCodeGeneratorRequest = do
-  builders <- manyTill parseField eof
-  pure $ CodeGeneratorRequest $ build (foldl (>>>) identity builders) defaultCodeGeneratorRequest
- where
-  parseField :: ParserT DataView Effect CodeGeneratorRequestBuilder
-  parseField = do
-    Tuple fieldNumber wireType <- Decode.tag32
-    case unit of
-      _ | fieldNumber == fn_CodeGeneratorRequest_file_to_generate -> do
-            x <- Decode.string
-            pure $ modify fs_CodeGeneratorRequest_file_to_generate $ flip snoc x
-        | fieldNumber == fn_CodeGeneratorRequest_parameter -> do
-            x <- Decode.string
-            pure $ modify fs_CodeGeneratorRequest_parameter $ const $ Just x
-        -- | fieldNumber == fn_CodeGeneratorRequest_proto_file -> do
-        --     x <- parseFileDescriptorProto
-        --     pure $ modify fs_CodeGeneratorRequest_proto_file $ flip snoc x
-        -- | fieldNumber == fn_CodeGeneratorRequest_compiler_version -> do
-        --     x <- parseVersion
-        --     pure $ modify fs_CodeGeneratorRequest_compiler_version $ const $ Just x
-      _ -> parseUnknownField wireType *> pure identity
+
 
       -- IMPORTANT For embedded message fields, the parser merges multiple instances of the same field,
       -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#optional
@@ -78,19 +83,41 @@ parseCodeGeneratorRequest = do
       -- IMPORTANT In proto3, repeated fields of scalar numeric types are packed by default.
       -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
 
--- | We don't know what this is, so consume it and throw it away
-parseUnknownField :: WireType -> ParserT DataView Effect Unit
-parseUnknownField wireType = case wireType of
-  VarInt -> void Decode.varint64
-  Bits64 -> void $ takeN 8
-  LenDel -> do
-        len <- toInt <$> Decode.varint64
-        case len of
-          Nothing -> fail "Length-delimited value of unknown field was too long."
-          Just l -> void $ takeN l
-  Bits32 -> void $ takeN 4
+parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
+parseCodeGeneratorRequest =
+  parseMessage CodeGeneratorRequest default parseField
+ where
+  parseField
+    :: Int
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
+  parseField 1 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "file_to_generate") $ flip snoc x
+  parseField 2 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "parameter") $ const $ Just x
+  parseField _ wireType = parseFieldUnknown wireType
 
--- https://pursuit.purescript.org/packages/purescript-record
+  default :: CodeGeneratorRequestR
+  default =
+    { file_to_generate: []
+    , parameter: Nothing
+    , proto_file: []
+    , compiler_version: Nothing
+    }
+
+  -- fs_CodeGeneratorRequest_file_to_generate =
+  -- fs_CodeGeneratorRequest_parameter =
+  -- fs_CodeGeneratorRequest_proto_file = SProxy :: SProxy "proto_file"
+  -- fs_CodeGeneratorRequest_compiler_version = SProxy :: SProxy "compiler_version"
+  -- fn_CodeGeneratorRequest_file_to_generate = UInt.fromInt 1 :: UInt
+  -- fn_CodeGeneratorRequest_parameter = UInt.fromInt 2 :: UInt
+  -- fn_CodeGeneratorRequest_proto_file = UInt.fromInt 15 :: UInt
+  -- fn_CodeGeneratorRequest_compiler_version = UInt.fromInt 3 :: UInt
+
+
+
 
 -- IMPORTANT We need to wrap our structural record types in a nominal
 -- data type so that we can nest records.
@@ -107,23 +134,6 @@ type CodeGeneratorRequestR =
   , proto_file :: Array FileDescriptorProto -- 15
   , compiler_version :: Maybe Version -- 3
   }
-
-defaultCodeGeneratorRequest :: CodeGeneratorRequestR
-defaultCodeGeneratorRequest =
-  { file_to_generate: []
-  , parameter: Nothing
-  , proto_file: []
-  , compiler_version: Nothing
-  }
-fs_CodeGeneratorRequest_file_to_generate = SProxy :: SProxy "file_to_generate"
-fs_CodeGeneratorRequest_parameter = SProxy :: SProxy "parameter"
-fs_CodeGeneratorRequest_proto_file = SProxy :: SProxy "proto_file"
-fs_CodeGeneratorRequest_compiler_version = SProxy :: SProxy "compiler_version"
-fn_CodeGeneratorRequest_file_to_generate = UInt.fromInt 1 :: UInt
-fn_CodeGeneratorRequest_parameter = UInt.fromInt 2 :: UInt
-fn_CodeGeneratorRequest_proto_file = UInt.fromInt 15 :: UInt
-fn_CodeGeneratorRequest_compiler_version = UInt.fromInt 3 :: UInt
-
 -- | The version number of protocol compiler.
 newtype Version = Version VersionR
 derive instance genericVersion :: Generic Version _

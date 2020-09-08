@@ -1,19 +1,33 @@
 # WIP purescript-protobuf
 
-Purescript code generation and runtime library for Google Protocol Buffers.
+Purescript library and code generator for Google Protocol Buffers.
 
 Only
 [Protocol Buffers Version 3](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec)
 supported.
 
-## Runtime library
+## Imports
 
 This library operates on
-[`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer), so 
-[works in both Node](https://pursuit.purescript.org/packages/purescript-node-buffer/docs/Node.Buffer.Class)
-and browser runtime environments.
+[`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer), so it will
+[run in both Node](https://pursuit.purescript.org/packages/purescript-node-buffer/docs/Node.Buffer.Class)
+and browser environments.
 
-## Compile-time Code Generation
+None of the modules in this package should be imported directly in your program.
+Rather, you'll import the message modules in the generated `.purs` files,
+as well as some standard dependencies for reading and writing `ArrayBuffer`s.
+[__ArrayBuffer.Builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
+[__Parsing.DataView__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
+
+The generated message modules will import the `Protobuf.Runtime` module.
+
+```purescript
+import Text.Parsing.Parser (runParserT)
+import Data.ArrayBuffer.Builder (execPut)
+import GeneratedMessages (MyMessage, parseMyMessage, putMyMessage)
+```
+
+## Code Generation
 
 The `shell.nix` environment provides
 
