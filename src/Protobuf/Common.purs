@@ -8,6 +8,8 @@ import Prelude
 import Data.UInt (UInt)
 import Data.Enum (class Enum, fromEnum, class BoundedEnum, Cardinality(..))
 import Data.Maybe (Maybe(..))
+import Data.Generic.Rep(class Generic)
+import Data.Generic.Rep.Show (genericShow)
 
 type FieldNumber = UInt
 
@@ -19,6 +21,7 @@ data WireType
   | Bits32
 
 derive instance eqWireType :: Eq WireType
+derive instance genericWireType :: Generic WireType _
 
 instance ordWireType :: Ord WireType
  where
@@ -52,4 +55,6 @@ instance boundedEnumWireType :: BoundedEnum WireType
   fromEnum Bits64 = 1
   fromEnum LenDel = 2
   fromEnum Bits32 = 5
+
+instance showWireType :: Show WireType where show = genericShow
 

@@ -1,0 +1,10 @@
+{
+  "name": "purescript-protobuf",
+  "version": "0.1.0",
+  "description": "Google Protocol Buffers",
+  "author": "Cross Compass, LLC.",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "long": "^4.0.0"
+  }
+}

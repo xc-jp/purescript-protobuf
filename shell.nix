@@ -23,6 +23,7 @@ pkgs.mkShell {
   echo "Purescript Protobuf development environment."
   echo "To build purescript-protobuf, run this command:"
   echo ""
+  echo "    npm install"
   echo "    spago build"
   echo ""
   echo "To test purescript-protobuf, run this command:"
@@ -31,7 +32,7 @@ pkgs.mkShell {
   echo ""
   echo "To generate Purescript files from .proto files, run this command:"
   echo ""
-  echo "    protoc --purescript_out=\$OUT_DIR \$PROTO_FILES"
+  echo "    protoc --purescript_out=./test test/test.proto"
   echo ""
   '';
   LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507
