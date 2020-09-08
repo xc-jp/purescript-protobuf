@@ -139,16 +139,31 @@ parseCodeGeneratorRequest pos =
     , compiler_version: Nothing
     }
 
-  -- fs_CodeGeneratorRequest_file_to_generate =
-  -- fs_CodeGeneratorRequest_parameter =
-  -- fs_CodeGeneratorRequest_proto_file = SProxy :: SProxy "proto_file"
-  -- fs_CodeGeneratorRequest_compiler_version = SProxy :: SProxy "compiler_version"
-  -- fn_CodeGeneratorRequest_file_to_generate = UInt.fromInt 1 :: UInt
-  -- fn_CodeGeneratorRequest_parameter = UInt.fromInt 2 :: UInt
-  -- fn_CodeGeneratorRequest_proto_file = UInt.fromInt 15 :: UInt
-  -- fn_CodeGeneratorRequest_compiler_version = UInt.fromInt 3 :: UInt
+-- | Call another parser for which eof will succeed after the byte length we designate.
+-- | Will always consume exactly the byte length we designate.
+subParse
+  :: forall a
+   . Int -- base position
+  -> Int -- byte length
+  -> ParserT DataView Effect a
+  -> ParserT DataView Effect a
 
+-- | Call a parser repeatedly until exactly *N* bytes have been consumed.
+-- | Will fail if too many bytes are consumed.
+manyLength
+  :: forall a
+   . Int -- byte length
+  -> ParserT DataView Effect a
+  -> ParserT DataView Effect (Array a)
+-- https://pursuit.purescript.org/packages/purescript-arrays/5.3.1/docs/Data.Array.ST#v:push
 
+-- | Call a parser once and check that exactly *N* bytes have been consumed.
+-- | Will fail if too many or too few bytes are consumed.
+oneLength
+  :: forall a
+   . Int -- byte length
+  -> ParserT DataView Effect a
+  -> ParserT DataView Effect a
 
 
 -- IMPORTANT We need to wrap our structural record types in a nominal
@@ -207,14 +222,14 @@ type FileDescriptorProtoR =
   , message_type :: Array DescriptorProto -- 4
   , enum_type :: Array EnumDescriptorProto -- 5
   -- TODO , service :: Array ServiceDescriptorProto -- 6
-  , extension :: Array FileDescriptorProto -- 7
+  , extension :: Array FieldDescriptorProto -- 7
   -- TODO , options :: Maybe FileOptions -- 8
   -- TODO , source_code_info :: Maybe SourceCodeInfo -- 9
   , syntax :: Maybe String -- 12
   }
 newtype FileDescriptorProto = FileDescriptorProto FileDescriptorProtoR
 derive instance genericFileDescriptorProto :: Generic FileDescriptorProto _
-instance showFileDescriptorProto :: Show FileDescriptorProto where show = const "" -- TODO genericShow
+instance showFileDescriptorProto :: Show FileDescriptorProto where show = genericShow
 parseFileDescriptorProto :: Pos -> ParserT DataView Effect FileDescriptorProto
 parseFileDescriptorProto pos =
   parseMessage FileDescriptorProto default parseField
@@ -229,6 +244,15 @@ parseFileDescriptorProto pos =
   parseField 2 LenDel = do
     x <- Decode.string
     pure $ modify (SProxy :: SProxy "package") $ const $ Just x
+  parseField 3 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "dependency") $ flip snoc x
+  parseField 10 Bits32 = do -- then this repeated int32 field is nonpacked
+    x <- Decode.int32
+    pure $ modify (SProxy :: SProxy "public_dependency") $ flip snoc x
+  parseField 10 LenDel = do -- then this repeated int32 field is packed
+    len <- UInt.toInt <$> Decode.varint32
+    pure identity
   parseField _ wireType = parseFieldUnknown wireType
   default =
     { name : Nothing
@@ -249,9 +273,6 @@ parseFileDescriptorProto pos =
 
 
 
-newtype DescriptorProto = DescriptorProto DescriptorProtoR
-derive instance genericDescriptorProto :: Generic DescriptorProto _
-instance showDescriptorProto :: Show DescriptorProto where show = const "" -- TODO genericShow
 -- | Describes a message type.
 type DescriptorProtoR =
   { name :: Maybe String -- 1
@@ -264,6 +285,11 @@ type DescriptorProtoR =
   -- TODO , options :: Maybe MessageOptions -- 7
   -- TODO eh who cares about reserved ranges
   }
+newtype DescriptorProto = DescriptorProto DescriptorProtoR
+derive instance genericDescriptorProto :: Generic DescriptorProto _
+instance showDescriptorProto :: Show DescriptorProto where
+  show (DescriptorProto{name,field}) = -- TODO genericShow, doesn't work because https://github.com/purescript/documentation/blob/master/errors/CycleInDeclaration.md
+    "DescriptorProto { name: " <> show name <> ", field: " <> show field <> "}"
 
 newtype DescriptorProto_ExtensionRange = DescriptorProto_ExtensionRange DescriptorProto_ExtensionRangeR
 derive instance genericDescriptorProto_ExtensionRange :: Generic DescriptorProto_ExtensionRange _
