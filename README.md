@@ -23,16 +23,22 @@ The `shell.nix` environment provides
   executable is on the `PATH`
   [so that `protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
 
-Enter the Nix shell.
-
 ```
-nix-shell
-```
+$ nix-shell
 
-Run `protoc` with the directory `OUT_DIR` name
-for the generated `.purs` files, and the `$PROTO_FILES` list of input
-`.proto` files.
+Purescript Protobuf development environment.
+To build purescript-protobuf, run:
 
-```
-protoc --purescript_out=$OUT_DIR $PROTO_FILES
+    npm install
+    spago build
+
+To test purescript-protobuf, run:
+
+    spago test
+
+To generate Purescript .purs files from .proto files, run:
+
+    protoc --purescript_out=./test test/test.proto
+
+[nix-shell]$
 ```
