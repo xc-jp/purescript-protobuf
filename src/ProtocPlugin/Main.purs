@@ -4,6 +4,7 @@ import Prelude
 
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 -- import Control.Category (identity)
 import Data.Array (snoc)
 import Data.Foldable (foldl)
@@ -14,10 +15,11 @@ import Data.Generic.Rep.Show (genericShow)
 -- import Data.Long.Unsigned (toInt)
 import Data.UInt (UInt)
 import Data.UInt as UInt
+import Control.Monad.Trans.Class (lift)
 
-import Text.Parsing.Parser (ParserT, fail, runParserT)
+import Text.Parsing.Parser (ParserT, runParserT, ParseError(..), failWithPosition)
 import Text.Parsing.Parser.Combinators (manyTill)
-import Text.Parsing.Parser.DataView (eof)
+import Text.Parsing.Parser.DataView (eof, takeN)
 
 import Record.Builder (build, modify)
 import Record.Builder as RecordB
@@ -37,6 +39,10 @@ import Data.ArrayBuffer.Types (DataView)
 import Protobuf.Runtime
   ( parseMessage
   , parseFieldUnknown
+  , Pos
+  , FieldNumberInt
+  , positionZero
+  , addPosCol
   )
 
 main :: Effect Unit
@@ -49,7 +55,7 @@ main = do
         stdinab <- toArrayBuffer stdinbuf
         -- void $ writeString stdout UTF8 (show $ AB.byteLength stdinab) (pure unit)
         let stdinview = DV.whole stdinab
-        request <- runParserT stdinview parseCodeGeneratorRequest
+        request <- runParserT stdinview $ parseCodeGeneratorRequest 0
         void $ writeString stderr UTF8 (show request) (pure unit)
 
 -- parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
@@ -83,12 +89,24 @@ main = do
       -- IMPORTANT In proto3, repeated fields of scalar numeric types are packed by default.
       -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
 
-parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
-parseCodeGeneratorRequest =
+-- | Record type for a CodeGenerationRequest message.
+-- | https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
+type CodeGeneratorRequestR =
+  { file_to_generate :: Array String -- 1
+  , parameter :: Maybe String -- 2
+  , proto_file :: Array FileDescriptorProto -- 15
+  , compiler_version :: Maybe Version -- 3
+  }
+newtype CodeGeneratorRequest = CodeGeneratorRequest CodeGeneratorRequestR
+derive instance genericCodeGeneratorRequest :: Generic CodeGeneratorRequest _
+instance showCodeGeneratorRequest :: Show CodeGeneratorRequest where show = genericShow
+parseCodeGeneratorRequest :: Pos -> ParserT DataView Effect CodeGeneratorRequest
+parseCodeGeneratorRequest pos =
   parseMessage CodeGeneratorRequest default parseField
  where
   parseField
-    :: Int
+    -- :: Pos
+    :: FieldNumberInt
     -> WireType
     -> ParserT DataView Effect (RecordB.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
   parseField 1 LenDel = do
@@ -97,6 +115,20 @@ parseCodeGeneratorRequest =
   parseField 2 LenDel = do
     x <- Decode.string
     pure $ modify (SProxy :: SProxy "parameter") $ const $ Just x
+  parseField 15 LenDel = do
+    len <- UInt.toInt <$> Decode.varint32 -- faster than int32
+    pos' <- positionZero
+    dview <- takeN len
+    lift (runParserT dview (parseFileDescriptorProto $ pos + pos')) >>= case _ of
+      Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
+      Right x -> pure $ modify (SProxy :: SProxy "proto_file") $ flip snoc x
+  parseField 3 LenDel = do
+    len <- UInt.toInt <$> Decode.varint32 -- faster than int32
+    pos' <- positionZero
+    dview <- takeN len
+    lift (runParserT dview (parseVersion $ pos + pos')) >>= case _ of
+      Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
+      Right x -> pure $ modify (SProxy :: SProxy "compiler_version") $ const $ Just x
   parseField _ wireType = parseFieldUnknown wireType
 
   default :: CodeGeneratorRequestR
@@ -123,31 +155,47 @@ parseCodeGeneratorRequest =
 -- data type so that we can nest records.
 -- https://github.com/purescript/documentation/blob/master/errors/CycleInTypeSynonym.md
 -- And so that we can assign instances?
-newtype CodeGeneratorRequest = CodeGeneratorRequest CodeGeneratorRequestR
-derive instance genericCodeGeneratorRequest :: Generic CodeGeneratorRequest _
-instance showCodeGeneratorRequest :: Show CodeGeneratorRequest where show = genericShow
--- | Data type for a CodeGenerationRequest message.
--- | https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
-type CodeGeneratorRequestR =
-  { file_to_generate :: Array String -- 1
-  , parameter :: Maybe String -- 2
-  , proto_file :: Array FileDescriptorProto -- 15
-  , compiler_version :: Maybe Version -- 3
-  }
+
+
 -- | The version number of protocol compiler.
-newtype Version = Version VersionR
-derive instance genericVersion :: Generic Version _
-instance showVersion :: Show Version where show = genericShow
+-- | https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.descriptor.pb
 type VersionR =
   { major :: Maybe Int --1
   , minor :: Maybe Int --2
   , patch :: Maybe Int --3
   , suffix :: Maybe String -- 4
   }
+newtype Version = Version VersionR
+derive instance genericVersion :: Generic Version _
+instance showVersion :: Show Version where show = genericShow
+parseVersion :: Pos -> ParserT DataView Effect Version
+parseVersion pos =
+  parseMessage Version default parseField
+ where
+  parseField
+    :: FieldNumberInt
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder VersionR VersionR)
+  parseField 1 VarInt = do
+    x <- Decode.int32
+    pure $ modify (SProxy :: SProxy "major") $ const $ Just x
+  parseField 2 VarInt = do
+    x <- Decode.int32
+    pure $ modify (SProxy :: SProxy "minor") $ const $ Just x
+  parseField 3 VarInt = do
+    x <- Decode.int32
+    pure $ modify (SProxy :: SProxy "patch") $ const $ Just x
+  parseField 4 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "suffix") $ const $ Just x
+  parseField _ wireType = parseFieldUnknown wireType
+  default =
+    { major: Nothing
+    , minor: Nothing
+    , patch: Nothing
+    , suffix: Nothing
+    }
 
-newtype FileDescriptorProto = FileDescriptorProto FileDescriptorProtoR
-derive instance genericFileDescriptorProto :: Generic FileDescriptorProto _
-instance showFileDescriptorProto :: Show FileDescriptorProto where show = const "" -- TODO genericShow
 -- | Describes a complete .proto file.
 -- | https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.descriptor.pb
 -- | The syntax for decoding this is "proto2"?
@@ -164,6 +212,42 @@ type FileDescriptorProtoR =
   -- TODO , source_code_info :: Maybe SourceCodeInfo -- 9
   , syntax :: Maybe String -- 12
   }
+newtype FileDescriptorProto = FileDescriptorProto FileDescriptorProtoR
+derive instance genericFileDescriptorProto :: Generic FileDescriptorProto _
+instance showFileDescriptorProto :: Show FileDescriptorProto where show = const "" -- TODO genericShow
+parseFileDescriptorProto :: Pos -> ParserT DataView Effect FileDescriptorProto
+parseFileDescriptorProto pos =
+  parseMessage FileDescriptorProto default parseField
+ where
+  parseField
+    :: FieldNumberInt
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder FileDescriptorProtoR FileDescriptorProtoR)
+  parseField 1 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "name") $ const $ Just x
+  parseField 2 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "package") $ const $ Just x
+  parseField _ wireType = parseFieldUnknown wireType
+  default =
+    { name : Nothing
+    , package : Nothing
+    , dependency : []
+    , public_dependency : []
+    , message_type : []
+    , enum_type : []
+    -- TODO , service :
+    , extension : []
+    -- TODO , options : []
+    -- TODO , source_code_info : []
+    , syntax : Nothing
+    }
+
+
+
+
+
 
 newtype DescriptorProto = DescriptorProto DescriptorProtoR
 derive instance genericDescriptorProto :: Generic DescriptorProto _
