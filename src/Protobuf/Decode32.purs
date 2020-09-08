@@ -1,4 +1,13 @@
--- | Primitive UInt-based parsers for decoding Google Protocol Buffers.
+-- | Primitive `UInt`-based parsers for decoding Google Protocol Buffers.
+-- |
+-- | There is no `varint32` in the Protbuf spec, this is
+-- | just a performance-improving assumption we make
+-- | in cases where only a deranged lunatic would use a value
+-- | bigger than 32 bits, such as in field numbers.
+-- | We think this is worth the risk because `UInt` is
+-- | represented as a native Javascript Number whereas
+-- | `Long` is a composite library type, so we expect the
+-- | performance difference to be significant.
 module Protobuf.Decode32
 ( zigzag32
 , tag32
@@ -8,6 +17,8 @@ module Protobuf.Decode32
 import Prelude
 import Effect.Class (class MonadEffect)
 import Data.Tuple (Tuple(..))
+import Data.Enum (toEnum)
+import Data.Maybe (Maybe(..))
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
 import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.), shr, shl)
@@ -22,10 +33,15 @@ zigzag32 n = toInt $ (n `shr` (fromInt 1)) .^. (unegate (n .&. (fromInt 1)))
   unegate = fromInt <<< negate <<< toInt
     -- unegate x = complement x + (fromInt 1) -- TODO switch to this definition?
 
+-- | Parse the field number and wire type of the next field.
+-- | https://developers.google.com/protocol-buffers/docs/encoding#structure
 tag32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber WireType)
 tag32 = do
   n <- varint32
-  pure $ Tuple (n `shr` (fromInt 3)) (toInt $ n .&. (fromInt 3))
+  let wireTypeInt = toInt $ n .&. (fromInt 3)
+  case toEnum wireTypeInt of
+    Just wireType -> pure $ Tuple (n `shr` (fromInt 3)) wireType
+    Nothing       -> fail $ "Unknown WireType " <> show wireTypeInt
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
 varint32 :: forall m. MonadEffect m => ParserT DataView m UInt
@@ -54,14 +70,6 @@ varint32 = do
                   if n_4 < u0x10
                     then pure $ acc_3 .|. (n_4 `shl` u28)
                     else fail "varint32 overflow. Please report this as a bug."
-                    -- There is no varint32 in the Protbuf spec, this is
-                    -- just a performance-improving assumption we make
-                    -- in cases where only a deranged lunatic would use a value
-                    -- bigger than 32 bits, such as in field numbers.
-                    -- We think this is worth the risk because UInt is
-                    -- represented as a native Javascript Number whereas
-                    -- Long is a composite library type, so we expect the
-                    -- performance difference to be significant.
  where
   u7    = fromInt 7
   u14   = fromInt 14

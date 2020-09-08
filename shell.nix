@@ -21,6 +21,14 @@ pkgs.mkShell {
   shellHook = ''
   export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
   echo "Purescript Protobuf development environment."
+  echo "To build purescript-protobuf, run this command:"
+  echo ""
+  echo "    spago build"
+  echo ""
+  echo "To test purescript-protobuf, run this command:"
+  echo ""
+  echo "    spago test"
+  echo ""
   echo "To generate Purescript files from .proto files, run this command:"
   echo ""
   echo "    protoc --purescript_out=\$OUT_DIR \$PROTO_FILES"

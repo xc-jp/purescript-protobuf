@@ -1,16 +1,22 @@
 # WIP purescript-protobuf
 
-Purescript support for Google Protocol Buffers.
+Purescript code generation and runtime library for Google Protocol Buffers.
 
 Only
 [Protocol Buffers Version 3](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec)
 supported.
 
-Works with both Node and browser?
+## Runtime library
+
+This library operates on
+[`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer), so works in both 
+[Node](https://pursuit.purescript.org/packages/purescript-node-buffer/docs/Node.Buffer.Class)
+and browser runtime environments.
 
 ## Compile-time Code Generation
 
 The `shell.nix` environment provides
+
 * The Purescript toolchain
 * The `protoc` compiler
 * The `bin/protoc-gen-purescript` executable on the `PATH`

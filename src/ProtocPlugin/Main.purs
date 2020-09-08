@@ -22,7 +22,7 @@ import Record.Builder as RecordB
 
 import Protobuf.Decode as Decode
 -- import Protobuf.Encode as Encode
-import Protobuf.Common (WireType)
+import Protobuf.Common (WireType(..))
 
 import Node.Process (stdin, stdout)
 import Node.Stream (read, writeString, onReadable)
@@ -75,15 +75,14 @@ parseCodeGeneratorRequest = do
 -- | We don't know what this is, so consume it and throw it away
 parseUnknownField :: WireType -> ParserT DataView Effect Unit
 parseUnknownField wireType = case wireType of
-  0 -> void Decode.varint64 -- varint
-  1 -> void $ takeN 8 -- 64-bit
-  2 -> do -- Length-delimited
+  VarInt -> void Decode.varint64
+  Bits64 -> void $ takeN 8
+  LenDel -> do
         len <- toInt <$> Decode.varint64
         case len of
-          Nothing -> fail "WireType Length-delimited value was too long."
+          Nothing -> fail "Length-delimited value of unknown field was too long."
           Just l -> void $ takeN l
-  5 -> void $ takeN 4 -- 32-bit
-  _ -> fail "Unknown WireType"
+  Bits32 -> void $ takeN 4
 
 -- https://pursuit.purescript.org/packages/purescript-record
 

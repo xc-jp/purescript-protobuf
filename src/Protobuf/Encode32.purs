@@ -1,4 +1,13 @@
 -- | Primitive UInt-based builders for encoding Google Protocol Buffers.
+-- |
+-- | There is no `varint32` in the Protbuf spec, this is
+-- | just a performance-improving assumption we make
+-- | in cases where only a deranged lunatic would use a value
+-- | bigger than 32 bits, such as in field numbers.
+-- | We think this is worth the risk because `UInt` is
+-- | represented as a native Javascript Number whereas
+-- | `Long` is a composite library type, so we expect the
+-- | performance difference to be significant.
 module Protobuf.Encode32
 ( zigzag32
 , tag32
@@ -10,6 +19,7 @@ import Prelude
 import Effect.Class (class MonadEffect)
 import Data.ArrayBuffer.Builder as Builder
 import Data.UInt (UInt, fromInt, (.&.), (.|.), (.^.), shl, zshr)
+import Data.Enum (fromEnum)
 import Protobuf.Common (FieldNumber, WireType)
 
 
@@ -20,7 +30,7 @@ zigzag32 n = let n' = fromInt n in (n' `shl` (fromInt 1)) .^. (n' `zshr` (fromIn
 -- | https://developers.google.com/protocol-buffers/docs/encoding#structure
 tag32 :: forall m. MonadEffect m => FieldNumber -> WireType -> Builder.PutM m Unit
 tag32 fieldNumber wireType =
-  varint32 $ (fieldNumber `shl` (fromInt 3)) .|. (fromInt wireType)
+  varint32 $ (fieldNumber `shl` (fromInt 3)) .|. (fromInt $ fromEnum wireType)
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
 varint32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit

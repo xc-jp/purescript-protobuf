@@ -1,40 +1,55 @@
 module Protobuf.Common
 ( FieldNumber
-, WireType
-, wtVarint
-, wt64
-, wtLength
-, wt32
+, WireType(..)
 )
 where
 
+import Prelude
 import Data.UInt (UInt)
--- import Data.Enum
+import Data.Enum (class Enum, fromEnum, class BoundedEnum, Cardinality(..))
+import Data.Maybe (Maybe(..))
 
 type FieldNumber = UInt
-type WireType    = Int
 
-wtVarint :: Int
-wtVarint = 0
+-- | https://developers.google.com/protocol-buffers/docs/encoding#structure
+data WireType
+  = VarInt
+  | Bits64
+  | LenDel
+  | Bits32
 
-wt64 :: Int
-wt64 = 1
+derive instance eqWireType :: Eq WireType
 
-wtLength :: Int
-wtLength = 2
+instance ordWireType :: Ord WireType
+ where
+  compare l r = compare (fromEnum l) (fromEnum r)
 
-wt32 :: Int
-wt32 = 5
+instance boundedWireType :: Bounded WireType
+ where
+  top = Bits32
+  bottom = VarInt
 
+instance enumWireType :: Enum WireType
+ where
+  succ VarInt = Just Bits64
+  succ Bits64 = Just LenDel
+  succ LenDel = Just Bits32
+  succ Bits32 = Nothing
+  pred VarInt = Nothing
+  pred Bits64 = Just VarInt
+  pred LenDel = Just Bits64
+  pred Bits32 = Just LenDel
 
--- data WireType
---   = Varint
---   | EightBytes
---   | LengthDelimited
---   | StartGroup
---   | EndGroup
---   | FourBytes
---
--- instance enumWireType :: Enum WireType where
---   succ Varint = Just EightBytes
---   succ EightBytes = Just
+instance boundedEnumWireType :: BoundedEnum WireType
+ where
+  cardinality = Cardinality 4
+  toEnum 0 = Just VarInt
+  toEnum 1 = Just Bits64
+  toEnum 2 = Just LenDel
+  toEnum 5 = Just Bits32
+  toEnum _ = Nothing
+  fromEnum VarInt = 0
+  fromEnum Bits64 = 1
+  fromEnum LenDel = 2
+  fromEnum Bits32 = 5
+
