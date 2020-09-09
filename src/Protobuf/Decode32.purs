@@ -69,7 +69,7 @@ varint32 = do
                   n_4 <- Parse.anyUint8
                   if n_4 < u0x10
                     then pure $ acc_3 .|. (n_4 `shl` u28)
-                    else fail "varint32 overflow. Please report this as a bug."
+                    else fail "varint32 overflow. We assumed that this varint would fit in 32 bits but it didn't. Please report issues at https://github.com/xc-jp/purescript-protobuf-library/issues"
  where
   u7    = fromInt 7
   u14   = fromInt 14

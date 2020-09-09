@@ -97,7 +97,7 @@ varint64 = do
                                       n_9 <- fromInt <$> Parse.anyUint8
                                       if n_9 < u0x02
                                         then pure $ acc_8 .|. (n_9 `shl` u63)
-                                        else fail "varint64 overflow. Please report this as a bug."
+                                        else fail "varint64 overflow. Possibly there is an encoding error in the input stream. Please report issues at https://github.com/xc-jp/purescript-protobuf-library/issues"
  where
   u7    = unsafeFromInt 7
   u14   = unsafeFromInt 14

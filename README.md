@@ -61,12 +61,15 @@ To generate Purescript .purs files from .proto files, run:
 [nix-shell]$
 ```
 
-## Interpreting decoding errors
+## Interpreting invalid encoding parse errors
+
+When the decode parser encounters an invalid encoding in the protobuf input
+stream then it will fail to parse.
 
 When
 [`Text.Parsing.Parser.ParserT`](https://pursuit.purescript.org/packages/purescript-parsing/docs/Text.Parsing.Parser#t:ParserT)
-fails at runtime it will return a `ParseError String (Position {line::Int,column::Int})`.
-The byte offset at which the decoding error occured is given by the
+fails it will return a `ParseError String (Position {line::Int,column::Int})`.
+The byte offset at which the invalid encoding occured is given by the
 formula `column - 1`.
 
 ## Features
