@@ -4,15 +4,15 @@ import Prelude
 
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
+-- import Data.Either (Either(..))
 -- import Control.Category (identity)
 import Data.Array (snoc)
-import Data.Foldable (foldl)
+-- import Data.Foldable (foldl)
 import Data.Symbol (SProxy(..))
-import Data.Tuple (Tuple(..))
-import Data.Ord (class Ord)
-import Data.Eq (class Eq)
-import Data.Bounded (class Bounded)
+-- import Data.Tuple (Tuple(..))
+-- import Data.Ord (class Ord)
+-- import Data.Eq (class Eq)
+-- import Data.Bounded (class Bounded)
 import Data.Enum (class Enum, class BoundedEnum, toEnum, fromEnum)
 import Data.Generic.Rep(class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -20,15 +20,15 @@ import Data.Generic.Rep.Bounded (genericBottom, genericTop)
 import Data.Generic.Rep.Enum (genericPred, genericSucc, genericCardinality)
 import Data.Generic.Rep.Ord (genericCompare)
 -- import Data.Long.Unsigned (toInt)
-import Data.UInt (UInt)
+-- import Data.UInt (UInt)
 import Data.UInt as UInt
-import Control.Monad.Trans.Class (lift)
+-- import Control.Monad.Trans.Class (lift)
 
-import Text.Parsing.Parser (ParserT, runParserT, ParseError(..), fail)
-import Text.Parsing.Parser.Combinators (manyTill)
+import Text.Parsing.Parser (ParserT, runParserT, fail)
+-- import Text.Parsing.Parser.Combinators (manyTill)
 -- import Text.Parsing.Parser.DataView (eof, takeN)
 
-import Record.Builder (build, modify)
+import Record.Builder (modify)
 import Record.Builder as RecordB
 
 import Protobuf.Decode as Decode
@@ -48,7 +48,6 @@ import Protobuf.Runtime
   , parseFieldUnknown
   , parseLenDel
   , FieldNumberInt
-  , onceLength
   , manyLength
   )
 
@@ -296,7 +295,6 @@ parseDescriptorProto length =
     x <- Decode.string
     pure $ modify (SProxy :: SProxy "name") $ const $ Just x
   parseField 2 LenDel = do
-    -- x <- parseFieldDescriptorProto <<< Uint.toInt =<< Decode.varint32
     x <- parseLenDel parseFieldDescriptorProto
     pure $ modify (SProxy :: SProxy "field") $ flip snoc x
   parseField _ wireType = parseFieldUnknown wireType
@@ -509,9 +507,6 @@ type OneofDescriptorProtoR =
   }
 
 -- | Describes an enum type.
-newtype EnumDescriptorProto = EnumDescriptorProto EnumDescriptorProtoR
-derive instance genericEnumDescriptorProto :: Generic EnumDescriptorProto _
-instance showEnumDescriptorProto :: Show EnumDescriptorProto where show = genericShow
 type EnumDescriptorProtoR =
   { name :: Maybe String -- 1
   , value :: Array EnumValueDescriptorProto -- 2
@@ -519,17 +514,55 @@ type EnumDescriptorProtoR =
   -- TODO , reserved_range :: Array EnumReservedRange -- 4
   -- TODO , reserved_name :: Array String -- 5
   }
+newtype EnumDescriptorProto = EnumDescriptorProto EnumDescriptorProtoR
+derive instance genericEnumDescriptorProto :: Generic EnumDescriptorProto _
+instance showEnumDescriptorProto :: Show EnumDescriptorProto where show = genericShow
+parseEnumDescriptorProto :: Int -> ParserT DataView Effect EnumDescriptorProto
+parseEnumDescriptorProto length =
+  parseMessage EnumDescriptorProto default parseField length
+ where
+  parseField
+    :: FieldNumberInt
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder EnumDescriptorProtoR EnumDescriptorProtoR)
+  parseField 1 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "name") $ const $ Just x
+  parseField 2 LenDel = do
+    x <- parseLenDel parseEnumValueDescriptorProto
+    pure $ modify (SProxy :: SProxy "value") $ flip snoc x
+  parseField _ wireType = parseFieldUnknown wireType
+  default =
+    { name: Nothing
+    , value: []
+    }
+
 
 -- | Describes a value within an enum.
-newtype EnumValueDescriptorProto = EnumValueDescriptorProto EnumValueDescriptorProtoR
-derive instance genericEnumValueDescriptorProto :: Generic EnumValueDescriptorProto _
-instance showEnumValueDescriptorProto :: Show EnumValueDescriptorProto where show = genericShow
 type EnumValueDescriptorProtoR =
   { name :: Maybe String -- 1
   , number :: Maybe Int -- 2
   -- TODO , options :: Maybe EnumValueOptions -- 3
   }
-
--- TODO data ServiceDescriptorProto
-
--- TODO data MethodDescriptorProto
+newtype EnumValueDescriptorProto = EnumValueDescriptorProto EnumValueDescriptorProtoR
+derive instance genericEnumValueDescriptorProto :: Generic EnumValueDescriptorProto _
+instance showEnumValueDescriptorProto :: Show EnumValueDescriptorProto where show = genericShow
+parseEnumValueDescriptorProto :: Int -> ParserT DataView Effect EnumValueDescriptorProto
+parseEnumValueDescriptorProto length =
+  parseMessage EnumValueDescriptorProto default parseField length
+ where
+  parseField
+    :: FieldNumberInt
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder EnumValueDescriptorProtoR EnumValueDescriptorProtoR)
+  parseField 1 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "name") $ const $ Just x
+  parseField 2 VarInt = do
+    x <- Decode.int32
+    pure $ modify (SProxy :: SProxy "number") $ const $ Just x
+  parseField _ wireType = parseFieldUnknown wireType
+  default =
+    { name: Nothing
+    , number: Nothing
+    }

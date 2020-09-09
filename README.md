@@ -72,12 +72,12 @@ formula `column - 1`.
 ## Features
 
 We only support __proto3__ so that means we don't support
-[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions)_.
+[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
 
 The generated record fields will use `Nothing` instead of the 
 [default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
 
-We do support
+We support
 [enumerations](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#enum).
 
 We do not preserve
@@ -90,7 +90,7 @@ We do not support
 [`oneof`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#oneof).
 The fields in a `oneof` will all be added to the message.
 
-We do support
+We do not support
 [maps](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#maps).
 
 We support
@@ -104,4 +104,4 @@ We do not support any
 
 ## Contributing
 
-We welcome pull requests for features or bugfixes.
+Pull requests are welcome.

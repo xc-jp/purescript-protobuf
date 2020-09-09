@@ -119,6 +119,7 @@ manyLength p len = do
 
 -- | Call a parser once and check that exactly *N* bytes have been consumed.
 -- | Will fail if too many or too few bytes are consumed.
+-- | TODO Deprecate? I don't think we need this.
 onceLength
   :: forall a
    . ParserT DataView Effect a
