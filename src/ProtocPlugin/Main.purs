@@ -19,7 +19,7 @@ import Control.Monad.Trans.Class (lift)
 
 import Text.Parsing.Parser (ParserT, runParserT, ParseError(..), failWithPosition)
 import Text.Parsing.Parser.Combinators (manyTill)
-import Text.Parsing.Parser.DataView (eof, takeN)
+-- import Text.Parsing.Parser.DataView (eof, takeN)
 
 import Record.Builder (build, modify)
 import Record.Builder as RecordB
@@ -39,10 +39,9 @@ import Data.ArrayBuffer.Types (DataView)
 import Protobuf.Runtime
   ( parseMessage
   , parseFieldUnknown
-  , Pos
   , FieldNumberInt
-  , positionZero
-  , addPosCol
+  , onceLength
+  , manyLength
   )
 
 main :: Effect Unit
@@ -55,7 +54,7 @@ main = do
         stdinab <- toArrayBuffer stdinbuf
         -- void $ writeString stdout UTF8 (show $ AB.byteLength stdinab) (pure unit)
         let stdinview = DV.whole stdinab
-        request <- runParserT stdinview $ parseCodeGeneratorRequest 0
+        request <- runParserT stdinview $ parseCodeGeneratorRequest $ DV.byteLength stdinview
         void $ writeString stderr UTF8 (show request) (pure unit)
 
 -- parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
@@ -100,12 +99,11 @@ type CodeGeneratorRequestR =
 newtype CodeGeneratorRequest = CodeGeneratorRequest CodeGeneratorRequestR
 derive instance genericCodeGeneratorRequest :: Generic CodeGeneratorRequest _
 instance showCodeGeneratorRequest :: Show CodeGeneratorRequest where show = genericShow
-parseCodeGeneratorRequest :: Pos -> ParserT DataView Effect CodeGeneratorRequest
-parseCodeGeneratorRequest pos =
-  parseMessage CodeGeneratorRequest default parseField
+parseCodeGeneratorRequest :: Int -> ParserT DataView Effect CodeGeneratorRequest
+parseCodeGeneratorRequest length =
+  parseMessage CodeGeneratorRequest default parseField length
  where
   parseField
-    -- :: Pos
     :: FieldNumberInt
     -> WireType
     -> ParserT DataView Effect (RecordB.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
@@ -117,18 +115,22 @@ parseCodeGeneratorRequest pos =
     pure $ modify (SProxy :: SProxy "parameter") $ const $ Just x
   parseField 15 LenDel = do
     len <- UInt.toInt <$> Decode.varint32 -- faster than int32
-    pos' <- positionZero
-    dview <- takeN len
-    lift (runParserT dview (parseFileDescriptorProto $ pos + pos')) >>= case _ of
-      Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
-      Right x -> pure $ modify (SProxy :: SProxy "proto_file") $ flip snoc x
+    -- pos' <- positionZero
+    -- dview <- takeN len
+    -- lift (runParserT dview (parseFileDescriptorProto $ pos + pos')) >>= case _ of
+    --   Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
+    --   Right x -> pure $ modify (SProxy :: SProxy "proto_file") $ flip snoc x
+    x <- parseFileDescriptorProto len
+    pure $ modify (SProxy :: SProxy "proto_file") $ flip snoc x
   parseField 3 LenDel = do
     len <- UInt.toInt <$> Decode.varint32 -- faster than int32
-    pos' <- positionZero
-    dview <- takeN len
-    lift (runParserT dview (parseVersion $ pos + pos')) >>= case _ of
-      Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
-      Right x -> pure $ modify (SProxy :: SProxy "compiler_version") $ const $ Just x
+    -- pos' <- positionZero
+    -- dview <- takeN len
+    -- lift (runParserT dview (parseVersion $ pos + pos')) >>= case _ of
+    --   Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
+    --   Right x -> pure $ modify (SProxy :: SProxy "compiler_version") $ const $ Just x
+    x <- parseVersion len
+    pure $ modify (SProxy :: SProxy "compiler_version") $ const $ Just x
   parseField _ wireType = parseFieldUnknown wireType
 
   default :: CodeGeneratorRequestR
@@ -139,31 +141,8 @@ parseCodeGeneratorRequest pos =
     , compiler_version: Nothing
     }
 
--- | Call another parser for which eof will succeed after the byte length we designate.
--- | Will always consume exactly the byte length we designate.
-subParse
-  :: forall a
-   . Int -- base position
-  -> Int -- byte length
-  -> ParserT DataView Effect a
-  -> ParserT DataView Effect a
 
--- | Call a parser repeatedly until exactly *N* bytes have been consumed.
--- | Will fail if too many bytes are consumed.
-manyLength
-  :: forall a
-   . Int -- byte length
-  -> ParserT DataView Effect a
-  -> ParserT DataView Effect (Array a)
--- https://pursuit.purescript.org/packages/purescript-arrays/5.3.1/docs/Data.Array.ST#v:push
 
--- | Call a parser once and check that exactly *N* bytes have been consumed.
--- | Will fail if too many or too few bytes are consumed.
-oneLength
-  :: forall a
-   . Int -- byte length
-  -> ParserT DataView Effect a
-  -> ParserT DataView Effect a
 
 
 -- IMPORTANT We need to wrap our structural record types in a nominal
@@ -183,9 +162,9 @@ type VersionR =
 newtype Version = Version VersionR
 derive instance genericVersion :: Generic Version _
 instance showVersion :: Show Version where show = genericShow
-parseVersion :: Pos -> ParserT DataView Effect Version
-parseVersion pos =
-  parseMessage Version default parseField
+parseVersion :: Int -> ParserT DataView Effect Version
+parseVersion length =
+  parseMessage Version default parseField length
  where
   parseField
     :: FieldNumberInt
@@ -230,9 +209,9 @@ type FileDescriptorProtoR =
 newtype FileDescriptorProto = FileDescriptorProto FileDescriptorProtoR
 derive instance genericFileDescriptorProto :: Generic FileDescriptorProto _
 instance showFileDescriptorProto :: Show FileDescriptorProto where show = genericShow
-parseFileDescriptorProto :: Pos -> ParserT DataView Effect FileDescriptorProto
-parseFileDescriptorProto pos =
-  parseMessage FileDescriptorProto default parseField
+parseFileDescriptorProto :: Int -> ParserT DataView Effect FileDescriptorProto
+parseFileDescriptorProto length =
+  parseMessage FileDescriptorProto default parseField length
  where
   parseField
     :: FieldNumberInt
@@ -252,7 +231,8 @@ parseFileDescriptorProto pos =
     pure $ modify (SProxy :: SProxy "public_dependency") $ flip snoc x
   parseField 10 LenDel = do -- then this repeated int32 field is packed
     len <- UInt.toInt <$> Decode.varint32
-    pure identity
+    xs <- manyLength Decode.int32 len
+    pure $ modify (SProxy :: SProxy "public_dependency") $ flip append xs
   parseField _ wireType = parseFieldUnknown wireType
   default =
     { name : Nothing

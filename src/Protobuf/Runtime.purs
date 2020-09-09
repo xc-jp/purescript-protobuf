@@ -5,7 +5,9 @@ module Protobuf.Runtime
 , Pos
 , FieldNumberInt
 , positionZero
-, addPosCol
+-- , addPosCol
+, onceLength
+, manyLength
 )
 where
 
@@ -16,6 +18,8 @@ import Data.Tuple (Tuple(..))
 import Data.Foldable (foldl)
 import Data.Long.Unsigned (toInt)
 import Data.UInt as UInt
+import Data.List (List(..), (:))
+import Data.Array (fromFoldable)
 import Text.Parsing.Parser (ParserT, fail, position)
 import Text.Parsing.Parser.Pos (Position(..))
 import Data.ArrayBuffer.Types (DataView)
@@ -47,14 +51,15 @@ parseFieldUnknown wireType = pure identity <* case wireType of
 -- | when applied to a Record, will modify the Record to add the parsed field.
 parseMessage
   :: forall a r
-   -- . Pos
    . (Record r -> a)
   -> (Record r)
   -> (FieldNumberInt -> WireType -> ParserT DataView Effect (RecordB.Builder (Record r) (Record r)))
   -- -> (Pos -> FieldNumberInt -> WireType -> ParserT DataView Effect (RecordB.Builder (Record r) (Record r)))
+  -> Int
   -> ParserT DataView Effect a
-parseMessage construct default parseField = do
-  builders <- manyTill applyParser eof
+parseMessage construct default parseField length = do
+  -- builders <- manyTill applyParser eof
+  builders <- manyLength applyParser length
   pure $ construct $ build (foldl (>>>) identity builders) default
  where
   applyParser = do
@@ -76,11 +81,54 @@ type FieldNumberInt = Int
 -- | Text.Parsing.Parser.DataView only uses the column field of Position.
 -- | We also note that Text.Parsing.Parser starts counting at 1, not 0.
 -- | https://github.com/purescript-contrib/purescript-parsing/issues/94
-addPosCol :: Pos -> Position -> Position
-addPosCol p (Position {column,line}) = Position {column: column + p, line}
+-- addPosCol :: Pos -> Position -> Position
+-- addPosCol p (Position {column,line}) = Position {column: column + p, line}
 
 -- | Zero-based position in the parser.
 positionZero :: forall s m. Monad m => ParserT s m Pos
 positionZero = do
   Position {column,line} <- position
   pure $ column - 1
+
+-- | Call a parser repeatedly until exactly *N* bytes have been consumed.
+-- | Will fail if too many bytes are consumed.
+manyLength
+  :: forall a
+   . ParserT DataView Effect a
+  -> Int -- byte length
+  -> ParserT DataView Effect (Array a)
+manyLength p len = do
+  posBegin' <- positionZero
+  fromFoldable <$> go posBegin'
+  -- TODO It would be faster if we could accumulate the Array directly with
+  -- https://pursuit.purescript.org/packages/purescript-arrays/5.3.1/docs/Data.Array.ST#v:push
+  -- instead of copying from a List?
+ where
+  -- https://github.com/purescript-contrib/purescript-parsing/blob/e801a0ef42f3211b1602a94a269eef7ce551423f/src/Text/Parsing/Parser/Combinators.purs#L188
+  go posBegin = do
+    pos <- positionZero
+    case compare (pos - posBegin) len of
+      GT -> fail "Length-delimited repeated field consumed too many bytes."
+      EQ -> pure Nil
+      LT -> do
+        x <- p
+        xs <- go posBegin
+        pure $ x:xs
+
+
+-- | Call a parser once and check that exactly *N* bytes have been consumed.
+-- | Will fail if too many or too few bytes are consumed.
+onceLength
+  :: forall a
+   . ParserT DataView Effect a
+  -> Int -- byte length
+  -> ParserT DataView Effect a
+onceLength p len = do
+  posBegin <- positionZero
+  x <- p
+  posEnd <- positionZero
+  case compare (posEnd - posBegin) len of
+    LT -> fail "Length-delimited field consumed too few bytes."
+    EQ -> pure x
+    GT -> fail "Length-delimited field consumed too many bytes."
+

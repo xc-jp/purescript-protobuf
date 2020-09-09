@@ -29,8 +29,8 @@ The generated message modules will import the `Protobuf.Runtime` module.
 
 You'll need these packages for reading and writing `ArrayBuffer`s.
 
-* [__Data.ArrayBuffer.Builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
-* [__Text.Parsing.DataView__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
+* [__arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
+* [__parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
 
 ## Code Generation
 
@@ -60,3 +60,11 @@ To generate Purescript .purs files from .proto files, run:
 
 [nix-shell]$
 ```
+
+## Interpreting decoding errors
+
+When
+[`Text.Parsing.Parser.ParserT`](https://pursuit.purescript.org/packages/purescript-parsing/docs/Text.Parsing.Parser#t:ParserT)
+fails at runtime it will return a `ParseError String (Position {line::Int,column::Int})`.
+The byte offset at which the decoding error occured is given by the
+formula `column - 1`.
