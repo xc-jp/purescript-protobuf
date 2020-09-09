@@ -68,3 +68,40 @@ When
 fails at runtime it will return a `ParseError String (Position {line::Int,column::Int})`.
 The byte offset at which the decoding error occured is given by the
 formula `column - 1`.
+
+## Features
+
+We only support __proto3__ so that means we don't support
+[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions)_.
+
+The generated record fields will use `Nothing` instead of the 
+[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
+
+We do support
+[enumerations](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#enum).
+
+We do not preserve
+[unknown fields](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#unknowns).
+
+We do not support the
+[Any message type](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#any).
+
+We do not support
+[`oneof`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#oneof).
+The fields in a `oneof` will all be added to the message.
+
+We do support
+[maps](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#maps).
+
+We support
+[packages](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#packages).
+
+We do not support
+[services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
+
+We do not support any
+[options](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#options).
+
+## Contributing
+
+We welcome pull requests for features or bugfixes.

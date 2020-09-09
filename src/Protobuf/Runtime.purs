@@ -2,6 +2,7 @@
 module Protobuf.Runtime
 ( parseMessage
 , parseFieldUnknown
+, parseLenDel
 , Pos
 , FieldNumberInt
 , positionZero
@@ -132,3 +133,9 @@ onceLength p len = do
     EQ -> pure x
     GT -> fail "Length-delimited field consumed too many bytes."
 
+-- | Parse a length, then call a parser which takes one length as its argument.
+parseLenDel
+  :: forall a
+   . (Int -> ParserT DataView Effect a)
+  -> ParserT DataView Effect a
+parseLenDel p = p <<< UInt.toInt =<< Decode.varint32

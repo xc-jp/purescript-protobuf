@@ -10,14 +10,21 @@ import Data.Array (snoc)
 import Data.Foldable (foldl)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
+import Data.Ord (class Ord)
+import Data.Eq (class Eq)
+import Data.Bounded (class Bounded)
+import Data.Enum (class Enum, class BoundedEnum, toEnum, fromEnum)
 import Data.Generic.Rep(class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Generic.Rep.Bounded (genericBottom, genericTop)
+import Data.Generic.Rep.Enum (genericPred, genericSucc, genericCardinality)
+import Data.Generic.Rep.Ord (genericCompare)
 -- import Data.Long.Unsigned (toInt)
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Control.Monad.Trans.Class (lift)
 
-import Text.Parsing.Parser (ParserT, runParserT, ParseError(..), failWithPosition)
+import Text.Parsing.Parser (ParserT, runParserT, ParseError(..), fail)
 import Text.Parsing.Parser.Combinators (manyTill)
 -- import Text.Parsing.Parser.DataView (eof, takeN)
 
@@ -39,6 +46,7 @@ import Data.ArrayBuffer.Types (DataView)
 import Protobuf.Runtime
   ( parseMessage
   , parseFieldUnknown
+  , parseLenDel
   , FieldNumberInt
   , onceLength
   , manyLength
@@ -229,10 +237,16 @@ parseFileDescriptorProto length =
   parseField 10 Bits32 = do -- then this repeated int32 field is nonpacked
     x <- Decode.int32
     pure $ modify (SProxy :: SProxy "public_dependency") $ flip snoc x
-  parseField 10 LenDel = do -- then this repeated int32 field is packed
-    len <- UInt.toInt <$> Decode.varint32
-    xs <- manyLength Decode.int32 len
+  parseField 10 LenDel = do
+    -- then this repeated int32 field is packed
+    -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
+    -- xs <- manyLength Decode.int32 <<< UInt.toInt =<< Decode.varint32
+    xs <- parseLenDel $ manyLength Decode.int32
     pure $ modify (SProxy :: SProxy "public_dependency") $ flip append xs
+  parseField 4 LenDel = do
+    -- x <- parseDescriptorProto <<< Uint.toInt =<< Decode.varint32
+    x <- parseLenDel parseDescriptorProto
+    pure $ modify (SProxy :: SProxy "message_type") $ flip snoc x
   parseField _ wireType = parseFieldUnknown wireType
   default =
     { name : Nothing
@@ -257,10 +271,10 @@ parseFileDescriptorProto length =
 type DescriptorProtoR =
   { name :: Maybe String -- 1
   , field :: Array FieldDescriptorProto -- 2
-  , extension :: Array FieldDescriptorProto -- 6
+  -- , extension :: Array FieldDescriptorProto -- 6
   , nested_type :: Array DescriptorProto -- 3
   , enum_type :: Array EnumDescriptorProto -- 4
-  , extension_range :: Array DescriptorProto_ExtensionRange -- 5
+  -- , extension_range :: Array DescriptorProto_ExtensionRange -- 5
   , oneof_decl :: Array OneofDescriptorProto -- 8
   -- TODO , options :: Maybe MessageOptions -- 7
   -- TODO eh who cares about reserved ranges
@@ -270,15 +284,39 @@ derive instance genericDescriptorProto :: Generic DescriptorProto _
 instance showDescriptorProto :: Show DescriptorProto where
   show (DescriptorProto{name,field}) = -- TODO genericShow, doesn't work because https://github.com/purescript/documentation/blob/master/errors/CycleInDeclaration.md
     "DescriptorProto { name: " <> show name <> ", field: " <> show field <> "}"
+parseDescriptorProto :: Int -> ParserT DataView Effect DescriptorProto
+parseDescriptorProto length =
+  parseMessage DescriptorProto default parseField length
+ where
+  parseField
+    :: FieldNumberInt
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder DescriptorProtoR DescriptorProtoR)
+  parseField 1 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "name") $ const $ Just x
+  parseField 2 LenDel = do
+    -- x <- parseFieldDescriptorProto <<< Uint.toInt =<< Decode.varint32
+    x <- parseLenDel parseFieldDescriptorProto
+    pure $ modify (SProxy :: SProxy "field") $ flip snoc x
+  parseField _ wireType = parseFieldUnknown wireType
+  default =
+    { name: Nothing
+    , field: []
+    , nested_type: []
+    , enum_type: []
+    , oneof_decl: []
+    }
 
-newtype DescriptorProto_ExtensionRange = DescriptorProto_ExtensionRange DescriptorProto_ExtensionRangeR
-derive instance genericDescriptorProto_ExtensionRange :: Generic DescriptorProto_ExtensionRange _
-instance showDescriptorProto_ExtensionRange :: Show DescriptorProto_ExtensionRange where show = genericShow
-type DescriptorProto_ExtensionRangeR =
-  { start :: Maybe Int -- 1
-  , end :: Maybe Int -- 2
-  -- TODO , options :: Maybe ExtensionRangeOptions
-  }
+
+-- newtype DescriptorProto_ExtensionRange = DescriptorProto_ExtensionRange DescriptorProto_ExtensionRangeR
+-- derive instance genericDescriptorProto_ExtensionRange :: Generic DescriptorProto_ExtensionRange _
+-- instance showDescriptorProto_ExtensionRange :: Show DescriptorProto_ExtensionRange where show = genericShow
+-- type DescriptorProto_ExtensionRangeR =
+--   { start :: Maybe Int -- 1
+--   , end :: Maybe Int -- 2
+--   -- TODO , options :: Maybe ExtensionRangeOptions
+--   }
 
 -- TODO
 -- data ExtensionRangeOptions = ExtensionRangeOptions
@@ -286,9 +324,127 @@ type DescriptorProto_ExtensionRangeR =
 --   -- ,  TODO extensions ::
 --   }
 
-data FieldDescriptorProto_Label = OPTIONAL | REQUIRED | REPEATED
+data FieldDescriptorProto_Label = LABEL_OPTIONAL | LABEL_REQUIRED | LABEL_REPEATED
 derive instance genericFieldDescriptorProto_Label :: Generic FieldDescriptorProto_Label _
+derive instance eqFieldDescriptorProto_Label :: Eq FieldDescriptorProto_Label
 instance showFieldDescriptorProto_Label :: Show FieldDescriptorProto_Label where show = genericShow
+instance ordFieldDescriptorProto_Label :: Ord FieldDescriptorProto_Label
+ where
+  compare = genericCompare
+instance boundedFieldDescriptorProto_Label :: Bounded FieldDescriptorProto_Label
+ where
+  -- bottom = LABEL_OPTIONAL
+  -- top = LABEL_REPEATED
+  bottom = genericBottom
+  top = genericTop
+instance enumFieldDescriptorProto_Label :: Enum FieldDescriptorProto_Label
+ where
+  succ = genericSucc
+  pred = genericPred
+  -- succ LABEL_OPTIONAL = Just LABEL_REQUIRED
+  -- succ LABEL_REQUIRED = Just LABEL_REPEATED
+  -- succ LABEL_REPEATED = Nothing
+  -- pred LABEL_OPTIONAL = Nothing
+  -- pred LABEL_REQUIRED = Just LABEL_OPTIONAL
+  -- pred LABEL_REPEATED = Just LABEL_REQUIRED
+instance boundedEnumFieldDescriptorProto_Label :: BoundedEnum FieldDescriptorProto_Label
+ where
+  -- cardinality = Cardinality 3
+  cardinality = genericCardinality
+  toEnum 1 = Just LABEL_OPTIONAL
+  toEnum 2 = Just LABEL_REQUIRED
+  toEnum 3 = Just LABEL_REPEATED
+  toEnum _ = Nothing
+  fromEnum LABEL_OPTIONAL = 1
+  fromEnum LABEL_REQUIRED = 2
+  fromEnum LABEL_REPEATED = 3
+parseFieldDescriptorProto_Label :: ParserT DataView Effect FieldDescriptorProto_Label
+parseFieldDescriptorProto_Label = do
+  x <- Decode.varint32
+  case toEnum $ UInt.toInt x of
+    Nothing -> fail $ "Out of range FieldDescriptorProto_Label " <> show x
+    Just e -> pure e
+
+data FieldDescriptorProto_Type
+  = TYPE_DOUBLE
+  | TYPE_FLOAT
+  | TYPE_INT64
+  | TYPE_UINT64
+  | TYPE_INT32
+  | TYPE_FIXED64
+  | TYPE_FIXED32
+  | TYPE_BOOL
+  | TYPE_STRING
+  | TYPE_GROUP
+  | TYPE_MESSAGE
+  | TYPE_BYTES
+  | TYPE_UINT32
+  | TYPE_ENUM
+  | TYPE_SFIXED32
+  | TYPE_SFIXED64
+  | TYPE_SINT32
+  | TYPE_SINT64
+derive instance genericFieldDescriptorProto_Type :: Generic FieldDescriptorProto_Type  _
+derive instance eqFieldDescriptorProto_Type :: Eq FieldDescriptorProto_Type
+instance showFieldDescriptorProto_Type :: Show FieldDescriptorProto_Type where show = genericShow
+instance ordFieldDescriptorProto_Type :: Ord FieldDescriptorProto_Type
+ where
+  compare = genericCompare
+instance boundedFieldDescriptorProto_Type :: Bounded FieldDescriptorProto_Type
+ where
+  bottom = genericBottom
+  top = genericTop
+instance enumFieldDescriptorProto_Type :: Enum FieldDescriptorProto_Type
+ where
+  succ = genericSucc
+  pred = genericPred
+instance boundedEnumFieldDescriptorProto_Type :: BoundedEnum FieldDescriptorProto_Type
+ where
+  -- cardinality = Cardinality 3
+  cardinality = genericCardinality
+  toEnum 1 = Just TYPE_DOUBLE
+  toEnum 2 = Just TYPE_FLOAT
+  toEnum 3 = Just TYPE_INT64
+  toEnum 4 = Just TYPE_UINT64
+  toEnum 5 = Just TYPE_INT32
+  toEnum 6 = Just TYPE_FIXED64
+  toEnum 7 = Just TYPE_FIXED32
+  toEnum 8 = Just TYPE_BOOL
+  toEnum 9 = Just TYPE_STRING
+  toEnum 10 = Just TYPE_GROUP
+  toEnum 11 = Just TYPE_MESSAGE
+  toEnum 12 = Just TYPE_BYTES
+  toEnum 13 = Just TYPE_UINT32
+  toEnum 14 = Just TYPE_ENUM
+  toEnum 15 = Just TYPE_SFIXED32
+  toEnum 16 = Just TYPE_SFIXED64
+  toEnum 17 = Just TYPE_SINT32
+  toEnum 18 = Just TYPE_SINT64
+  toEnum _ = Nothing
+  fromEnum TYPE_DOUBLE   = 1
+  fromEnum TYPE_FLOAT    = 2
+  fromEnum TYPE_INT64    = 3
+  fromEnum TYPE_UINT64   = 4
+  fromEnum TYPE_INT32    = 5
+  fromEnum TYPE_FIXED64  = 6
+  fromEnum TYPE_FIXED32  = 7
+  fromEnum TYPE_BOOL     = 8
+  fromEnum TYPE_STRING   = 9
+  fromEnum TYPE_GROUP    = 10
+  fromEnum TYPE_MESSAGE  = 11
+  fromEnum TYPE_BYTES    = 12
+  fromEnum TYPE_UINT32   = 13
+  fromEnum TYPE_ENUM     = 14
+  fromEnum TYPE_SFIXED32 = 15
+  fromEnum TYPE_SFIXED64 = 16
+  fromEnum TYPE_SINT32   = 17
+  fromEnum TYPE_SINT64   = 18
+parseFieldDescriptorProto_Type :: ParserT DataView Effect FieldDescriptorProto_Type
+parseFieldDescriptorProto_Type = do
+  x <- Decode.varint32
+  case toEnum $ UInt.toInt x of
+    Nothing -> fail $ "Out of range FieldDescriptorProto_Type " <> show x
+    Just e -> pure e
 
 -- | Describes a field within a message.
 newtype FieldDescriptorProto = FieldDescriptorProto FieldDescriptorProtoR
@@ -298,14 +454,50 @@ type FieldDescriptorProtoR =
   { name :: Maybe String -- 1
   , number :: Maybe Int -- 3
   , label :: Maybe FieldDescriptorProto_Label -- 4
-  , type_ :: Maybe WireType -- 5
+  , type_ :: Maybe FieldDescriptorProto_Type -- 5
   , type_name :: Maybe String -- 6
-  , extendee :: Maybe String -- 2
-  , default_value :: Maybe String -- 7
-  , oneof_index :: Maybe Int -- 9
+  -- , extendee :: Maybe String -- 2
+  -- , default_value :: Maybe String -- 7 -- TODO meh support this?
+  -- , oneof_index :: Maybe Int -- 9
   , json_name :: Maybe String -- 10
   -- TODO , options :: Maybe FieldOptions --8
   }
+parseFieldDescriptorProto :: Int -> ParserT DataView Effect FieldDescriptorProto
+parseFieldDescriptorProto length =
+  parseMessage FieldDescriptorProto default parseField length
+ where
+  parseField
+    :: FieldNumberInt
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder FieldDescriptorProtoR FieldDescriptorProtoR)
+  parseField 1 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "name") $ const $ Just x
+  parseField 3 VarInt = do
+    x <- Decode.int32
+    pure $ modify (SProxy :: SProxy "number") $ const $ Just x
+  parseField 4 VarInt = do
+    x <- parseFieldDescriptorProto_Label
+    pure $ modify (SProxy :: SProxy "label") $ const $ Just x
+  parseField 5 VarInt = do
+    x <- parseFieldDescriptorProto_Type
+    pure $ modify (SProxy :: SProxy "type_") $ const $ Just x
+  parseField 6 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "type_name") $ const $ Just x
+  parseField 10 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "json_name") $ const $ Just x
+  parseField _ wireType = parseFieldUnknown wireType
+  default =
+    { name: Nothing
+    , number: Nothing
+    , label: Nothing
+    , type_: Nothing
+    , type_name: Nothing
+    , json_name: Nothing
+    }
+
 
 -- | Describes a oneof.
 newtype OneofDescriptorProto = OneofDescriptorProto OneofDescriptorProtoR
