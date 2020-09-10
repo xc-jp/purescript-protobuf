@@ -124,4 +124,5 @@ let additions =
     }
   }
 
-in  upstream // additions
+in  (upstream // additions)
+  with arraybuffer-builder.version = "master"

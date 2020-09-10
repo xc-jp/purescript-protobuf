@@ -20,6 +20,7 @@ where
 
 import Prelude
 import Effect.Class (class MonadEffect)
+import Control.Monad.Writer.Trans (tell)
 import Data.Float32 (Float32)
 import Data.ArrayBuffer.Builder as Builder
 import Data.UInt (UInt)
@@ -147,13 +148,21 @@ string fieldNumber s = do
   varint32 $ UInt.fromInt $ AB.byteLength stringbuf
   Builder.putArrayBuffer stringbuf
 
+-- -- | __bytes__
+-- -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- bytes :: forall m. MonadEffect m => FieldNumber -> ArrayBuffer -> Builder.PutM m Unit
+-- -- I guess if we wanted to do this right, this could be a DataView.
+-- -- But for that, the ArrayBuffer Builder would have to accept DataView.
+-- bytes fieldNumber s = do
+--   tag32 fieldNumber LenDel
+--   varint32 $ UInt.fromInt $ AB.byteLength s
+--   Builder.putArrayBuffer s
+
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => FieldNumber -> ArrayBuffer -> Builder.PutM m Unit
--- I guess if we wanted to do this right, this could be a DataView.
--- But for that, the ArrayBuffer Builder would have to accept DataView.
+bytes :: forall m. MonadEffect m => FieldNumber -> Builder.Builder -> Builder.PutM m Unit
 bytes fieldNumber s = do
   tag32 fieldNumber LenDel
-  varint32 $ UInt.fromInt $ AB.byteLength s
-  Builder.putArrayBuffer s
+  varint32 $ UInt.fromInt $ Builder.length s
+  tell s
 

@@ -11,26 +11,38 @@ This library operates on
 [in Node](https://pursuit.purescript.org/packages/purescript-node-buffer/docs/Node.Buffer.Class)
 and in browser environments.
 
-## Imports
+## Using the library
 
 None of the modules in this package should be imported directly in your program.
-Rather, you'll import the message modules in the generated `.purs` files,
+Rather, you'll import the message modules from the generated `.purs` files,
 as well as modules for reading and writing `ArrayBuffer`s.
 
+Each `.proto` message will export four names in the generated `.purs` modules.
+
+1. A message record type, for example
+   * `type MyMessageR = {..}`.
+2. A message data type, for example
+   * `newtype MyMessage = MyMessage MyMessageR`.
+3. A message encoder which works with 
+   [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/),
+   for example
+   * `putMyMessage :: forall m. MonadEffect m => MyMessage -> PutM m Unit`
+4. A message decoder which works with
+   [__purescript-parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/),
+   for example
+   * `parseMyMessage :: forall m. MonadEffect m => ParserT DataView m MyMessage`
+
+Then, in your program, your imports will look something like this.
+
+
 ```purescript
-import GeneratedMessages (MyMessage, parseMyMessage, putMyMessage)
+import GeneratedMessages (MyMessage, putMyMessage, parseMyMessage)
 import Text.Parsing.Parser (runParserT)
 import Data.ArrayBuffer.Builder (execPut)
 ```
 
-The generated message modules will import the `Protobuf.Runtime` module.
-
-## Dependencies
-
-You'll need these packages for reading and writing `ArrayBuffer`s.
-
-* [__arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
-* [__parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
+The generated code modules will transitively import other modules from this
+package by importing `Protobuf.Runtime`.
 
 ## Code Generation
 
@@ -77,7 +89,7 @@ formula `column - 1`.
 We only support __proto3__ so that means we don't support
 [extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
 
-The generated record fields will use `Nothing` instead of the 
+The generated optional record fields will use `Nothing` instead of the 
 [default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
 
 We support
@@ -91,7 +103,7 @@ We do not support the
 
 We do not support
 [`oneof`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#oneof).
-The fields in a `oneof` will all be added to the message.
+The fields in a `oneof` will all be added to the message record product type.
 
 We do not support
 [maps](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#maps).

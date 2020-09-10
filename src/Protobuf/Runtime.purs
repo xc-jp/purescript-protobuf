@@ -3,17 +3,20 @@ module Protobuf.Runtime
 ( parseMessage
 , parseFieldUnknown
 , parseLenDel
+, putString
 , Pos
 , FieldNumberInt
 , positionZero
 -- , addPosCol
-, onceLength
+-- , onceLength
 , manyLength
+, putLenDel
 )
 where
 
 import Prelude
 import Effect (Effect)
+import Control.Monad.Writer.Trans (tell)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Data.Foldable (foldl)
@@ -26,11 +29,13 @@ import Text.Parsing.Parser.Pos (Position(..))
 import Data.ArrayBuffer.Types (DataView)
 import Text.Parsing.Parser.DataView (takeN, eof)
 import Text.Parsing.Parser.Combinators (manyTill)
+import Data.ArrayBuffer.Builder (Put, subBuilder)
+import Data.ArrayBuffer.Builder as ABBuilder
 import Record.Builder as RecordB
 import Record.Builder (build, modify)
 import Protobuf.Common (FieldNumber, WireType(..))
 import Protobuf.Decode as Decode
--- import Protobuf.Encode as Encode
+import Protobuf.Encode as Encode
 
 -- | We don't recognize the field number, so consume the field and throw it away
 -- | and then return a no-op Record builder.
@@ -71,7 +76,8 @@ parseMessage construct default parseField length = do
 type Pos = Int
 
 -- | We want Int FieldNumber to pass to parseField so that we can pattern
--- | match on Int literals.
+-- | match on Int literals. UInt doesn't export any constructors, so can't
+-- | pattern match on it.
 type FieldNumberInt = Int
 
 -- | Add an offset to a parser column Position and return the new Position.
@@ -140,3 +146,17 @@ parseLenDel
    . (Int -> ParserT DataView Effect a)
   -> ParserT DataView Effect a
 parseLenDel p = p <<< UInt.toInt =<< Decode.varint32
+
+putString :: FieldNumberInt -> Maybe String -> Put Unit
+putString fieldNumber x =
+  case x of
+    Nothing -> pure unit
+    Just x' -> Encode.string (UInt.fromInt fieldNumber) x'
+
+putLenDel
+  :: FieldNumberInt
+  -> Put Unit
+  -> Put Unit
+putLenDel fieldNumber p = do
+  b <- subBuilder p
+  Encode.bytes (UInt.fromInt fieldNumber) b

@@ -3,8 +3,9 @@ module ProtocPlugin.Main where
 import Prelude
 
 import Effect (Effect)
+import Control.Monad.Writer.Trans (tell)
 import Data.Maybe (Maybe(..))
--- import Data.Either (Either(..))
+import Data.Either (Either(..))
 -- import Control.Category (identity)
 import Data.Array (snoc)
 -- import Data.Foldable (foldl)
@@ -14,6 +15,7 @@ import Data.Symbol (SProxy(..))
 -- import Data.Eq (class Eq)
 -- import Data.Bounded (class Bounded)
 import Data.Enum (class Enum, class BoundedEnum, toEnum, fromEnum)
+import Data.Foldable (traverse_)
 import Data.Generic.Rep(class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Generic.Rep.Bounded (genericBottom, genericTop)
@@ -27,6 +29,7 @@ import Data.UInt as UInt
 import Text.Parsing.Parser (ParserT, runParserT, fail)
 -- import Text.Parsing.Parser.Combinators (manyTill)
 -- import Text.Parsing.Parser.DataView (eof, takeN)
+import Data.ArrayBuffer.Builder (Put, execPut)
 
 import Record.Builder (modify)
 import Record.Builder as RecordB
@@ -36,8 +39,8 @@ import Protobuf.Decode as Decode
 import Protobuf.Common (WireType(..))
 
 import Node.Process (stdin, stdout, stderr)
-import Node.Stream (read, writeString, onReadable)
-import Node.Buffer (toArrayBuffer)
+import Node.Stream (read, write, writeString, onReadable)
+import Node.Buffer (toArrayBuffer, fromArrayBuffer)
 import Node.Encoding (Encoding(..))
 -- import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
@@ -49,6 +52,8 @@ import Protobuf.Runtime
   , parseLenDel
   , FieldNumberInt
   , manyLength
+  , putString
+  , putLenDel
   )
 
 main :: Effect Unit
@@ -59,34 +64,41 @@ main = do
       Nothing -> pure unit
       Just stdinbuf -> do
         stdinab <- toArrayBuffer stdinbuf
-        -- void $ writeString stdout UTF8 (show $ AB.byteLength stdinab) (pure unit)
         let stdinview = DV.whole stdinab
-        request <- runParserT stdinview $ parseCodeGeneratorRequest $ DV.byteLength stdinview
-        void $ writeString stderr UTF8 (show request) (pure unit)
+        requestParsed <- runParserT stdinview $ parseCodeGeneratorRequest $ DV.byteLength stdinview
+        case requestParsed of
+          Left err -> void $ writeString stderr UTF8 (show err) (pure unit)
+          Right request -> do
+            void $ writeString stderr UTF8 (show request) (pure unit)
+            let response = generate request
+            responseab <- execPut $ putCodeGeneratorResponse response
+            responsebuffer <- fromArrayBuffer responseab
+            void $ write stdout responsebuffer (pure unit)
 
--- parseCodeGeneratorRequest :: ParserT DataView Effect CodeGeneratorRequest
--- parseCodeGeneratorRequest = do
---   builders <- manyTill parseField eof
---   pure $ CodeGeneratorRequest $ build (foldl (>>>) identity builders) defaultCodeGeneratorRequest
---  where
---   parseField :: ParserT DataView Effect (RecordB.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
---   parseField = do
---     Tuple fieldNumber wireType <- Decode.tag32
---     case unit of
---       _ | fieldNumber == fn_CodeGeneratorRequest_file_to_generate -> do
---             x <- Decode.string
---             pure $ modify fs_CodeGeneratorRequest_file_to_generate $ flip snoc x
---         | fieldNumber == fn_CodeGeneratorRequest_parameter -> do
---             x <- Decode.string
---             pure $ modify fs_CodeGeneratorRequest_parameter $ const $ Just x
---         -- | fieldNumber == fn_CodeGeneratorRequest_proto_file -> do
---         --     x <- parseFileDescriptorProto
---         --     pure $ modify fs_CodeGeneratorRequest_proto_file $ flip snoc x
---         -- | fieldNumber == fn_CodeGeneratorRequest_compiler_version -> do
---         --     x <- parseVersion
---         --     pure $ modify fs_CodeGeneratorRequest_compiler_version $ const $ Just x
---       _ -> parseFieldUnknown wireType
 
+
+generate :: CodeGeneratorRequest -> CodeGeneratorResponse
+generate (CodeGeneratorRequest{file_to_generate,parameter,proto_file,compiler_version}) =
+  CodeGeneratorResponse
+    { error: Nothing
+    , file
+    }
+ where
+  file = map genFile proto_file
+  genFile :: FileDescriptorProto -> CodeGeneratorResponse_File
+  genFile (FileDescriptorProto
+    { name
+    , package
+    , dependency
+    , public_dependency
+    , message_type
+    , enum_type
+    , syntax
+    }) = CodeGeneratorResponse_File
+      { name : Just "GeneratedMessages.purs"
+      , insertion_point : Nothing
+      , content : Just ""
+      }
 
 
       -- IMPORTANT For embedded message fields, the parser merges multiple instances of the same field,
@@ -121,25 +133,26 @@ parseCodeGeneratorRequest length =
     x <- Decode.string
     pure $ modify (SProxy :: SProxy "parameter") $ const $ Just x
   parseField 15 LenDel = do
-    len <- UInt.toInt <$> Decode.varint32 -- faster than int32
+    -- len <- UInt.toInt <$> Decode.varint32 -- faster than int32
     -- pos' <- positionZero
     -- dview <- takeN len
     -- lift (runParserT dview (parseFileDescriptorProto $ pos + pos')) >>= case _ of
     --   Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
     --   Right x -> pure $ modify (SProxy :: SProxy "proto_file") $ flip snoc x
-    x <- parseFileDescriptorProto len
+    -- x <- parseFileDescriptorProto len
+    x <- parseLenDel parseFileDescriptorProto
     pure $ modify (SProxy :: SProxy "proto_file") $ flip snoc x
   parseField 3 LenDel = do
-    len <- UInt.toInt <$> Decode.varint32 -- faster than int32
+    -- len <- UInt.toInt <$> Decode.varint32 -- faster than int32
     -- pos' <- positionZero
     -- dview <- takeN len
     -- lift (runParserT dview (parseVersion $ pos + pos')) >>= case _ of
     --   Left (ParseError s pos'') -> failWithPosition s $ addPosCol pos pos''
     --   Right x -> pure $ modify (SProxy :: SProxy "compiler_version") $ const $ Just x
-    x <- parseVersion len
+    -- x <- parseVersion len
+    x <- parseLenDel parseVersion
     pure $ modify (SProxy :: SProxy "compiler_version") $ const $ Just x
   parseField _ wireType = parseFieldUnknown wireType
-
   default :: CodeGeneratorRequestR
   default =
     { file_to_generate: []
@@ -149,8 +162,71 @@ parseCodeGeneratorRequest length =
     }
 
 
+-- The plugin writes an encoded CodeGeneratorResponse to stdout.
+type CodeGeneratorResponseR =
+  { error :: Maybe String
+  , file :: Array CodeGeneratorResponse_File
+  }
+newtype CodeGeneratorResponse = CodeGeneratorResponse CodeGeneratorResponseR
+derive instance genericCodeGeneratorResponse :: Generic CodeGeneratorResponse _
+instance showCodeGeneratorResponse :: Show CodeGeneratorResponse where show = genericShow
+-- parseCodeGeneratorResponse :: Int -> ParserT DataView Effect CodeGeneratorResponse
+-- parseCodeGeneratorResponse length =
+--   parseMessage CodeGeneratorResponse default parseField length
+--  where
+--   parseField
+--     :: FieldNumberInt
+--     -> WireType
+--     -> ParserT DataView Effect (RecordB.Builder CodeGeneratorResponseR CodeGeneratorResponseR)
+--   parseField 1 LenDel = do
+--     x <- Decode.string
+--     pure $ modify (SProxy :: SProxy "error") $ const $ Just x
+--   parseField 15 LenDel = do
+--     x <- parseLenDel parseCodeGeneratorResponse_File
+--     pure $ modify (SProxy :: SProxy "file") $ flip snoc x
+--   parseField _ wireType = parseFieldUnknown wireType
+--   default :: CodeGeneratorResponseR
+--   default =
+--     { error: Nothing
+--     , file: []
+--     }
+putCodeGeneratorResponse :: CodeGeneratorResponse -> Put Unit
+putCodeGeneratorResponse (CodeGeneratorResponse r) = do
+  putString 1 r.error
+  putLenDel 15 $ traverse_ putCodeGeneratorResponse_File r.file
 
 
+-- Represents a single generated file.
+type CodeGeneratorResponse_FileR =
+  { name :: Maybe String
+  , insertion_point :: Maybe String
+  , content :: Maybe String
+  }
+newtype CodeGeneratorResponse_File = CodeGeneratorResponse_File CodeGeneratorResponse_FileR
+derive instance genericCodeGeneratorResponse_File :: Generic CodeGeneratorResponse_File _
+instance showCodeGeneratorResponse_File :: Show CodeGeneratorResponse_File where show = genericShow
+-- parseCodeGeneratorResponse_File :: Int -> ParserT DataView Effect CodeGeneratorResponse_File
+-- parseCodeGeneratorResponse_File length =
+--   parseMessage CodeGeneratorResponse_File default parseField length
+--  where
+--   parseField
+--     :: FieldNumberInt
+--     -> WireType
+--     -> ParserT DataView Effect (RecordB.Builder CodeGeneratorResponse_FileR CodeGeneratorResponse_FileR)
+--   parseField 1 LenDel = do
+--     x <- Decode.string
+--     pure $ modify (SProxy :: SProxy "name") $ const $ Just x
+--   default :: CodeGeneratorResponseR
+--   default =
+--     { name: Nothing
+--     , insertion_point: Nothing
+--     , content: Nothing
+--     }
+putCodeGeneratorResponse_File :: CodeGeneratorResponse_File -> Put Unit
+putCodeGeneratorResponse_File (CodeGeneratorResponse_File r) = do
+  putString 1 r.name
+  putString 2 r.insertion_point
+  putString 15 r.content
 
 -- IMPORTANT We need to wrap our structural record types in a nominal
 -- data type so that we can nest records.
@@ -208,7 +284,7 @@ type FileDescriptorProtoR =
   , message_type :: Array DescriptorProto -- 4
   , enum_type :: Array EnumDescriptorProto -- 5
   -- TODO , service :: Array ServiceDescriptorProto -- 6
-  , extension :: Array FieldDescriptorProto -- 7
+  -- , extension :: Array FieldDescriptorProto -- 7
   -- TODO , options :: Maybe FileOptions -- 8
   -- TODO , source_code_info :: Maybe SourceCodeInfo -- 9
   , syntax :: Maybe String -- 12
@@ -255,7 +331,7 @@ parseFileDescriptorProto length =
     , message_type : []
     , enum_type : []
     -- TODO , service :
-    , extension : []
+    -- , extension : []
     -- TODO , options : []
     -- TODO , source_code_info : []
     , syntax : Nothing
@@ -456,7 +532,7 @@ type FieldDescriptorProtoR =
   , type_name :: Maybe String -- 6
   -- , extendee :: Maybe String -- 2
   -- , default_value :: Maybe String -- 7 -- TODO meh support this?
-  -- , oneof_index :: Maybe Int -- 9
+  , oneof_index :: Maybe Int -- 9
   , json_name :: Maybe String -- 10
   -- TODO , options :: Maybe FieldOptions --8
   }
@@ -483,6 +559,9 @@ parseFieldDescriptorProto length =
   parseField 6 LenDel = do
     x <- Decode.string
     pure $ modify (SProxy :: SProxy "type_name") $ const $ Just x
+  parseField 9 VarInt = do
+    x <- Decode.int32
+    pure $ modify (SProxy :: SProxy "oneof_index") $ const $ Just x
   parseField 10 LenDel = do
     x <- Decode.string
     pure $ modify (SProxy :: SProxy "json_name") $ const $ Just x
@@ -493,6 +572,7 @@ parseFieldDescriptorProto length =
     , label: Nothing
     , type_: Nothing
     , type_name: Nothing
+    , oneof_index: Nothing
     , json_name: Nothing
     }
 

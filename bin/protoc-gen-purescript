@@ -1,1 +1,2 @@
-spago run --main ProtocPlugin.Main 
+# $(spago run --main ProtocPlugin.Main 1>&2)
+spago run --main ProtocPlugin.Main
