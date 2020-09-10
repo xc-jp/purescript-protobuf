@@ -7,7 +7,7 @@ import Control.Monad.Writer.Trans (tell)
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 -- import Control.Category (identity)
-import Data.Array (snoc)
+import Data.Array (snoc, concatMap, fromFoldable)
 -- import Data.Foldable (foldl)
 import Data.Symbol (SProxy(..))
 -- import Data.Tuple (Tuple(..))
@@ -23,6 +23,7 @@ import Data.Generic.Rep.Enum (genericPred, genericSucc, genericCardinality)
 import Data.Generic.Rep.Ord (genericCompare)
 -- import Data.Long.Unsigned (toInt)
 -- import Data.UInt (UInt)
+import Data.String as String
 import Data.UInt as UInt
 -- import Control.Monad.Trans.Class (lift)
 
@@ -42,6 +43,7 @@ import Node.Process (stdin, stdout, stderr)
 import Node.Stream (read, write, writeString, onReadable)
 import Node.Buffer (toArrayBuffer, fromArrayBuffer)
 import Node.Encoding (Encoding(..))
+import Node.Path (basenameWithoutExt)
 -- import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Types (DataView)
@@ -76,29 +78,127 @@ main = do
             void $ write stdout responsebuffer (pure unit)
 
 
+capitalize s = String.toUpper (String.take 1 s) <> String.drop 1 s
 
 generate :: CodeGeneratorRequest -> CodeGeneratorResponse
 generate (CodeGeneratorRequest{file_to_generate,parameter,proto_file,compiler_version}) =
   CodeGeneratorResponse
     { error: Nothing
-    , file
+    , file: map genFile proto_file
+    }
+
+genFile :: FileDescriptorProto -> CodeGeneratorResponse_File
+genFile (FileDescriptorProto
+  { name
+  , package
+  , dependency
+  , public_dependency
+  , message_type
+  , enum_type
+  , syntax
+  }) = CodeGeneratorResponse_File
+    { name : Just $ moduleName <> ".purs"
+    , insertion_point : Nothing
+    , content : Just content
     }
  where
-  file = map genFile proto_file
-  genFile :: FileDescriptorProto -> CodeGeneratorResponse_File
-  genFile (FileDescriptorProto
-    { name
-    , package
-    , dependency
-    , public_dependency
-    , message_type
-    , enum_type
-    , syntax
-    }) = CodeGeneratorResponse_File
-      { name : Just "GeneratedMessages.purs"
-      , insertion_point : Nothing
-      , content : Just ""
-      }
+  baseName = case name of
+    Nothing -> "GeneratedMessages"
+    Just "" -> "GeneratedMessages"
+    Just n -> basenameWithoutExt n ".proto"
+  moduleName = capitalize baseName
+  messages = flattenMessages [] message_type
+  content = String.joinWith "\n" $
+    [ "module " <> moduleName
+    , "("
+    , """)
+where
+
+import Protobuf.Runtime as Pbuf
+"""
+    ]
+    <>
+    (map genMessage messages )
+
+
+type NameSpace = Array String
+
+-- | A message descriptor, plus the names of all parent messages.
+data ScopedMsg = ScopedMsg NameSpace DescriptorProto
+
+
+
+-- | Pull all of the nested messages out of of the messages and bring them
+-- | to the top, with their namespace.
+flattenMessages :: NameSpace -> Array DescriptorProto -> Array ScopedMsg
+flattenMessages namespace msgarray = concatMap go msgarray
+ where
+  go :: DescriptorProto -> Array ScopedMsg
+  go (DescriptorProto r@{name: Just msgName, nested_type}) =
+    [ScopedMsg namespace (DescriptorProto r)]
+      <> flattenMessages (namespace <> [msgName]) nested_type
+  go _ = [] -- error no name
+
+
+
+genMessage :: ScopedMsg -> String
+genMessage (ScopedMsg namespace (DescriptorProto {name: Just msgName, field})) =
+  String.joinWith "\n"
+    [ "type " <> mkTypeName namespace msgName <> "R ="
+    , "  {" <> String.joinWith "\n  ," (map genFieldRecord field)
+    , "  }"
+    ]
+genMessage _ = ""
+
+genFieldRecord :: FieldDescriptorProto -> String
+genFieldRecord (FieldDescriptorProto
+  { name: Just fname
+  , number: Just fnumber
+  , label: Just flabel
+  , type_: Just ftype
+  , type_name
+  }) = fname <> ": " <> ptype flabel ftype type_name
+ where
+  ptype LABEL_REPEATED TYPE_DOUBLE _ = "Array.Array Number"
+  ptype LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
+  ptype LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
+  ptype LABEL_REPEATED TYPE_UINT64 _ = "Array.Array (Long.Long Long.Unsigned)"
+  ptype LABEL_REPEATED TYPE_INT32 _ = "Array.Array UInt.UInt"
+  ptype LABEL_REPEATED TYPE_FIXED64 _ = "Array.Array (Long.Long Long.Unsigned)"
+  ptype LABEL_REPEATED TYPE_FIXED32 _ = "Array.Array UInt"
+  ptype LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
+  ptype LABEL_REPEATED TYPE_STRING _ = "Array.Array String"
+  ptype LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array.Array " <> tname
+  ptype LABEL_REPEATED TYPE_BYTES _ = "Array.Array DataView.DataView"
+  ptype LABEL_REPEATED TYPE_UINT32 _ = "Array.Array UInt.UInt"
+  ptype LABEL_REPEATED TYPE_ENUM (Just tname) = "Array.Array " <> tname
+  ptype LABEL_REPEATED TYPE_SFIXED32 _ = "Array.Array Int"
+  ptype LABEL_REPEATED TYPE_SFIXED64 _ = "Array.Array (Long.Long Long.Signed)"
+  ptype LABEL_REPEATED TYPE_SINT32 _ = "Array.Array Int"
+  ptype LABEL_REPEATED TYPE_SINT64 _ = "Array.Array (Long.Long Long.Signed)"
+  ptype _ TYPE_DOUBLE _ = "Maybe.Maybe Number"
+  ptype _ TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
+  ptype _ TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+  ptype _ TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
+  ptype _ TYPE_INT32 _ = "Maybe.Maybe UInt.UInt"
+  ptype _ TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
+  ptype _ TYPE_FIXED32 _ = "Maybe.Maybe UInt"
+  ptype _ TYPE_BOOL _ = "Maybe.Maybe Boolean"
+  ptype _ TYPE_STRING _ = "Maybe.Maybe String"
+  ptype _ TYPE_MESSAGE (Just tname) = "Maybe.Maybe " <> tname
+  ptype _ TYPE_BYTES _ = "Maybe.Maybe DataView.DataView"
+  ptype _ TYPE_UINT32 _ = "Maybe.Maybe UInt.UInt"
+  ptype _ TYPE_ENUM (Just tname) = "Maybe.Maybe " <> tname
+  ptype _ TYPE_SFIXED32 _ = "Maybe.Maybe Int"
+  ptype _ TYPE_SFIXED64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+  ptype _ TYPE_SINT32 _ = "Maybe.Maybe Int"
+  ptype _ TYPE_SINT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+  ptype _ _ _ = "" -- error, maybe its a TYPE_GROUP
+genFieldRecord _ = "" -- error, not enough information
+
+mkTypeName :: NameSpace -> String -> String
+mkTypeName ns n = String.joinWith "" (map (\s -> capitalize s <> "_") ns) <> capitalize n
+
 
 
       -- IMPORTANT For embedded message fields, the parser merges multiple instances of the same field,
@@ -315,13 +415,17 @@ parseFileDescriptorProto length =
   parseField 10 LenDel = do
     -- then this repeated int32 field is packed
     -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
-    -- xs <- manyLength Decode.int32 <<< UInt.toInt =<< Decode.varint32
     xs <- parseLenDel $ manyLength Decode.int32
     pure $ modify (SProxy :: SProxy "public_dependency") $ flip append xs
   parseField 4 LenDel = do
-    -- x <- parseDescriptorProto <<< Uint.toInt =<< Decode.varint32
     x <- parseLenDel parseDescriptorProto
     pure $ modify (SProxy :: SProxy "message_type") $ flip snoc x
+  parseField 5 LenDel = do
+    x <- parseLenDel parseEnumDescriptorProto
+    pure $ modify (SProxy :: SProxy "enum_type") $ flip snoc x
+  parseField 12 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "syntax") $ const $ Just x
   parseField _ wireType = parseFieldUnknown wireType
   default =
     { name : Nothing

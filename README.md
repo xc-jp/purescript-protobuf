@@ -44,6 +44,11 @@ import Data.ArrayBuffer.Builder (execPut)
 The generated code modules will transitively import other modules from this
 package by importing `Protobuf.Runtime`.
 
+The generated code depends on 
+[__purescript-longs__](https://pursuit.purescript.org/packages/purescript-longs)
+and the Javascript package
+[__long__](https://www.npmjs.com/package/long).
+
 ## Code Generation
 
 The `shell.nix` environment provides

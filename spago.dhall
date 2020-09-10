@@ -13,6 +13,7 @@
   , "node-streams"
   , "node-process"
   , "node-buffer"
+  , "node-path"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

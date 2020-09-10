@@ -125,4 +125,4 @@ let additions =
   }
 
 in  (upstream // additions)
-  with arraybuffer-builder.version = "master"
+  with arraybuffer-builder.version = "v1.1.0"
