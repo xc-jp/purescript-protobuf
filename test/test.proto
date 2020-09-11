@@ -1,5 +1,12 @@
 syntax = "proto3";
 
-message Test2 {
+package My.Module;
+
+message Msg1 {
   string b = 2;
+  message Msg2 {
+    string b = 2;
+  }
+
+  Msg2 c = 3;
 }

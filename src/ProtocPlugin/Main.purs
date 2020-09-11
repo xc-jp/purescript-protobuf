@@ -8,6 +8,7 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 -- import Control.Category (identity)
 import Data.Array (snoc, concatMap, fromFoldable)
+import Data.Array as Array
 -- import Data.Foldable (foldl)
 import Data.Symbol (SProxy(..))
 -- import Data.Tuple (Tuple(..))
@@ -24,6 +25,7 @@ import Data.Generic.Rep.Ord (genericCompare)
 -- import Data.Long.Unsigned (toInt)
 -- import Data.UInt (UInt)
 import Data.String as String
+import Data.String.Pattern as String.Pattern
 import Data.UInt as UInt
 -- import Control.Monad.Trans.Class (lift)
 
@@ -87,6 +89,12 @@ generate (CodeGeneratorRequest{file_to_generate,parameter,proto_file,compiler_ve
     , file: map genFile proto_file
     }
 
+type NameSpace = Array String
+
+-- | A message descriptor, plus the names of all parent messages.
+data ScopedMsg = ScopedMsg NameSpace DescriptorProto
+
+
 genFile :: FileDescriptorProto -> CodeGeneratorResponse_File
 genFile (FileDescriptorProto
   { name
@@ -108,96 +116,210 @@ genFile (FileDescriptorProto
     Just n -> basenameWithoutExt n ".proto"
   moduleName = capitalize baseName
   messages = flattenMessages [] message_type
+  moduleNamespace = case package of
+    Nothing -> []
+    -- Just ps -> String.joinWith "." $ map capitalize $ String.split "." ps
+    Just ps -> String.split (String.Pattern.Pattern ".") ps
   content = String.joinWith "\n" $
-    [ "module " <> moduleName
-    , "("
+    -- [ "module " <> (String.joinWith "." $ map capitalize moduleNamespace) <> moduleName
+    [ "module " <> (String.joinWith "." ((map capitalize moduleNamespace) <> [moduleName]))
+    , "( " <> String.joinWith "\n, " (map genMessageExport messages)
     , """)
 where
 
-import Protobuf.Runtime as Pbuf
+import Prelude
+import Effect as Effect
+import Protobuf.Runtime as Runtime
+import Protobuf.Decode as Decode
+import Protobuf.Encode as Encode
+import Protobuf.Common as Common
+import Record.Builder as Record.Builder
+import Data.Array as Array
+import Data.Maybe as Maybe
+import Data.Generic as Generic
+import Data.Symbol as Symbol
+import Text.Parsing.Parser as Parser
+import Data.ArrayBuffer.Types as ArrayBuffer.Types
 """
     ]
     <>
     (map genMessage messages )
 
 
-type NameSpace = Array String
 
--- | A message descriptor, plus the names of all parent messages.
-data ScopedMsg = ScopedMsg NameSpace DescriptorProto
-
-
-
--- | Pull all of the nested messages out of of the messages and bring them
--- | to the top, with their namespace.
-flattenMessages :: NameSpace -> Array DescriptorProto -> Array ScopedMsg
-flattenMessages namespace msgarray = concatMap go msgarray
- where
-  go :: DescriptorProto -> Array ScopedMsg
-  go (DescriptorProto r@{name: Just msgName, nested_type}) =
-    [ScopedMsg namespace (DescriptorProto r)]
-      <> flattenMessages (namespace <> [msgName]) nested_type
-  go _ = [] -- error no name
+  -- | Pull all of the nested messages out of of the messages and bring them
+  -- | to the top, with their namespace.
+  flattenMessages :: NameSpace -> Array DescriptorProto -> Array ScopedMsg
+  flattenMessages namespace msgarray = concatMap go msgarray
+   where
+    go :: DescriptorProto -> Array ScopedMsg
+    go (DescriptorProto r@{name: Just msgName, nested_type}) =
+      [ScopedMsg namespace (DescriptorProto r)]
+        <> flattenMessages (namespace <> [msgName]) nested_type
+    go _ = [] -- error no name
 
 
+  genMessageExport :: ScopedMsg -> String
+  genMessageExport (ScopedMsg namespace (DescriptorProto {name: Just msgName})) =
+    let tname = mkTypeName $ namespace <> [msgName]
+    in tname <> ", " <> tname <> "R, parse" <> tname <> ", put" <> tname
+  genMessageExport _ = "" -- error, no name
 
-genMessage :: ScopedMsg -> String
-genMessage (ScopedMsg namespace (DescriptorProto {name: Just msgName, field})) =
-  String.joinWith "\n"
-    [ "type " <> mkTypeName namespace msgName <> "R ="
-    , "  {" <> String.joinWith "\n  ," (map genFieldRecord field)
-    , "  }"
-    ]
-genMessage _ = ""
 
-genFieldRecord :: FieldDescriptorProto -> String
-genFieldRecord (FieldDescriptorProto
-  { name: Just fname
-  , number: Just fnumber
-  , label: Just flabel
-  , type_: Just ftype
-  , type_name
-  }) = fname <> ": " <> ptype flabel ftype type_name
- where
-  ptype LABEL_REPEATED TYPE_DOUBLE _ = "Array.Array Number"
-  ptype LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
-  ptype LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
-  ptype LABEL_REPEATED TYPE_UINT64 _ = "Array.Array (Long.Long Long.Unsigned)"
-  ptype LABEL_REPEATED TYPE_INT32 _ = "Array.Array UInt.UInt"
-  ptype LABEL_REPEATED TYPE_FIXED64 _ = "Array.Array (Long.Long Long.Unsigned)"
-  ptype LABEL_REPEATED TYPE_FIXED32 _ = "Array.Array UInt"
-  ptype LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
-  ptype LABEL_REPEATED TYPE_STRING _ = "Array.Array String"
-  ptype LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array.Array " <> tname
-  ptype LABEL_REPEATED TYPE_BYTES _ = "Array.Array DataView.DataView"
-  ptype LABEL_REPEATED TYPE_UINT32 _ = "Array.Array UInt.UInt"
-  ptype LABEL_REPEATED TYPE_ENUM (Just tname) = "Array.Array " <> tname
-  ptype LABEL_REPEATED TYPE_SFIXED32 _ = "Array.Array Int"
-  ptype LABEL_REPEATED TYPE_SFIXED64 _ = "Array.Array (Long.Long Long.Signed)"
-  ptype LABEL_REPEATED TYPE_SINT32 _ = "Array.Array Int"
-  ptype LABEL_REPEATED TYPE_SINT64 _ = "Array.Array (Long.Long Long.Signed)"
-  ptype _ TYPE_DOUBLE _ = "Maybe.Maybe Number"
-  ptype _ TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
-  ptype _ TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
-  ptype _ TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
-  ptype _ TYPE_INT32 _ = "Maybe.Maybe UInt.UInt"
-  ptype _ TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
-  ptype _ TYPE_FIXED32 _ = "Maybe.Maybe UInt"
-  ptype _ TYPE_BOOL _ = "Maybe.Maybe Boolean"
-  ptype _ TYPE_STRING _ = "Maybe.Maybe String"
-  ptype _ TYPE_MESSAGE (Just tname) = "Maybe.Maybe " <> tname
-  ptype _ TYPE_BYTES _ = "Maybe.Maybe DataView.DataView"
-  ptype _ TYPE_UINT32 _ = "Maybe.Maybe UInt.UInt"
-  ptype _ TYPE_ENUM (Just tname) = "Maybe.Maybe " <> tname
-  ptype _ TYPE_SFIXED32 _ = "Maybe.Maybe Int"
-  ptype _ TYPE_SFIXED64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
-  ptype _ TYPE_SINT32 _ = "Maybe.Maybe Int"
-  ptype _ TYPE_SINT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
-  ptype _ _ _ = "" -- error, maybe its a TYPE_GROUP
-genFieldRecord _ = "" -- error, not enough information
+  genMessage :: ScopedMsg -> String
+  genMessage (ScopedMsg namespace (DescriptorProto {name: Just msgName, field})) =
+    let tname = mkTypeName $ namespace <> [msgName]
+    in
+    String.joinWith "\n"
+      [ "\ntype " <> tname <> "R ="
+      , "  { " <> String.joinWith "\n  , " (map genFieldRecord field)
+      , "  }"
+      , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
+      , "derive instance generic " <> tname <> " :: Generic.Generic " <> tname <> " _"
+      , "parse" <> tname <> " :: Int -> Parser.ParserT ArrayBuffer.Types.DataView Effect.Effect " <> tname
+      , "parse" <> tname <> " length ="
+      , "  Runtime.parseMessage " <> tname <> " default parseField length"
+      , """ where
+  parseField
+    :: Runtime.FieldNumberInt
+    -> Common.WireType"""
+      , "    -> Parser.ParserT ArrayBuffer.Types.DataView Effect.Effect (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
+      , String.joinWith "\n" (map genFieldParser field)
+      , "  default = "
+      , "    { " <> String.joinWith "\n    , " (map genFieldDefault field)
+      , "    }"
 
-mkTypeName :: NameSpace -> String -> String
-mkTypeName ns n = String.joinWith "" (map (\s -> capitalize s <> "_") ns) <> capitalize n
+      ]
+  genMessage _ = ""
+
+  genFieldParser :: FieldDescriptorProto -> String
+  genFieldParser (FieldDescriptorProto
+    { name: Just fname
+    , number: Just fnumber
+    , label: Just flabel
+    , type_: Just ftype
+    , type_name
+    }) = f flabel ftype type_name
+   where
+    f LABEL_REPEATED TYPE_DOUBLE _ = "Array.Array Number"
+    f LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
+    f LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
+    f LABEL_REPEATED TYPE_UINT64 _ = "Array.Array (Long.Long Long.Unsigned)"
+    f LABEL_REPEATED TYPE_INT32 _ = "Array.Array UInt.UInt"
+    f LABEL_REPEATED TYPE_FIXED64 _ = "Array.Array (Long.Long Long.Unsigned)"
+    f LABEL_REPEATED TYPE_FIXED32 _ = "Array.Array UInt"
+    f LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
+    f LABEL_REPEATED TYPE_STRING _ = "Array.Array String"
+    f LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array.Array " <> mkFieldName tname
+    f LABEL_REPEATED TYPE_BYTES _ = "Array.Array DataView.DataView"
+    f LABEL_REPEATED TYPE_UINT32 _ = "Array.Array UInt.UInt"
+    f LABEL_REPEATED TYPE_ENUM (Just tname) = "Array.Array " <> mkFieldName tname
+    f LABEL_REPEATED TYPE_SFIXED32 _ = "Array.Array Int"
+    f LABEL_REPEATED TYPE_SFIXED64 _ = "Array.Array (Long.Long Long.Signed)"
+    f LABEL_REPEATED TYPE_SINT32 _ = "Array.Array Int"
+    f LABEL_REPEATED TYPE_SINT64 _ = "Array.Array (Long.Long Long.Signed)"
+    f _              TYPE_DOUBLE _ = "Maybe.Maybe Number"
+    f _              TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
+    f _              TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+    f _              TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
+    f _              TYPE_INT32 _ = "Maybe.Maybe UInt.UInt"
+    f _              TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
+    f _              TYPE_FIXED32 _ = "Maybe.Maybe UInt"
+    f _              TYPE_BOOL _ = "Maybe.Maybe Boolean"
+    f _              TYPE_STRING _ = String.joinWith "\n" -- "Maybe.Maybe String"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- Decode.string"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Just x"
+      ]
+    f _              TYPE_MESSAGE (Just tname) = String.joinWith "\n" -- "Maybe.Maybe " <> mkFieldName tname
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- Runtime.parseLenDel parse" <> mkFieldName tname
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Just x"
+      ]
+    f _              TYPE_BYTES _ = "Maybe.Maybe DataView.DataView"
+    f _              TYPE_UINT32 _ = "Maybe.Maybe UInt.UInt"
+    f _              TYPE_ENUM (Just tname) = "Maybe.Maybe " <> mkFieldName tname
+    f _              TYPE_SFIXED32 _ = "Maybe.Maybe Int"
+    f _              TYPE_SFIXED64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+    f _              TYPE_SINT32 _ = "Maybe.Maybe Int"
+    f _              TYPE_SINT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+    f _ _ _ = "" -- error, maybe its a TYPE_GROUP
+  genFieldParser _ = "" -- error, not enough information
+
+  genFieldRecord :: FieldDescriptorProto -> String
+  genFieldRecord (FieldDescriptorProto
+    { name: Just fname
+    , number: Just fnumber
+    , label: Just flabel
+    , type_: Just ftype
+    , type_name
+    }) = fname <> ": " <> ptype flabel ftype type_name
+   where
+    ptype LABEL_REPEATED TYPE_DOUBLE _ = "Array.Array Number"
+    ptype LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
+    ptype LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
+    ptype LABEL_REPEATED TYPE_UINT64 _ = "Array.Array (Long.Long Long.Unsigned)"
+    ptype LABEL_REPEATED TYPE_INT32 _ = "Array.Array UInt.UInt"
+    ptype LABEL_REPEATED TYPE_FIXED64 _ = "Array.Array (Long.Long Long.Unsigned)"
+    ptype LABEL_REPEATED TYPE_FIXED32 _ = "Array.Array UInt"
+    ptype LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
+    ptype LABEL_REPEATED TYPE_STRING _ = "Array.Array String"
+    ptype LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array.Array " <> mkFieldName tname
+    ptype LABEL_REPEATED TYPE_BYTES _ = "Array.Array DataView.DataView"
+    ptype LABEL_REPEATED TYPE_UINT32 _ = "Array.Array UInt.UInt"
+    ptype LABEL_REPEATED TYPE_ENUM (Just tname) = "Array.Array " <> mkFieldName tname
+    ptype LABEL_REPEATED TYPE_SFIXED32 _ = "Array.Array Int"
+    ptype LABEL_REPEATED TYPE_SFIXED64 _ = "Array.Array (Long.Long Long.Signed)"
+    ptype LABEL_REPEATED TYPE_SINT32 _ = "Array.Array Int"
+    ptype LABEL_REPEATED TYPE_SINT64 _ = "Array.Array (Long.Long Long.Signed)"
+    ptype _ TYPE_DOUBLE _ = "Maybe.Maybe Number"
+    ptype _ TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
+    ptype _ TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+    ptype _ TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
+    ptype _ TYPE_INT32 _ = "Maybe.Maybe UInt.UInt"
+    ptype _ TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
+    ptype _ TYPE_FIXED32 _ = "Maybe.Maybe UInt"
+    ptype _ TYPE_BOOL _ = "Maybe.Maybe Boolean"
+    ptype _ TYPE_STRING _ = "Maybe.Maybe String"
+    ptype _ TYPE_MESSAGE (Just tname) = "Maybe.Maybe " <> mkFieldName tname
+    ptype _ TYPE_BYTES _ = "Maybe.Maybe DataView.DataView"
+    ptype _ TYPE_UINT32 _ = "Maybe.Maybe UInt.UInt"
+    ptype _ TYPE_ENUM (Just tname) = "Maybe.Maybe " <> mkFieldName tname
+    ptype _ TYPE_SFIXED32 _ = "Maybe.Maybe Int"
+    ptype _ TYPE_SFIXED64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+    ptype _ TYPE_SINT32 _ = "Maybe.Maybe Int"
+    ptype _ TYPE_SINT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
+    ptype _ _ _ = "" -- error, maybe its a TYPE_GROUP
+  genFieldRecord _ = "" -- error, not enough information
+
+  genFieldDefault :: FieldDescriptorProto -> String
+  genFieldDefault (FieldDescriptorProto
+    { name: Just fname
+    , label: Just flabel
+    }) = fname <> ": " <> dtype flabel
+   where
+    dtype LABEL_REPEATED = "[]"
+    dtype _              = "Maybe.Nothing"
+  genFieldDefault _ = "" -- error, not enough information
+
+  mkFieldName :: String -> String
+  mkFieldName n = mkTypeName $ trimPackage $ parseFieldName n
+
+  -- mkTypeName :: NameSpace -> String -> String
+  -- mkTypeName ns n = String.joinWith "" (map (\s -> capitalize s <> "_") ns) <> capitalize n
+  mkTypeName :: Array String -> String
+  mkTypeName ns = String.joinWith "_" $ map capitalize ns
+
+  parseFieldName :: String -> Array String
+  parseFieldName fname = Array.dropWhile (_ == "") $ String.split (String.Pattern.Pattern ".") fname
+
+  trimPackage :: Array String -> Array String
+  trimPackage ns =
+    let len = Array.length moduleNamespace
+    in
+    if Array.take len ns == moduleNamespace
+      then Array.drop len ns
+      else ns
 
 
 
@@ -477,6 +599,15 @@ parseDescriptorProto length =
   parseField 2 LenDel = do
     x <- parseLenDel parseFieldDescriptorProto
     pure $ modify (SProxy :: SProxy "field") $ flip snoc x
+  parseField 3 LenDel = do
+    x <- parseLenDel parseDescriptorProto
+    pure $ modify (SProxy :: SProxy "nested_type") $ flip snoc x
+  parseField 4 lenDel = do
+    x <- parseLenDel parseEnumDescriptorProto
+    pure $ modify (SProxy :: SProxy "enum_type") $ flip snoc x
+  parseField 8 lenDel = do
+    x <- parseLenDel parseOneofDescriptorProto
+    pure $ modify (SProxy :: SProxy "oneof_decl") $ flip snoc x
   parseField _ wireType = parseFieldUnknown wireType
   default =
     { name: Nothing
@@ -682,13 +813,30 @@ parseFieldDescriptorProto length =
 
 
 -- | Describes a oneof.
-newtype OneofDescriptorProto = OneofDescriptorProto OneofDescriptorProtoR
-derive instance genericOneofDescriptorProto :: Generic OneofDescriptorProto _
-instance showOneofDescriptorProto :: Show OneofDescriptorProto where show = genericShow
 type OneofDescriptorProtoR =
   { name :: Maybe String -- 1
   -- TODO , options :: Maybe OneofOptions -- 2
   }
+newtype OneofDescriptorProto = OneofDescriptorProto OneofDescriptorProtoR
+derive instance genericOneofDescriptorProto :: Generic OneofDescriptorProto _
+instance showOneofDescriptorProto :: Show OneofDescriptorProto where show = genericShow
+parseOneofDescriptorProto :: Int -> ParserT DataView Effect OneofDescriptorProto
+parseOneofDescriptorProto length =
+  parseMessage OneofDescriptorProto default parseField length
+ where
+  parseField
+    :: FieldNumberInt
+    -> WireType
+    -> ParserT DataView Effect (RecordB.Builder OneofDescriptorProtoR OneofDescriptorProtoR)
+  parseField 1 LenDel = do
+    x <- Decode.string
+    pure $ modify (SProxy :: SProxy "name") $ const $ Just x
+  parseField _ wireType = parseFieldUnknown wireType
+  default =
+    { name: Nothing
+    }
+
+
 
 -- | Describes an enum type.
 type EnumDescriptorProtoR =
