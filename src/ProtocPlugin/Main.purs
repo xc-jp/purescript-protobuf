@@ -201,40 +201,182 @@ import Data.ArrayBuffer.Types as ArrayBuffer.Types
     , type_name
     }) = f flabel ftype type_name
    where
-    f LABEL_REPEATED TYPE_DOUBLE _ = "Array.Array Number"
-    f LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
-    f LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
-    f LABEL_REPEATED TYPE_UINT64 _ = "Array.Array (Long.Long Long.Unsigned)"
-    f LABEL_REPEATED TYPE_INT32 _ = "Array.Array UInt.UInt"
-    f LABEL_REPEATED TYPE_FIXED64 _ = "Array.Array (Long.Long Long.Unsigned)"
-    f LABEL_REPEATED TYPE_FIXED32 _ = "Array.Array UInt"
-    f LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
-    f LABEL_REPEATED TYPE_STRING _ = "Array.Array String"
-    f LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array.Array " <> mkFieldName tname
-    f LABEL_REPEATED TYPE_BYTES _ = "Array.Array DataView.DataView"
-    f LABEL_REPEATED TYPE_UINT32 _ = "Array.Array UInt.UInt"
-    f LABEL_REPEATED TYPE_ENUM (Just tname) = "Array.Array " <> mkFieldName tname
-    f LABEL_REPEATED TYPE_SFIXED32 _ = "Array.Array Int"
-    f LABEL_REPEATED TYPE_SFIXED64 _ = "Array.Array (Long.Long Long.Signed)"
-    f LABEL_REPEATED TYPE_SINT32 _ = "Array.Array Int"
-    f LABEL_REPEATED TYPE_SINT64 _ = "Array.Array (Long.Long Long.Signed)"
+    -- For repeated fields of primitive numeric types, also parse the packed
+    -- encoding.
+    -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
+    f LABEL_REPEATED TYPE_DOUBLE _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Bits64 = do"
+      , "    x <- Decode.double"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_DOUBLE _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.double"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_FLOAT _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Bits32 = do"
+      , "    x <- Decode.float"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_FLOAT _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.float"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_INT64 _ = String.joinWith "\n" -- "Array.Array (Long.Long Long.Signed)"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- Decode.int64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_INT64 _ = String.joinWith "\n" -- "Array.Array (Long.Long Long.Signed)"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.int64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_UINT64 _ = String.joinWith "\n" --  "Array.Array (Long.Long Long.Unsigned)"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- Decode.uint64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_UINT64 _ = String.joinWith "\n" --  "Array.Array (Long.Long Long.Unsigned)"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.uint64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_INT32 _ = String.joinWith "\n" -- "Array.Array Int"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- Decode.int32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_INT32 _ = String.joinWith "\n" -- "Array.Array Int"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.int32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_FIXED64 _ = String.joinWith "\n" -- "Array.Array (Long.Long Long.Unsigned)"
+      [ "  parseField " <> show fnumber <> " Bits64 = do"
+      , "    x <- Decode.fixed64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_FIXED64 _ = String.joinWith "\n" -- "Array.Array (Long.Long Long.Unsigned)"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.fixed64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_FIXED32 _ = String.joinWith "\n" -- "Array.Array UInt"
+      [ "  parseField " <> show fnumber <> " Bits32 = do"
+      , "    x <- Decode.fixed32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_FIXED32 _ = String.joinWith "\n" -- "Array.Array UInt"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.fixed32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_BOOL _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- Decode.bool"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_BOOL _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.bool"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_STRING _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- Decode.string"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_MESSAGE (Just tname) = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel parse" <> mkFieldName tname
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_BYTES _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- Decode.bytes"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_UINT32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- Decode.uint32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_UINT32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.uint32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_ENUM (Just tname) = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- parse" <> mkFieldName tname
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_ENUM (Just tname) = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel parse" <> mkFieldName tname
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_SFIXED32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Bits32 = do"
+      , "    x <- Decode.sfixed32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_SFIXED32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.sfixed32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_SFIXED64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Bits64 = do"
+      , "    x <- Decode.sfixed64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_SFIXED64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.sfixed64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_SINT32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- Decode.sint32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_SINT32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.sint32"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+    f LABEL_REPEATED TYPE_SINT64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " VarInt = do"
+      , "    x <- Decode.sint64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      ]
+    f LABEL_REPEATED TYPE_SINT64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " LenDel = do"
+      , "    x <- parseLenDel $ manyLength Decode.sint64"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      ]
+
     f _              TYPE_DOUBLE _ = "Maybe.Maybe Number"
     f _              TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
     f _              TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
     f _              TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
-    f _              TYPE_INT32 _ = "Maybe.Maybe UInt.UInt"
+    f _              TYPE_INT32 _ = "Maybe.Maybe Int"
     f _              TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
     f _              TYPE_FIXED32 _ = "Maybe.Maybe UInt"
     f _              TYPE_BOOL _ = "Maybe.Maybe Boolean"
     f _              TYPE_STRING _ = String.joinWith "\n" -- "Maybe.Maybe String"
       [ "  parseField " <> show fnumber <> " LenDel = do"
       , "    x <- Decode.string"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Just x"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
       ]
     f _              TYPE_MESSAGE (Just tname) = String.joinWith "\n" -- "Maybe.Maybe " <> mkFieldName tname
       [ "  parseField " <> show fnumber <> " LenDel = do"
       , "    x <- Runtime.parseLenDel parse" <> mkFieldName tname
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Just x"
+      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
       ]
     f _              TYPE_BYTES _ = "Maybe.Maybe DataView.DataView"
     f _              TYPE_UINT32 _ = "Maybe.Maybe UInt.UInt"
@@ -259,7 +401,7 @@ import Data.ArrayBuffer.Types as ArrayBuffer.Types
     ptype LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
     ptype LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
     ptype LABEL_REPEATED TYPE_UINT64 _ = "Array.Array (Long.Long Long.Unsigned)"
-    ptype LABEL_REPEATED TYPE_INT32 _ = "Array.Array UInt.UInt"
+    ptype LABEL_REPEATED TYPE_INT32 _ = "Array.Array Int"
     ptype LABEL_REPEATED TYPE_FIXED64 _ = "Array.Array (Long.Long Long.Unsigned)"
     ptype LABEL_REPEATED TYPE_FIXED32 _ = "Array.Array UInt"
     ptype LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
@@ -276,7 +418,7 @@ import Data.ArrayBuffer.Types as ArrayBuffer.Types
     ptype _ TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
     ptype _ TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
     ptype _ TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
-    ptype _ TYPE_INT32 _ = "Maybe.Maybe UInt.UInt"
+    ptype _ TYPE_INT32 _ = "Maybe.Maybe Int"
     ptype _ TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
     ptype _ TYPE_FIXED32 _ = "Maybe.Maybe UInt"
     ptype _ TYPE_BOOL _ = "Maybe.Maybe Boolean"
@@ -534,9 +676,7 @@ parseFileDescriptorProto length =
   parseField 10 Bits32 = do -- then this repeated int32 field is nonpacked
     x <- Decode.int32
     pure $ modify (SProxy :: SProxy "public_dependency") $ flip snoc x
-  parseField 10 LenDel = do
-    -- then this repeated int32 field is packed
-    -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
+  parseField 10 LenDel = do -- then this repeated int32 field is packed
     xs <- parseLenDel $ manyLength Decode.int32
     pure $ modify (SProxy :: SProxy "public_dependency") $ flip append xs
   parseField 4 LenDel = do
