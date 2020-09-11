@@ -176,7 +176,7 @@ import Protobuf.Runtime as Runtime
 
   genEnumExport :: ScopedEnum -> String
   genEnumExport (ScopedEnum namespace (EnumDescriptorProto {name: Just eName})) =
-    mkTypeName $ namespace <> [eName]
+    (mkTypeName $ namespace <> [eName]) <> "(..)"
   genEnumExport _ = "" -- error, no name
 
   genEnum :: ScopedEnum -> String
@@ -246,7 +246,7 @@ import Protobuf.Runtime as Runtime
   genMessageExport :: ScopedMsg -> String
   genMessageExport (ScopedMsg namespace (DescriptorProto {name: Just msgName})) =
     let tname = mkTypeName $ namespace <> [msgName]
-    in tname <> ", " <> tname <> "R, parse" <> tname <> ", put" <> tname
+    in tname <> "(..), " <> tname <> "R, parse" <> tname <> ", put" <> tname
   genMessageExport _ = "" -- error, no name
 
 
@@ -276,7 +276,7 @@ import Protobuf.Runtime as Runtime
     -> Common.WireType"""
       , "    -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
       , String.joinWith "\n" (map genFieldParser field)
-      , "  default = "
+      , "  default ="
       , "    { " <> String.joinWith "\n    , " (map genFieldDefault field)
       , "    }"
 

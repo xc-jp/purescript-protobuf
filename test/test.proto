@@ -1,18 +1,18 @@
 syntax = "proto3";
 
-package My.Module;
+package my.module;
 
-message Msg1 {
-  string b = 2;
-  message Msg2 {
+message msg1 {
+  string B = 2;
+  message msg2 {
     string b = 2;
-    enum MyEnum {
+    enum myEnum {
       ONE = 0;
       two = 2;
       THREE = 3;
     }
-    MyEnum enumfield = 3;
+    myEnum enumfield = 3;
   }
 
-  Msg2 c = 3;
+  msg2 c = 3;
 }

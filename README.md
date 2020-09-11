@@ -20,7 +20,7 @@ as well as modules for reading and writing `ArrayBuffer`s.
 Each `.proto` message will export four names in the generated `.purs` modules.
 
 1. A message record type, for example
-   * `type MyMessageR = {..}`.
+   * `type MyMessageR = { field :: Maybe Int }`.
 2. A message data type, for example
    * `newtype MyMessage = MyMessage MyMessageR`.
 3. A message encoder which works with 
