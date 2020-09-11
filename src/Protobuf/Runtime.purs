@@ -140,7 +140,7 @@ parseLenDel p = p <<< UInt.toInt =<< Decode.varint32
 putLenDel :: forall a . (a -> Put Unit) -> UInt -> a -> Put Unit
 putLenDel p fieldNumber x = do
   b <- subBuilder $ p x
-  Encode.bytes fieldNumber b
+  Encode.builder fieldNumber b
 
 putOptional :: forall a. FieldNumberInt -> Maybe a -> (UInt -> a -> Put Unit) -> Put Unit
 putOptional _ Nothing _ = pure unit
@@ -153,4 +153,4 @@ putPacked :: forall a. FieldNumberInt -> Array a -> (a -> Put Unit) -> Put Unit
 putPacked _ [] _ = pure unit
 putPacked fieldNumber xs encoder = do
   b <- subBuilder $ traverse_ encoder xs
-  Encode.bytes (UInt.fromInt fieldNumber) b
+  Encode.builder (UInt.fromInt fieldNumber) b

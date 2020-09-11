@@ -32,8 +32,9 @@ import Data.UInt as UInt
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, unsignedToSigned)
 import Data.Long as SLong
 import Data.Float32 (Float32)
-import Data.ArrayBuffer.Types (DataView, Uint8Array)
+import Data.ArrayBuffer.Types (ArrayBuffer, DataView, Uint8Array)
 import Data.ArrayBuffer.Typed as AT
+import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
 import Data.TextDecoding (decodeUtf8)
 import Protobuf.Decode32 (varint32, zigzag32, tag32)
@@ -149,6 +150,12 @@ string = do
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => ParserT DataView m DataView
-bytes = varint32 >>= UInt.toInt >>> Parse.takeN
+bytes :: forall m. MonadEffect m => ParserT DataView m ArrayBuffer
+bytes = do
+  len <- UInt.toInt <$> varint32
+  dv <- Parse.takeN len
+  let ab = DV.buffer dv
+  let begin = DV.byteOffset dv
+  pure $ AB.slice begin (begin + len) ab
+
 

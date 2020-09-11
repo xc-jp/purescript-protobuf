@@ -254,7 +254,7 @@ import Data.Long.Internal as Long
     f _ TYPE_MESSAGE (Just tname) =
       "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel put" <> mkFieldName tname
     f LABEL_REPEATED TYPE_BYTES _ =
-      "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.bytes"
+      "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Encode.bytes"
     f _ TYPE_BYTES _ =
       "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.bytes"
     f LABEL_REPEATED TYPE_UINT32 _ =
@@ -554,7 +554,7 @@ import Data.Long.Internal as Long
     ptype LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
     ptype LABEL_REPEATED TYPE_STRING _ = "Array.Array String"
     ptype LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array.Array " <> mkFieldName tname
-    ptype LABEL_REPEATED TYPE_BYTES _ = "Array.Array DataView.DataView"
+    ptype LABEL_REPEATED TYPE_BYTES _ = "Array.Array ArrayBuffer.Types.ArrayBuffer"
     ptype LABEL_REPEATED TYPE_UINT32 _ = "Array.Array UInt.UInt"
     ptype LABEL_REPEATED TYPE_ENUM (Just tname) = "Array.Array " <> mkFieldName tname
     ptype LABEL_REPEATED TYPE_SFIXED32 _ = "Array.Array Int"
@@ -571,7 +571,7 @@ import Data.Long.Internal as Long
     ptype _ TYPE_BOOL _ = "Maybe.Maybe Boolean"
     ptype _ TYPE_STRING _ = "Maybe.Maybe String"
     ptype _ TYPE_MESSAGE (Just tname) = "Maybe.Maybe " <> mkFieldName tname
-    ptype _ TYPE_BYTES _ = "Maybe.Maybe DataView.DataView"
+    ptype _ TYPE_BYTES _ = "Maybe.Maybe ArrayBuffer.Types.ArrayBuffer"
     ptype _ TYPE_UINT32 _ = "Maybe.Maybe UInt.UInt"
     ptype _ TYPE_ENUM (Just tname) = "Maybe.Maybe " <> mkFieldName tname
     ptype _ TYPE_SFIXED32 _ = "Maybe.Maybe Int"

@@ -31,6 +31,7 @@ module Protobuf.Encode
 , bool'
 , string
 , bytes
+, builder
 )
 where
 
@@ -224,20 +225,16 @@ string fieldNumber s = do
   varint32 $ UInt.fromInt $ AB.byteLength stringbuf
   Builder.putArrayBuffer stringbuf
 
--- -- | __bytes__
--- -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
--- bytes :: forall m. MonadEffect m => FieldNumber -> ArrayBuffer -> Builder.PutM m Unit
--- -- I guess if we wanted to do this right, this could be a DataView.
--- -- But for that, the ArrayBuffer Builder would have to accept DataView.
--- bytes fieldNumber s = do
---   tag32 fieldNumber LenDel
---   varint32 $ UInt.fromInt $ AB.byteLength s
---   Builder.putArrayBuffer s
-
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => FieldNumber -> Builder.Builder -> Builder.PutM m Unit
+bytes :: forall m. MonadEffect m => FieldNumber -> ArrayBuffer -> Builder.PutM m Unit
 bytes fieldNumber s = do
+  tag32 fieldNumber LenDel
+  varint32 $ UInt.fromInt $ AB.byteLength s
+  Builder.putArrayBuffer s
+
+builder :: forall m. MonadEffect m => FieldNumber -> Builder.Builder -> Builder.PutM m Unit
+builder fieldNumber s = do
   tag32 fieldNumber LenDel
   varint32 $ UInt.fromInt $ Builder.length s
   tell s
