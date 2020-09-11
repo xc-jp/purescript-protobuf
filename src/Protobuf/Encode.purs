@@ -1,18 +1,34 @@
 -- | Primitive builders for encoding Google Protocol Buffers.
+-- |
+-- | Primed (') encoder functions encode without the tag, for packed
+-- | repeating fields.
 module Protobuf.Encode
 ( double
+, double'
 , float
+, float'
 , int32
+, int32'
 , int64
+, int64'
 , uint32
+, uint32'
 , uint64
+, uint64'
 , sint32
+, sint32'
 , sint64
+, sint64'
 , fixed32
+, fixed32'
 , fixed64
+, fixed64'
 , sfixed32
+, sfixed32'
 , sfixed64
+, sfixed64'
 , bool
+, bool'
 , string
 , bytes
 )
@@ -43,6 +59,11 @@ double :: forall m. MonadEffect m => FieldNumber -> Number -> Builder.PutM m Uni
 -- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
 double fieldNumber n = do
   tag32 fieldNumber Bits64
+  double' n
+
+double' :: forall m. MonadEffect m => Number -> Builder.PutM m Unit
+-- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+double' n = do
   Builder.putFloat64le n
 
 -- | __float__
@@ -50,6 +71,10 @@ double fieldNumber n = do
 float :: forall m. MonadEffect m => FieldNumber -> Float32 -> Builder.PutM m Unit
 float fieldNumber n = do
   tag32 fieldNumber Bits32
+  float' n
+
+float' :: forall m. MonadEffect m => Float32 -> Builder.PutM m Unit
+float' n = do
   Builder.putFloat32le n
 
 -- | __int32__
@@ -60,6 +85,13 @@ int32 :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
 int32 fieldNumber n = do
   tag32 fieldNumber VarInt
+  int32' n
+
+int32' :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
+-- “If you use int32 or int64 as the type for a negative number, the resulting
+-- varint is always ten bytes long”
+-- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+int32' n = do
   varint64 $ signedToUnsigned $ signedLongFromInt n
 
 -- | __int64__
@@ -70,6 +102,13 @@ int64 :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
 int64 fieldNumber n = do
   tag32 fieldNumber VarInt
+  int64' n
+
+int64' :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+-- “If you use int32 or int64 as the type for a negative number, the resulting
+-- varint is always ten bytes long”
+-- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+int64' n = do
   varint64 $ toUnsigned n
 
 -- | __uint32__
@@ -77,6 +116,10 @@ int64 fieldNumber n = do
 uint32 :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
 uint32 fieldNumber n = do
   tag32 fieldNumber VarInt
+  uint32' n
+
+uint32' :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
+uint32' n = do
   varint32 n
 
 -- | __uint64__
@@ -84,6 +127,10 @@ uint32 fieldNumber n = do
 uint64 :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
 uint64 fieldNumber n = do
   tag32 fieldNumber VarInt
+  uint64' n
+
+uint64' :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+uint64' n = do
   varint64 n
 
 -- | __sint32__
@@ -91,6 +138,10 @@ uint64 fieldNumber n = do
 sint32 :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
 sint32 fieldNumber n = do
   tag32 fieldNumber VarInt
+  sint32' n
+
+sint32' :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
+sint32' n = do
   varint32 $ zigzag32 n
 
 -- | __sint64__
@@ -98,6 +149,10 @@ sint32 fieldNumber n = do
 sint64 :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
 sint64 fieldNumber n = do
   tag32 fieldNumber VarInt
+  sint64' n
+
+sint64' :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+sint64' n = do
   varint64 $ zigzag64 n
 
 -- | __fixed32__
@@ -106,6 +161,11 @@ fixed32 :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
 -- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
 fixed32 fieldNumber n = do
   tag32 fieldNumber Bits32
+  fixed32' n
+
+fixed32' :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
+-- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+fixed32' n = do
   Builder.putUint32le n
 
 -- | __fixed64__
@@ -113,6 +173,10 @@ fixed32 fieldNumber n = do
 fixed64 :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
 fixed64 fieldNumber n = do
   tag32 fieldNumber Bits64
+  fixed64' n
+
+fixed64' :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+fixed64' n = do
   Builder.putInt32le $ LU.lowBits n
   Builder.putInt32le $ LU.highBits n
 
@@ -121,6 +185,10 @@ fixed64 fieldNumber n = do
 sfixed32 :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
 sfixed32 fieldNumber n = do
   tag32 fieldNumber Bits32
+  sfixed32' n
+
+sfixed32' :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
+sfixed32' n = do
   Builder.putInt32le n
 
 -- | __sfixed64__
@@ -128,6 +196,10 @@ sfixed32 fieldNumber n = do
 sfixed64 :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
 sfixed64 fieldNumber n = do
   tag32 fieldNumber Bits64
+  sfixed64' n
+
+sfixed64' :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+sfixed64' n = do
   Builder.putInt32le $ lowBits n
   Builder.putInt32le $ highBits n
 
@@ -136,6 +208,10 @@ sfixed64 fieldNumber n = do
 bool :: forall m. MonadEffect m => FieldNumber -> Boolean -> Builder.PutM m Unit
 bool fieldNumber n = do
   tag32 fieldNumber VarInt
+  bool' n
+
+bool' :: forall m. MonadEffect m => Boolean -> Builder.PutM m Unit
+bool' n = do
   if n then Builder.putInt8 1 else Builder.putInt8 0
 
 -- | __string__

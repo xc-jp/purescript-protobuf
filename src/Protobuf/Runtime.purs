@@ -3,14 +3,14 @@ module Protobuf.Runtime
 ( parseMessage
 , parseFieldUnknown
 , parseLenDel
-, putString
 , Pos
 , FieldNumberInt
 , positionZero
--- , addPosCol
--- , onceLength
 , manyLength
 , putLenDel
+, putOptional
+, putRepeated
+, putPacked
 )
 where
 
@@ -22,8 +22,10 @@ import Data.Tuple (Tuple(..))
 import Data.Foldable (foldl)
 import Data.Long.Unsigned (toInt)
 import Data.UInt as UInt
+import Data.UInt (UInt)
 import Data.List (List(..), (:))
 import Data.Array (fromFoldable)
+import Data.Foldable (traverse_)
 import Text.Parsing.Parser (ParserT, fail, position)
 import Text.Parsing.Parser.Pos (Position(..))
 import Data.ArrayBuffer.Types (DataView)
@@ -60,7 +62,6 @@ parseMessage
    . (Record r -> a)
   -> (Record r)
   -> (FieldNumberInt -> WireType -> ParserT DataView Effect (RecordB.Builder (Record r) (Record r)))
-  -- -> (Pos -> FieldNumberInt -> WireType -> ParserT DataView Effect (RecordB.Builder (Record r) (Record r)))
   -> Int
   -> ParserT DataView Effect a
 parseMessage construct default parseField length = do
@@ -79,17 +80,6 @@ type Pos = Int
 -- | match on Int literals. UInt doesn't export any constructors, so can't
 -- | pattern match on it.
 type FieldNumberInt = Int
-
--- | Add an offset to a parser column Position and return the new Position.
--- | We need this so we can report accurate positions of parsing errors
--- | in Length-Delimited message fields, for which we recursively call
--- | runParserT on a DataView which frames the Length-Delimited message field.
--- | Here we have to take advantage of our knowledge that
--- | Text.Parsing.Parser.DataView only uses the column field of Position.
--- | We also note that Text.Parsing.Parser starts counting at 1, not 0.
--- | https://github.com/purescript-contrib/purescript-parsing/issues/94
--- addPosCol :: Pos -> Position -> Position
--- addPosCol p (Position {column,line}) = Position {column: column + p, line}
 
 -- | Zero-based position in the parser.
 positionZero :: forall s m. Monad m => ParserT s m Pos
@@ -123,22 +113,22 @@ manyLength p len = do
         pure $ x:xs
 
 
--- | Call a parser once and check that exactly *N* bytes have been consumed.
--- | Will fail if too many or too few bytes are consumed.
--- | TODO Deprecate? I don't think we need this.
-onceLength
-  :: forall a
-   . ParserT DataView Effect a
-  -> Int -- byte length
-  -> ParserT DataView Effect a
-onceLength p len = do
-  posBegin <- positionZero
-  x <- p
-  posEnd <- positionZero
-  case compare (posEnd - posBegin) len of
-    LT -> fail "Length-delimited field consumed too few bytes."
-    EQ -> pure x
-    GT -> fail "Length-delimited field consumed too many bytes."
+-- -- | Call a parser once and check that exactly *N* bytes have been consumed.
+-- -- | Will fail if too many or too few bytes are consumed.
+-- -- | TODO Deprecate? I don't think we need this.
+-- onceLength
+--   :: forall a
+--    . ParserT DataView Effect a
+--   -> Int -- byte length
+--   -> ParserT DataView Effect a
+-- onceLength p len = do
+--   posBegin <- positionZero
+--   x <- p
+--   posEnd <- positionZero
+--   case compare (posEnd - posBegin) len of
+--     LT -> fail "Length-delimited field consumed too few bytes."
+--     EQ -> pure x
+--     GT -> fail "Length-delimited field consumed too many bytes."
 
 -- | Parse a length, then call a parser which takes one length as its argument.
 parseLenDel
@@ -147,16 +137,20 @@ parseLenDel
   -> ParserT DataView Effect a
 parseLenDel p = p <<< UInt.toInt =<< Decode.varint32
 
-putString :: FieldNumberInt -> Maybe String -> Put Unit
-putString fieldNumber x =
-  case x of
-    Nothing -> pure unit
-    Just x' -> Encode.string (UInt.fromInt fieldNumber) x'
+putLenDel :: forall a . (a -> Put Unit) -> UInt -> a -> Put Unit
+putLenDel p fieldNumber x = do
+  b <- subBuilder $ p x
+  Encode.bytes fieldNumber b
 
-putLenDel
-  :: FieldNumberInt
-  -> Put Unit
-  -> Put Unit
-putLenDel fieldNumber p = do
-  b <- subBuilder p
+putOptional :: forall a. FieldNumberInt -> Maybe a -> (UInt -> a -> Put Unit) -> Put Unit
+putOptional _ Nothing _ = pure unit
+putOptional fieldNumber (Just x) encoder = encoder (UInt.fromInt fieldNumber) x
+
+putRepeated :: forall a. FieldNumberInt -> Array a -> (UInt -> a -> Put Unit) -> Put Unit
+putRepeated fieldNumber xs encoder = flip traverse_ xs $ encoder $ UInt.fromInt fieldNumber
+
+putPacked :: forall a. FieldNumberInt -> Array a -> (a -> Put Unit) -> Put Unit
+putPacked _ [] _ = pure unit
+putPacked fieldNumber xs encoder = do
+  b <- subBuilder $ traverse_ encoder xs
   Encode.bytes (UInt.fromInt fieldNumber) b
