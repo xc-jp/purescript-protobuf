@@ -259,7 +259,7 @@ import Protobuf.Runtime as Runtime
       , "  { " <> String.joinWith "\n  , " (map genFieldRecord field)
       , "  }"
       , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
-      , "derive instance generic " <> tname <> " :: Generic.Generic " <> tname <> " _"
+      , "derive instance generic" <> tname <> " :: Generic.Generic " <> tname <> " _"
       , ""
       , "put" <> tname <> " :: forall m. Effect.MonadEffect m => " <> tname <> " -> ArrayBuffer.Builder.PutM m Unit"
       , "put" <> tname <> " (" <> tname <> " r) = do"
