@@ -32,6 +32,8 @@ module Protobuf.Encode
 , string
 , bytes
 , builder
+, module Protobuf.Encode32
+, module Protobuf.Encode64
 )
 where
 

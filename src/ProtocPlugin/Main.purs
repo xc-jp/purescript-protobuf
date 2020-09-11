@@ -3,11 +3,10 @@ module ProtocPlugin.Main where
 import Prelude
 
 import Effect (Effect)
-import Control.Monad.Writer.Trans (tell)
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 -- import Control.Category (identity)
-import Data.Array (snoc, concatMap, fromFoldable)
+import Data.Array (snoc, concatMap)
 import Data.Array as Array
 -- import Data.Foldable (foldl)
 import Data.Symbol (SProxy(..))
@@ -15,20 +14,17 @@ import Data.Symbol (SProxy(..))
 -- import Data.Ord (class Ord)
 -- import Data.Eq (class Eq)
 -- import Data.Bounded (class Bounded)
-import Data.Enum (class Enum, class BoundedEnum, toEnum, fromEnum)
+import Data.Enum (class Enum, class BoundedEnum)
 import Data.Generic.Rep(class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Generic.Rep.Bounded (genericBottom, genericTop)
 import Data.Generic.Rep.Enum (genericPred, genericSucc, genericCardinality)
 import Data.Generic.Rep.Ord (genericCompare)
--- import Data.Long.Unsigned (toInt)
--- import Data.UInt (UInt)
 import Data.String as String
 import Data.String.Pattern as String.Pattern
-import Data.UInt as UInt
 -- import Control.Monad.Trans.Class (lift)
 
-import Text.Parsing.Parser (ParserT, runParserT, fail)
+import Text.Parsing.Parser (ParserT, runParserT)
 -- import Text.Parsing.Parser.Combinators (manyTill)
 -- import Text.Parsing.Parser.DataView (eof, takeN)
 import Data.ArrayBuffer.Builder (Put, execPut)
@@ -59,6 +55,7 @@ import Protobuf.Runtime
   , putOptional
   , putRepeated
   -- , putPacked
+  , parseEnum
   )
 
 main :: Effect Unit
@@ -93,10 +90,12 @@ type NameSpace = Array String
 -- | A message descriptor, plus the names of all parent messages.
 data ScopedMsg = ScopedMsg NameSpace DescriptorProto
 
+-- | An enum descriptor, plus the names of all parent messages.
+data ScopedEnum = ScopedEnum NameSpace EnumDescriptorProto
 
 genFile :: FileDescriptorProto -> CodeGeneratorResponse_File
 genFile (FileDescriptorProto
-  { name
+  { name: fileName
   , package
   , dependency
   , public_dependency
@@ -111,12 +110,13 @@ genFile (FileDescriptorProto
  where
   capitalize :: String -> String
   capitalize s = String.toUpper (String.take 1 s) <> String.drop 1 s
-  baseName = case name of
+  baseName = case fileName of
     Nothing -> "GeneratedMessages"
     Just "" -> "GeneratedMessages"
     Just n -> basenameWithoutExt n ".proto"
   moduleName = capitalize baseName
   messages = flattenMessages [] message_type
+  enums = (ScopedEnum [] <$> enum_type) <> flattenEnums [] message_type
   moduleNamespace = case package of
     Nothing -> []
     -- Just ps -> String.joinWith "." $ map capitalize $ String.split "." ps
@@ -124,32 +124,112 @@ genFile (FileDescriptorProto
   content = String.joinWith "\n" $
     -- [ "module " <> (String.joinWith "." $ map capitalize moduleNamespace) <> moduleName
     [ "module " <> (String.joinWith "." ((map capitalize moduleNamespace) <> [moduleName]))
-    , "( " <> String.joinWith "\n, " (map genMessageExport messages)
+    , "( " <> (String.joinWith "\n, "
+         ((map genMessageExport messages) <> (map genEnumExport enums)))
     , """)
 where
 
-import Prelude
-import Effect as Effect
-import Protobuf.Runtime as Runtime
-import Protobuf.Decode as Decode
-import Protobuf.Encode as Encode
-import Protobuf.Common as Common
+import Effect.Class as Effect
 import Record.Builder as Record.Builder
 import Data.Array as Array
+import Data.Enum as Enum
+import Data.Eq as Eq
+import Data.Function as Function
+import Data.Show as Show
+import Data.Ord as Ord
 import Data.Maybe as Maybe
-import Data.Generic as Generic
+import Data.Generic.Rep as Generic.Rep
+import Data.Generic.Rep.Show as Generic.Rep.Show
+import Data.Generic.Rep.Bounded as Generic.Rep.Bounded
+import Data.Generic.Rep.Enum as Generic.Rep.Enum
+import Data.Generic.Rep.Ord as Generic.Rep.Ord
 import Data.Symbol as Symbol
+import Data.UInt as UInt
+import Data.Long.Internal as Long
 import Text.Parsing.Parser as Parser
 import Data.ArrayBuffer.Builder as ArrayBuffer.Builder
 import Data.ArrayBuffer.Types as ArrayBuffer.Types
-import Data.UInt as UInt
-import Data.Long.Internal as Long
+import Protobuf.Common as Common
+import Protobuf.Decode as Decode
+import Protobuf.Encode as Encode
+import Protobuf.Runtime as Runtime
 """
     ]
     <>
-    (map genMessage messages )
+    (map genMessage messages)
+    <>
+    (map genEnum enums)
+    <>
+    ["\n"]
 
 
+  -- | Pull all of the enums out of of the nested messages and bring them
+  -- | to the top, with their namespace.
+  flattenEnums :: NameSpace -> Array DescriptorProto -> Array ScopedEnum
+  flattenEnums namespace msgarray = concatMap go msgarray
+   where
+    go :: DescriptorProto -> Array ScopedEnum
+    go (DescriptorProto {name: Just msgName, nested_type, enum_type: msgEnums}) =
+      (ScopedEnum (namespace <> [msgName]) <$> msgEnums)
+        <> flattenEnums (namespace <> [msgName]) nested_type
+    go _ = [] -- error no name
+
+  genEnumExport :: ScopedEnum -> String
+  genEnumExport (ScopedEnum namespace (EnumDescriptorProto {name: Just eName})) =
+    mkTypeName $ namespace <> [eName]
+  genEnumExport _ = "" -- error, no name
+
+  genEnum :: ScopedEnum -> String
+  genEnum (ScopedEnum namespace (EnumDescriptorProto {name: Just eName, value})) =
+    let tname = mkTypeName $ namespace <> [eName]
+    in
+    String.joinWith "\n" $
+      [ "\ndata " <> tname
+      -- , "  = " <> String.joinWith "\n  | " (Array.catMaybes (_.name <$> value))
+      , "  = " <> String.joinWith "\n  | " (genEnumConstruct <$> value)
+      , "derive instance generic" <> tname <> " :: Generic.Rep.Generic " <> tname <> " _"
+      , "derive instance eq" <> tname <> " :: Eq.Eq " <> tname
+      , "instance show" <> tname <> " :: Show.Show " <> tname <> " where show = Generic.Rep.Show.genericShow"
+      , "instance ord" <> tname <> " :: Ord.Ord " <> tname <> " where compare = Generic.Rep.Ord.genericCompare"
+      , "instance bounded" <> tname <> " :: Enum.Bounded " <> tname
+      , " where"
+      , "  bottom = Generic.Rep.Bounded.genericBottom"
+      , "  top = Generic.Rep.Bounded.genericTop"
+      , "instance enum" <> tname <> " :: Enum.Enum " <> tname
+      , " where"
+      , "  succ = Generic.Rep.Enum.genericSucc"
+      , "  pred = Generic.Rep.Enum.genericPred"
+      , "instance bounded" <> tname <> " :: Enum.BoundedEnum " <> tname
+      , " where"
+      , "  cardinality = Generic.Rep.Enum.genericCardinality"
+      ]
+      <>
+      (map genEnumTo value)
+      <>
+      [ "  toEnum _ = Maybe.Nothing"]
+      <>
+      (map genEnumFrom value)
+      --<>
+      --[ "parse" <> tname <> " :: forall m. MonadEffect m => ParserT DataView m " <> tname
+      --, "parse" <> tname <> " = do"
+      --, "  x <- Decode.varint32"
+      --, "  case toEnum $ UInt.toInt x of"
+      --, "    Nothing -> fail $ \"Out of range " <> tname <> " \" <> show x"
+      --, "    Just e -> pure e"
+      --, "put" <> tname <> " :: " <> tname <> " -> Put Unit"
+      --, "put" <> tname <> " x = Encode.varint32 $ UInt.fromInt $ fromEnum x"
+      --]
+   where
+    genEnumConstruct (EnumValueDescriptorProto {name: Just name}) =
+      capitalize name
+    genEnumConstruct _ = "" -- error no name
+    genEnumTo (EnumValueDescriptorProto {name: Just name,number: Just number}) =
+      "  toEnum " <> show number <> " = Maybe.Just " <> capitalize name
+    genEnumTo _ = "" -- error no name
+    genEnumFrom (EnumValueDescriptorProto {name: Just name,number: Just number}) =
+      "  fromEnum " <> capitalize name <> " = " <> show number
+    genEnumFrom _ = "" -- error no name
+  genEnum _ = "" -- error no name
 
   -- | Pull all of the nested messages out of of the messages and bring them
   -- | to the top, with their namespace.
@@ -181,18 +261,20 @@ import Data.Long.Internal as Long
       , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
       , "derive instance generic " <> tname <> " :: Generic.Generic " <> tname <> " _"
       , ""
-      , "put" <> tname <> " :: " <> tname <> " -> ArrayBuffer.Builder.Put Unit"
+      , "put" <> tname <> " :: forall m. Effect.MonadEffect m => " <> tname <> " -> ArrayBuffer.Builder.PutM m Unit"
       , "put" <> tname <> " (" <> tname <> " r) = do"
       , String.joinWith "\n" (map genFieldPut field)
       , ""
-      , "parse" <> tname <> " :: Int -> Parser.ParserT ArrayBuffer.Types.DataView Effect.Effect " <> tname
+      , "parse" <> tname <> " :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m " <> tname
       , "parse" <> tname <> " length ="
       , "  Runtime.parseMessage " <> tname <> " default parseField length"
       , """ where
   parseField
-    :: Runtime.FieldNumberInt
+    :: forall m
+     . Effect.MonadEffect m
+    => Runtime.FieldNumberInt
     -> Common.WireType"""
-      , "    -> Parser.ParserT ArrayBuffer.Types.DataView Effect.Effect (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
+      , "    -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
       , String.joinWith "\n" (map genFieldParser field)
       , "  default = "
       , "    { " <> String.joinWith "\n    , " (map genFieldDefault field)
@@ -262,10 +344,10 @@ import Data.Long.Internal as Long
       "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.uint32'"
     f _ TYPE_UINT32 _ =
       "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.uint32"
-    f LABEL_REPEATED TYPE_ENUM (Just tname) =
-      "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel put" <> mkFieldName tname
-    f _ TYPE_ENUM (Just tname) =
-      "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel put" <> mkFieldName tname
+    f LABEL_REPEATED TYPE_ENUM _ =
+      "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Runtime.putEnum'"
+    f _ TYPE_ENUM _ =
+      "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Runtime.putEnum"
     f LABEL_REPEATED TYPE_SFIXED32 _ =
       "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sfixed32'"
     f _ TYPE_SFIXED32 _ =
@@ -301,209 +383,209 @@ import Data.Long.Internal as Long
     f LABEL_REPEATED TYPE_DOUBLE _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits64 = do"
       , "    x <- Decode.double"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.double"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.double"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_FLOAT _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits32 = do"
       , "    x <- Decode.float"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.float"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.float"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_INT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.int64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.int64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.int64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_UINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.uint64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.uint64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.uint64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_INT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.int32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.int32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.int32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_FIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits64 = do"
       , "    x <- Decode.fixed64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.fixed64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_FIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits32 = do"
       , "    x <- Decode.fixed32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.fixed32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_BOOL _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.bool"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.bool"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.bool"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_STRING _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " LenDel = do"
       , "    x <- Decode.string"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       ]
     f LABEL_REPEATED TYPE_MESSAGE (Just tname) = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel parse" <> mkFieldName tname
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    x <- Runtime.parseLenDel parse" <> mkFieldName tname
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       ]
     f LABEL_REPEATED TYPE_BYTES _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " LenDel = do"
       , "    x <- Decode.bytes"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       ]
     f LABEL_REPEATED TYPE_UINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.uint32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.uint32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.uint32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
-    f LABEL_REPEATED TYPE_ENUM (Just tname) = String.joinWith "\n"
+    f LABEL_REPEATED TYPE_ENUM _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
-      , "    x <- parse" <> mkFieldName tname
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    x <- Runtime.parseEnum"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel parse" <> mkFieldName tname
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength parseEnum"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_SFIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits32 = do"
       , "    x <- Decode.sfixed32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.sfixed32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_SFIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits64 = do"
       , "    x <- Decode.sfixed64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.sfixed64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_SINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.sint32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.sint32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sint32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f LABEL_REPEATED TYPE_SINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.sint64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.snoc x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " LenDel = do"
-      , "    x <- parseLenDel $ manyLength Decode.sint64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ flip Array.append x"
+      , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sint64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
       ]
     f _ TYPE_DOUBLE _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits64 = do"
       , "    x <- Decode.double"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_FLOAT _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits32 = do"
       , "    x <- Decode.float"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_INT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.int64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x "
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x "
       ]
     f _  TYPE_INT32 _ = String.joinWith "\n" -- "Array.Array Int"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.int32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_FIXED64 _ = String.joinWith "\n" -- "Array.Array (Long.Long Long.Unsigned)"
       [ "  parseField " <> show fnumber <> " Bits64 = do"
       , "    x <- Decode.fixed64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_FIXED32 _ = String.joinWith "\n" -- "Array.Array UInt"
       [ "  parseField " <> show fnumber <> " Bits32 = do"
       , "    x <- Decode.fixed32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Justx"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Justx"
       ]
     f _ TYPE_BOOL _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.bool"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_STRING _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " LenDel = do"
       , "    x <- Decode.string"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_MESSAGE (Just tname) = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " LenDel = do"
       , "    x <- Runtime.parseLenDel parse" <> mkFieldName tname
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_BYTES _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " LenDel = do"
       , "    x <- Decode.bytes"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_UINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.uint32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ TYPE_ENUM (Just tname) = String.joinWith "\n"
+    f _ TYPE_ENUM _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
-      , "    x <- parse" <> mkFieldName tname
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    x <- parseEnum"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_SFIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits32 = do"
       , "    x <- Decode.sfixed32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_SFIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Bits64 = do"
       , "    x <- Decode.sfixed64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_SINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.sint32"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_SINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " VarInt = do"
       , "    x <- Decode.sint64"
-      , "    pure $ modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ const $ Maybe.Just x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ _ _ = "" -- error, maybe its a TYPE_GROUP
   genFieldParser _ = "" -- error, not enough information
@@ -904,23 +986,14 @@ instance ordFieldDescriptorProto_Label :: Ord FieldDescriptorProto_Label
   compare = genericCompare
 instance boundedFieldDescriptorProto_Label :: Bounded FieldDescriptorProto_Label
  where
-  -- bottom = LABEL_OPTIONAL
-  -- top = LABEL_REPEATED
   bottom = genericBottom
   top = genericTop
 instance enumFieldDescriptorProto_Label :: Enum FieldDescriptorProto_Label
  where
   succ = genericSucc
   pred = genericPred
-  -- succ LABEL_OPTIONAL = Just LABEL_REQUIRED
-  -- succ LABEL_REQUIRED = Just LABEL_REPEATED
-  -- succ LABEL_REPEATED = Nothing
-  -- pred LABEL_OPTIONAL = Nothing
-  -- pred LABEL_REQUIRED = Just LABEL_OPTIONAL
-  -- pred LABEL_REPEATED = Just LABEL_REQUIRED
 instance boundedEnumFieldDescriptorProto_Label :: BoundedEnum FieldDescriptorProto_Label
  where
-  -- cardinality = Cardinality 3
   cardinality = genericCardinality
   toEnum 1 = Just LABEL_OPTIONAL
   toEnum 2 = Just LABEL_REQUIRED
@@ -929,12 +1002,12 @@ instance boundedEnumFieldDescriptorProto_Label :: BoundedEnum FieldDescriptorPro
   fromEnum LABEL_OPTIONAL = 1
   fromEnum LABEL_REQUIRED = 2
   fromEnum LABEL_REPEATED = 3
-parseFieldDescriptorProto_Label :: ParserT DataView Effect FieldDescriptorProto_Label
-parseFieldDescriptorProto_Label = do
-  x <- Decode.varint32
-  case toEnum $ UInt.toInt x of
-    Nothing -> fail $ "Out of range FieldDescriptorProto_Label " <> show x
-    Just e -> pure e
+-- parseFieldDescriptorProto_Label :: ParserT DataView Effect FieldDescriptorProto_Label
+-- parseFieldDescriptorProto_Label = do
+--   x <- Decode.varint32
+--   case toEnum $ UInt.toInt x of
+--     Nothing -> fail $ "Out of range FieldDescriptorProto_Label " <> show x
+--     Just e -> pure e
 
 data FieldDescriptorProto_Type
   = TYPE_DOUBLE
@@ -971,7 +1044,6 @@ instance enumFieldDescriptorProto_Type :: Enum FieldDescriptorProto_Type
   pred = genericPred
 instance boundedEnumFieldDescriptorProto_Type :: BoundedEnum FieldDescriptorProto_Type
  where
-  -- cardinality = Cardinality 3
   cardinality = genericCardinality
   toEnum 1 = Just TYPE_DOUBLE
   toEnum 2 = Just TYPE_FLOAT
@@ -1010,12 +1082,12 @@ instance boundedEnumFieldDescriptorProto_Type :: BoundedEnum FieldDescriptorProt
   fromEnum TYPE_SFIXED64 = 16
   fromEnum TYPE_SINT32   = 17
   fromEnum TYPE_SINT64   = 18
-parseFieldDescriptorProto_Type :: ParserT DataView Effect FieldDescriptorProto_Type
-parseFieldDescriptorProto_Type = do
-  x <- Decode.varint32
-  case toEnum $ UInt.toInt x of
-    Nothing -> fail $ "Out of range FieldDescriptorProto_Type " <> show x
-    Just e -> pure e
+-- parseFieldDescriptorProto_Type :: ParserT DataView Effect FieldDescriptorProto_Type
+-- parseFieldDescriptorProto_Type = do
+--   x <- Decode.varint32
+--   case toEnum $ UInt.toInt x of
+--     Nothing -> fail $ "Out of range FieldDescriptorProto_Type " <> show x
+--     Just e -> pure e
 
 -- | Describes a field within a message.
 newtype FieldDescriptorProto = FieldDescriptorProto FieldDescriptorProtoR
@@ -1048,10 +1120,10 @@ parseFieldDescriptorProto length =
     x <- Decode.int32
     pure $ modify (SProxy :: SProxy "number") $ const $ Just x
   parseField 4 VarInt = do
-    x <- parseFieldDescriptorProto_Label
+    x <- parseEnum
     pure $ modify (SProxy :: SProxy "label") $ const $ Just x
   parseField 5 VarInt = do
-    x <- parseFieldDescriptorProto_Type
+    x <- parseEnum
     pure $ modify (SProxy :: SProxy "type_") $ const $ Just x
   parseField 6 LenDel = do
     x <- Decode.string

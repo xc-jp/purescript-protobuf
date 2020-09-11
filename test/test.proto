@@ -6,6 +6,12 @@ message Msg1 {
   string b = 2;
   message Msg2 {
     string b = 2;
+    enum MyEnum {
+      ONE = 0;
+      two = 2;
+      THREE = 3;
+    }
+    MyEnum enumfield = 3;
   }
 
   Msg2 c = 3;

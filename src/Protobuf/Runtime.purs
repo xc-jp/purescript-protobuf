@@ -11,12 +11,17 @@ module Protobuf.Runtime
 , putOptional
 , putRepeated
 , putPacked
+, putEnum
+, putEnum'
+, parseEnum
 )
 where
 
 import Prelude
-import Effect (Effect)
+-- import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Control.Monad.Writer.Trans (tell)
+import Data.Enum (class BoundedEnum, toEnum, fromEnum)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Data.Foldable (foldl)
@@ -31,7 +36,7 @@ import Text.Parsing.Parser.Pos (Position(..))
 import Data.ArrayBuffer.Types (DataView)
 import Text.Parsing.Parser.DataView (takeN, eof)
 import Text.Parsing.Parser.Combinators (manyTill)
-import Data.ArrayBuffer.Builder (Put, subBuilder)
+import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.Builder as ABBuilder
 import Record.Builder as RecordB
 import Record.Builder (build, modify)
@@ -42,9 +47,10 @@ import Protobuf.Encode as Encode
 -- | We don't recognize the field number, so consume the field and throw it away
 -- | and then return a no-op Record builder.
 parseFieldUnknown
-  :: forall r
-   . WireType
-  -> ParserT DataView Effect (RecordB.Builder (Record r) (Record r))
+  :: forall m r
+   . MonadEffect m
+  => WireType
+  -> ParserT DataView m (RecordB.Builder (Record r) (Record r))
 parseFieldUnknown wireType = pure identity <* case wireType of
   VarInt -> void Decode.varint64
   Bits64 -> void $ takeN 8
@@ -58,12 +64,13 @@ parseFieldUnknown wireType = pure identity <* case wireType of
 -- | The parseField argument is a parser which returns a Record builder which,
 -- | when applied to a Record, will modify the Record to add the parsed field.
 parseMessage
-  :: forall a r
-   . (Record r -> a)
+  :: forall m a r
+   . MonadEffect m
+  => (Record r -> a)
   -> (Record r)
-  -> (FieldNumberInt -> WireType -> ParserT DataView Effect (RecordB.Builder (Record r) (Record r)))
+  -> (FieldNumberInt -> WireType -> ParserT DataView m (RecordB.Builder (Record r) (Record r)))
   -> Int
-  -> ParserT DataView Effect a
+  -> ParserT DataView m a
 parseMessage construct default parseField length = do
   -- builders <- manyTill applyParser eof
   builders <- manyLength applyParser length
@@ -90,10 +97,11 @@ positionZero = do
 -- | Call a parser repeatedly until exactly *N* bytes have been consumed.
 -- | Will fail if too many bytes are consumed.
 manyLength
-  :: forall a
-   . ParserT DataView Effect a
+  :: forall m a
+   . MonadEffect m
+  => ParserT DataView m a
   -> Int -- byte length
-  -> ParserT DataView Effect (Array a)
+  -> ParserT DataView m (Array a)
 manyLength p len = do
   posBegin' <- positionZero
   fromFoldable <$> go posBegin'
@@ -132,25 +140,67 @@ manyLength p len = do
 
 -- | Parse a length, then call a parser which takes one length as its argument.
 parseLenDel
-  :: forall a
-   . (Int -> ParserT DataView Effect a)
-  -> ParserT DataView Effect a
+  :: forall m a
+   . MonadEffect m
+  => (Int -> ParserT DataView m a)
+  -> ParserT DataView m a
 parseLenDel p = p <<< UInt.toInt =<< Decode.varint32
 
-putLenDel :: forall a . (a -> Put Unit) -> UInt -> a -> Put Unit
+putLenDel
+  :: forall m a
+   . MonadEffect m
+  => (a -> PutM m Unit)
+  -> FieldNumber -> a -> PutM m Unit
 putLenDel p fieldNumber x = do
   b <- subBuilder $ p x
   Encode.builder fieldNumber b
 
-putOptional :: forall a. FieldNumberInt -> Maybe a -> (UInt -> a -> Put Unit) -> Put Unit
+putOptional
+  :: forall m a
+   . MonadEffect m
+  => FieldNumberInt
+  -> Maybe a
+  -> (FieldNumber -> a -> PutM m Unit)
+  -> PutM m Unit
 putOptional _ Nothing _ = pure unit
 putOptional fieldNumber (Just x) encoder = encoder (UInt.fromInt fieldNumber) x
 
-putRepeated :: forall a. FieldNumberInt -> Array a -> (UInt -> a -> Put Unit) -> Put Unit
+putRepeated
+  :: forall m a
+   . MonadEffect m
+  => FieldNumberInt
+  -> Array a
+  -> (FieldNumber -> a -> PutM m Unit)
+  -> PutM m Unit
 putRepeated fieldNumber xs encoder = flip traverse_ xs $ encoder $ UInt.fromInt fieldNumber
 
-putPacked :: forall a. FieldNumberInt -> Array a -> (a -> Put Unit) -> Put Unit
+putPacked
+  :: forall m a
+   . MonadEffect m
+  => FieldNumberInt
+  -> Array a
+  -> (a -> PutM m Unit)
+  -> PutM m Unit
 putPacked _ [] _ = pure unit
 putPacked fieldNumber xs encoder = do
   b <- subBuilder $ traverse_ encoder xs
   Encode.builder (UInt.fromInt fieldNumber) b
+
+putEnum
+  :: forall m a
+   . MonadEffect m
+  => BoundedEnum a
+  => FieldNumberInt -> a -> PutM m Unit
+putEnum fieldNumber x = do
+  Encode.tag32 (UInt.fromInt fieldNumber) VarInt
+  putEnum' x
+
+putEnum' :: forall m a. MonadEffect m => BoundedEnum a => a -> PutM m Unit
+putEnum' x = Encode.varint32 $ UInt.fromInt $ fromEnum x
+
+parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
+parseEnum = do
+  x <- Decode.varint32
+  case toEnum $ UInt.toInt x of
+    Nothing -> fail "Enum out bounds" -- TODO better error
+    Just e -> pure e
