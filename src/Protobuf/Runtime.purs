@@ -18,28 +18,22 @@ module Protobuf.Runtime
 where
 
 import Prelude
--- import Effect (Effect)
 import Effect.Class (class MonadEffect)
-import Control.Monad.Writer.Trans (tell)
 import Data.Enum (class BoundedEnum, toEnum, fromEnum)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
-import Data.Foldable (foldl)
+import Data.Foldable (foldl, traverse_)
 import Data.Long.Unsigned (toInt)
 import Data.UInt as UInt
-import Data.UInt (UInt)
 import Data.List (List(..), (:))
 import Data.Array (fromFoldable)
-import Data.Foldable (traverse_)
 import Text.Parsing.Parser (ParserT, fail, position)
 import Text.Parsing.Parser.Pos (Position(..))
 import Data.ArrayBuffer.Types (DataView)
-import Text.Parsing.Parser.DataView (takeN, eof)
-import Text.Parsing.Parser.Combinators (manyTill)
+import Text.Parsing.Parser.DataView (takeN)
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
-import Data.ArrayBuffer.Builder as ABBuilder
 import Record.Builder as RecordB
-import Record.Builder (build, modify)
+import Record.Builder (build)
 import Protobuf.Common (FieldNumber, WireType(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
@@ -72,7 +66,6 @@ parseMessage
   -> Int
   -> ParserT DataView m a
 parseMessage construct default parseField length = do
-  -- builders <- manyTill applyParser eof
   builders <- manyLength applyParser length
   pure $ construct $ build (foldl (>>>) identity builders) default
  where
@@ -105,7 +98,7 @@ manyLength
 manyLength p len = do
   posBegin' <- positionZero
   fromFoldable <$> go posBegin'
-  -- TODO It would be faster if we could accumulate the Array directly with
+  -- TODO It would be faster if we could accumulate the Array with
   -- https://pursuit.purescript.org/packages/purescript-arrays/5.3.1/docs/Data.Array.ST#v:push
   -- instead of copying from a List?
  where
@@ -120,23 +113,6 @@ manyLength p len = do
         xs <- go posBegin
         pure $ x:xs
 
-
--- -- | Call a parser once and check that exactly *N* bytes have been consumed.
--- -- | Will fail if too many or too few bytes are consumed.
--- -- | TODO Deprecate? I don't think we need this.
--- onceLength
---   :: forall a
---    . ParserT DataView Effect a
---   -> Int -- byte length
---   -> ParserT DataView Effect a
--- onceLength p len = do
---   posBegin <- positionZero
---   x <- p
---   posEnd <- positionZero
---   case compare (posEnd - posBegin) len of
---     LT -> fail "Length-delimited field consumed too few bytes."
---     EQ -> pure x
---     GT -> fail "Length-delimited field consumed too many bytes."
 
 -- | Parse a length, then call a parser which takes one length as its argument.
 parseLenDel
@@ -202,5 +178,5 @@ parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
 parseEnum = do
   x <- Decode.varint32
   case toEnum $ UInt.toInt x of
-    Nothing -> fail "Enum out bounds" -- TODO better error
+    Nothing -> fail "Enum out of bounds" -- TODO better error
     Just e -> pure e

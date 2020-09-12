@@ -235,6 +235,7 @@ bytes fieldNumber s = do
   varint32 $ UInt.fromInt $ AB.byteLength s
   Builder.putArrayBuffer s
 
+-- | `tell` with a tag and a length delimit.
 builder :: forall m. MonadEffect m => FieldNumber -> Builder.Builder -> Builder.PutM m Unit
 builder fieldNumber s = do
   tag32 fieldNumber LenDel

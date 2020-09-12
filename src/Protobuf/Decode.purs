@@ -57,7 +57,7 @@ int32 = do
   n <- varint64
   case SLong.toInt (unsignedToSigned n) of
     Just x -> pure x
-    Nothing -> fail "int32 overflow. Please report this as a bug."
+    Nothing -> fail "int32 overflow. Please report this issue https://github.com/xc-jp/purescript-protobuf/issues"
     -- But this is a problem with the Protobuf spec?
     -- “If you use int32 or int64 as the type for a negative number, the resulting
     -- varint is always ten bytes long”
@@ -78,7 +78,7 @@ uint32 = do
   n <- varint64
   case SLong.toInt (unsignedToSigned n) of
     Just x -> pure $ UInt.fromInt x
-    Nothing -> fail "uint32 overflow. Please report this as a bug."
+    Nothing -> fail "uint32 overflow. Please report this issue https://github.com/xc-jp/purescript-protobuf/issues"
     -- But this is a problem with the Protobuf spec?
     -- “If you use int32 or int64 as the type for a negative number, the resulting
     -- varint is always ten bytes long”
