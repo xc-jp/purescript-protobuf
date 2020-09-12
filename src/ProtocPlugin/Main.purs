@@ -140,9 +140,11 @@ import Effect.Class as Effect
 import Record.Builder as Record.Builder
 import Data.Array as Array
 import Data.Bounded as Bounded
+import Data.Boolean as Boolean
 import Data.Enum as Enum
 import Data.Eq as Eq
 import Data.Function as Function
+import Data.Float32 as Float32
 import Data.Show as Show
 import Data.Ord as Ord
 import Data.Maybe as Maybe
@@ -151,6 +153,7 @@ import Data.Generic.Rep.Show as Generic.Rep.Show
 import Data.Generic.Rep.Bounded as Generic.Rep.Bounded
 import Data.Generic.Rep.Enum as Generic.Rep.Enum
 import Data.Generic.Rep.Ord as Generic.Rep.Ord
+import Data.Semigroup as Semigroup
 import Data.Symbol as Symbol
 import Data.UInt as UInt
 import Data.Unit as Unit
@@ -279,9 +282,7 @@ import Protobuf.Runtime as Runtime
       , "  Runtime.parseMessage " <> tname <> " default parseField length"
       , """ where
   parseField
-    :: forall m
-     . Effect.MonadEffect m
-    => Runtime.FieldNumberInt
+    :: Runtime.FieldNumberInt
     -> Common.WireType"""
       , "    -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
       , String.joinWith "\n" (map genFieldParser field)
@@ -398,7 +399,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.double"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_FLOAT _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
@@ -406,7 +407,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.float"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_INT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
@@ -414,7 +415,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.int64"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_UINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
@@ -422,7 +423,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.uint64"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_INT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
@@ -430,7 +431,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.int32"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_FIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
@@ -438,7 +439,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed64"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_FIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
@@ -446,7 +447,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed32"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_BOOL _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
@@ -454,7 +455,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.bool"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_STRING _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
@@ -477,7 +478,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.uint32"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_ENUM _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
@@ -485,7 +486,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Runtime.parseEnum"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_SFIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
@@ -493,7 +494,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed32"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_SFIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
@@ -501,7 +502,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed64"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_SINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
@@ -509,7 +510,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sint32"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f LABEL_REPEATED TYPE_SINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
@@ -517,7 +518,7 @@ import Protobuf.Runtime as Runtime
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       , "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sint64"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.append x"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
     f _ TYPE_DOUBLE _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
@@ -534,17 +535,17 @@ import Protobuf.Runtime as Runtime
       , "    x <- Decode.int64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x "
       ]
-    f _  TYPE_INT32 _ = String.joinWith "\n" -- "Array.Array Int"
+    f _  TYPE_INT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.int32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ TYPE_FIXED64 _ = String.joinWith "\n" -- "Array.Array (Long.Long Long.Unsigned)"
+    f _ TYPE_FIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
       , "    x <- Decode.fixed64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ TYPE_FIXED32 _ = String.joinWith "\n" -- "Array.Array UInt"
+    f _ TYPE_FIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.fixed32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Justx"
@@ -612,30 +613,30 @@ import Protobuf.Runtime as Runtime
     }) = fname <> " :: " <> ptype flabel ftype type_name
    where
     fname = decapitalize name'
-    ptype LABEL_REPEATED TYPE_DOUBLE _ = "Array.Array Number"
-    ptype LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
-    ptype LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
-    ptype LABEL_REPEATED TYPE_UINT64 _ = "Array.Array (Long.Long Long.Unsigned)"
-    ptype LABEL_REPEATED TYPE_INT32 _ = "Array.Array Int"
-    ptype LABEL_REPEATED TYPE_FIXED64 _ = "Array.Array (Long.Long Long.Unsigned)"
-    ptype LABEL_REPEATED TYPE_FIXED32 _ = "Array.Array UInt"
-    ptype LABEL_REPEATED TYPE_BOOL _ = "Array.Array Boolean"
-    ptype LABEL_REPEATED TYPE_STRING _ = "Array.Array String"
-    ptype LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array.Array " <> mkFieldName tname
-    ptype LABEL_REPEATED TYPE_BYTES _ = "Array.Array ArrayBuffer.Types.ArrayBuffer"
-    ptype LABEL_REPEATED TYPE_UINT32 _ = "Array.Array UInt.UInt"
-    ptype LABEL_REPEATED TYPE_ENUM (Just tname) = "Array.Array " <> mkFieldName tname
-    ptype LABEL_REPEATED TYPE_SFIXED32 _ = "Array.Array Int"
-    ptype LABEL_REPEATED TYPE_SFIXED64 _ = "Array.Array (Long.Long Long.Signed)"
-    ptype LABEL_REPEATED TYPE_SINT32 _ = "Array.Array Int"
-    ptype LABEL_REPEATED TYPE_SINT64 _ = "Array.Array (Long.Long Long.Signed)"
+    ptype LABEL_REPEATED TYPE_DOUBLE _ = "Array Number"
+    ptype LABEL_REPEATED TYPE_FLOAT _ = "Array Float32.Float32"
+    ptype LABEL_REPEATED TYPE_INT64 _ = "Array (Long.Long Long.Signed)"
+    ptype LABEL_REPEATED TYPE_UINT64 _ = "Array (Long.Long Long.Unsigned)"
+    ptype LABEL_REPEATED TYPE_INT32 _ = "Array Int"
+    ptype LABEL_REPEATED TYPE_FIXED64 _ = "Array (Long.Long Long.Unsigned)"
+    ptype LABEL_REPEATED TYPE_FIXED32 _ = "Array UInt.UInt"
+    ptype LABEL_REPEATED TYPE_BOOL _ = "Array Boolean"
+    ptype LABEL_REPEATED TYPE_STRING _ = "Array String"
+    ptype LABEL_REPEATED TYPE_MESSAGE (Just tname) = "Array " <> mkFieldName tname
+    ptype LABEL_REPEATED TYPE_BYTES _ = "Array ArrayBuffer.Types.ArrayBuffer"
+    ptype LABEL_REPEATED TYPE_UINT32 _ = "Array UInt.UInt"
+    ptype LABEL_REPEATED TYPE_ENUM (Just tname) = "Array " <> mkFieldName tname
+    ptype LABEL_REPEATED TYPE_SFIXED32 _ = "Array Int"
+    ptype LABEL_REPEATED TYPE_SFIXED64 _ = "Array (Long.Long Long.Signed)"
+    ptype LABEL_REPEATED TYPE_SINT32 _ = "Array Int"
+    ptype LABEL_REPEATED TYPE_SINT64 _ = "Array (Long.Long Long.Signed)"
     ptype _ TYPE_DOUBLE _ = "Maybe.Maybe Number"
     ptype _ TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
     ptype _ TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
     ptype _ TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
     ptype _ TYPE_INT32 _ = "Maybe.Maybe Int"
     ptype _ TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
-    ptype _ TYPE_FIXED32 _ = "Maybe.Maybe UInt"
+    ptype _ TYPE_FIXED32 _ = "Maybe.Maybe UInt.UInt"
     ptype _ TYPE_BOOL _ = "Maybe.Maybe Boolean"
     ptype _ TYPE_STRING _ = "Maybe.Maybe String"
     ptype _ TYPE_MESSAGE (Just tname) = "Maybe.Maybe " <> mkFieldName tname
