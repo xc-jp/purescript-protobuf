@@ -110,17 +110,23 @@ genFile (FileDescriptorProto
  where
   capitalize :: String -> String
   capitalize s = String.toUpper (String.take 1 s) <> String.drop 1 s
+  decapitalize :: String -> String
+  decapitalize s = String.toLower (String.take 1 s) <> String.drop 1 s
+
   baseName = case fileName of
     Nothing -> "GeneratedMessages"
     Just "" -> "GeneratedMessages"
     Just n -> basenameWithoutExt n ".proto"
+
   moduleName = capitalize baseName
   messages = flattenMessages [] message_type
   enums = (ScopedEnum [] <$> enum_type) <> flattenEnums [] message_type
+
   moduleNamespace = case package of
     Nothing -> []
     -- Just ps -> String.joinWith "." $ map capitalize $ String.split "." ps
     Just ps -> String.split (String.Pattern.Pattern ".") ps
+
   content = String.joinWith "\n" $
     -- [ "module " <> (String.joinWith "." $ map capitalize moduleNamespace) <> moduleName
     [ "module " <> (String.joinWith "." ((map capitalize moduleNamespace) <> [moduleName]))
@@ -286,13 +292,14 @@ import Protobuf.Runtime as Runtime
 
   genFieldPut :: FieldDescriptorProto -> String
   genFieldPut (FieldDescriptorProto
-    { name: Just fname
+    { name: Just name'
     , number: Just fnumber
     , label: Just flabel
     , type_: Just ftype
     , type_name
     }) = f flabel ftype type_name
    where
+    fname = decapitalize name'
     -- For repeated fields of primitive numeric types, always put the packed
     -- encoding.
     -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
@@ -370,13 +377,14 @@ import Protobuf.Runtime as Runtime
 
   genFieldParser :: FieldDescriptorProto -> String
   genFieldParser (FieldDescriptorProto
-    { name: Just fname
+    { name: Just name'
     , number: Just fnumber
     , label: Just flabel
     , type_: Just ftype
     , type_name
     }) = f flabel ftype type_name
    where
+    fname = decapitalize name'
     -- For repeated fields of primitive numeric types, also parse the packed
     -- encoding.
     -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
@@ -592,13 +600,14 @@ import Protobuf.Runtime as Runtime
 
   genFieldRecord :: FieldDescriptorProto -> String
   genFieldRecord (FieldDescriptorProto
-    { name: Just fname
+    { name: Just name'
     , number: Just fnumber
     , label: Just flabel
     , type_: Just ftype
     , type_name
     }) = fname <> ": " <> ptype flabel ftype type_name
    where
+    fname = decapitalize name'
     ptype LABEL_REPEATED TYPE_DOUBLE _ = "Array.Array Number"
     ptype LABEL_REPEATED TYPE_FLOAT _ = "Array.Array Float32.Float32"
     ptype LABEL_REPEATED TYPE_INT64 _ = "Array.Array (Long.Long Long.Signed)"
