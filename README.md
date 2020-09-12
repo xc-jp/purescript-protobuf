@@ -1,4 +1,4 @@
-# WIP purescript-protobuf
+# purescript-protobuf
 
 Purescript library and code generator for Google Protocol Buffers.
 
