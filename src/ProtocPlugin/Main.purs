@@ -131,7 +131,6 @@ import Effect.Class as Effect
 import Record.Builder as Record.Builder
 import Data.Array as Array
 import Data.Bounded as Bounded
-import Data.Boolean as Boolean
 import Data.Enum as Enum
 import Data.Eq as Eq
 import Data.Function as Function
@@ -213,14 +212,15 @@ import Protobuf.Runtime as Runtime
       (map genEnumFrom value)
    where
     genEnumConstruct (EnumValueDescriptorProto {name: Just name}) =
-      capitalize name
+      mkEnumName name
     genEnumConstruct _ = "" -- error no name
     genEnumTo (EnumValueDescriptorProto {name: Just name,number: Just number}) =
-      "  toEnum " <> show number <> " = Maybe.Just " <> capitalize name
+      "  toEnum " <> show number <> " = Maybe.Just " <> mkEnumName name
     genEnumTo _ = "" -- error no name
     genEnumFrom (EnumValueDescriptorProto {name: Just name,number: Just number}) =
-      "  fromEnum " <> capitalize name <> " = " <> show number
+      "  fromEnum " <> mkEnumName name <> " = " <> show number
     genEnumFrom _ = "" -- error no name
+    mkEnumName name = mkTypeName $ namespace <> [eName] <> [name]
   genEnum _ = "" -- error no name
 
   -- | Pull all of the nested messages out of of the messages and bring them
@@ -299,7 +299,7 @@ import Protobuf.Runtime as Runtime
     f _ TYPE_DOUBLE _ =
       "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.double"
     f LABEL_REPEATED TYPE_FLOAT _ =
-      "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.double'"
+      "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.float'"
     f _ TYPE_FLOAT _ =
       "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.float"
     f LABEL_REPEATED TYPE_INT64 _ =
@@ -534,7 +534,7 @@ import Protobuf.Runtime as Runtime
     f _ TYPE_FIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.fixed32"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Justx"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ TYPE_BOOL _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"

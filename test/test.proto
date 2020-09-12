@@ -3,16 +3,48 @@ syntax = "proto3";
 package my.module;
 
 message msg1 {
-  string B = 2;
-  message msg2 {
-    string b = 2;
-    enum myEnum {
-      ONE = 0;
-      two = 2;
-      THREE = 3;
-    }
-    myEnum enumfield = 3;
+  double f1 = 1;
+  float f2 = 2;
+  int32 f3 = 3;
+  int64 f4 = 4;
+  uint32 f5 = 5;
+  uint64 f6 = 6;
+  sint32 f7 = 7;
+  sint64 f8 = 8;
+  fixed32 f9 = 9;
+  fixed64 f10 = 10;
+  sfixed64 f11 = 11;
+  bool f12 = 12;
+  string f13 = 13;
+  bytes f14 = 14;
+  enum e1 {
+    one = 0;
+    two = 2;
+    three = 3;
   }
-
-  msg2 c = 3;
+  e1 f15 = 15;
 }
+
+message msg2 {
+  repeated double f1 = 1;
+  repeated float f2 = 2;
+  repeated int32 f3 = 3;
+  repeated int64 f4 = 4;
+  repeated uint32 f5 = 5;
+  repeated uint64 f6 = 6;
+  repeated sint32 f7 = 7;
+  repeated sint64 f8 = 8;
+  repeated fixed32 f9 = 9;
+  repeated fixed64 f10 = 10;
+  repeated sfixed64 f11 = 11;
+  repeated bool f12 = 12;
+  repeated string f13 = 13;
+  repeated bytes f14 = 14;
+  enum e1 {
+    one = 0;
+    two = 2;
+    three = 3;
+  }
+  repeated e1 f15 = 15;
+}
+
