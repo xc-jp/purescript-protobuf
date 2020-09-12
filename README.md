@@ -71,8 +71,8 @@ import Text.Parsing.Parser (runParserT)
 import Data.ArrayBuffer.Builder (execPut)
 ```
 
-The generated code modules will transitively import other modules from this
-package by importing `Protobuf.Runtime`.
+The generated code modules will import modules from this
+package.
 
 The generated code depends on 
 [__purescript-longs__](https://pursuit.purescript.org/packages/purescript-longs)
@@ -83,9 +83,10 @@ and the Javascript package
 
 We cannot easily derive common instances like `Eq` for the
 generated message types because
-1. The types might be recursive
-2. The types might contain fields like `ArrayBuffer` which don't have those
-instances.
+1. The types [might be recursive](https://github.com/purescript/documentation/blob/master/errors/CycleInDeclaration.md).
+2. The types might contain fields of type
+   [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer)
+   which doesn't have those instances.
 
 All of the generated message types have an instance of
 [`Generic`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep#t:Generic).
@@ -118,7 +119,7 @@ also work, as long as they don't have __proto2__ features.
 We don't support
 [extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
 
-The generated optional record fields will use `Nothing` instead of the 
+The generated optional record fields will use `Nothing` instead of the
 [default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
 
 We do not preserve
