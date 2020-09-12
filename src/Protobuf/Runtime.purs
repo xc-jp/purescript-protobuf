@@ -190,9 +190,9 @@ putEnum
   :: forall m a
    . MonadEffect m
   => BoundedEnum a
-  => FieldNumberInt -> a -> PutM m Unit
+  => FieldNumber -> a -> PutM m Unit
 putEnum fieldNumber x = do
-  Encode.tag32 (UInt.fromInt fieldNumber) VarInt
+  Encode.tag32 fieldNumber VarInt
   putEnum' x
 
 putEnum' :: forall m a. MonadEffect m => BoundedEnum a => a -> PutM m Unit
