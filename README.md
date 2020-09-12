@@ -11,7 +11,37 @@ This library operates on
 [in Node](https://pursuit.purescript.org/packages/purescript-node-buffer/docs/Node.Buffer.Class)
 and in browser environments.
 
-## Using the library
+## Code Generation
+
+The `shell.nix` environment provides
+
+* The Purescript toolchain
+* The [`protoc`](https://github.com/protocolbuffers/protobuf/blob/master/src/README.md) compiler
+* The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
+  [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
+
+```
+$ nix-shell
+
+Purescript Protobuf development environment.
+To build purescript-protobuf, run:
+
+    npm install
+    spago build
+
+To test purescript-protobuf, run:
+
+    protoc --purescript_out=./test test/test.proto
+    spago -x test.dhall test
+
+To generate Purescript .purs files from .proto files, run:
+
+    protoc --purescript_out=path_to_output intput_file.proto
+
+[nix-shell]$
+```
+
+## Importing the generated code
 
 None of the modules in this package should be imported directly in your program.
 Rather, you'll import the message modules from the generated `.purs` files,
@@ -49,34 +79,25 @@ The generated code depends on
 and the Javascript package
 [__long__](https://www.npmjs.com/package/long).
 
-## Code Generation
+## Generated message instances
 
-The `shell.nix` environment provides
+We cannot easily derive common instances like `Eq` for the
+generated message types because
+1. The types might be recursive
+2. The types might contain fields like `ArrayBuffer` which don't have those
+instances.
 
-* The Purescript toolchain
-* The [`protoc`](https://github.com/protocolbuffers/protobuf/blob/master/src/README.md) compiler
-* The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
-  [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
+All of the generated message types have an instance of
+[`Generic`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep#t:Generic).
+This allows us to sometimes use
+[`genericEq`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep.Eq#v:genericEq)
+and
+[`genericShow`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep.Show#v:genericShow)
+on the generated messages, if neither of two conditions above apply to
+our particular message types.
 
-```
-$ nix-shell
-
-Purescript Protobuf development environment.
-To build purescript-protobuf, run:
-
-    npm install
-    spago build
-
-To test purescript-protobuf, run:
-
-    spago test
-
-To generate Purescript .purs files from .proto files, run:
-
-    protoc --purescript_out=./test test/test.proto
-
-[nix-shell]$
-```
+All of the generated message types have an instance of
+[`NewType`](https://pursuit.purescript.org/packages/purescript-newtype/docs/Data.Newtype#t:Newtype).
 
 ## Interpreting invalid encoding parse errors
 
