@@ -112,14 +112,14 @@ formula `column - 1`.
 
 ## Features
 
-We only support __proto3__ so that means we don't support
+We aim to support __proto3__. Many __proto2__-syntax descriptor files will
+also work, as long as they don't have __proto2__ features.
+
+We don't support
 [extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
 
 The generated optional record fields will use `Nothing` instead of the 
 [default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
-
-We support
-[enumerations](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#enum).
 
 We do not preserve
 [unknown fields](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#unknowns).
@@ -134,15 +134,22 @@ The fields in a `oneof` will all be added to the message record product type.
 We do not support
 [maps](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#maps).
 
-We support
-[packages](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#packages).
-
 We do not support
 [services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
 
 We do not support any
 [options](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#options).
 
+## Performance
+
+The implementation is simple and straightforward. We haven't done
+any special optimizations. For example, when encoding a protobuf varint, we
+allocate a list of new one-byte `ArrayBuffers`s and then copy them all into
+position in the final `ArrayBuffer`. For another example, when decoding a
+packed field of numbers, we build a list of the numbers, and then copy them
+all into the final `Array`. Also, this whole library is very stack-unsafe.
+This may all be improved in later versions.
+
 ## Contributing
 
-Pull requests are welcome.
+Pull requests welcome.

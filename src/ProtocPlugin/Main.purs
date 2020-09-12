@@ -138,6 +138,7 @@ import Data.Float32 as Float32
 import Data.Show as Show
 import Data.Ord as Ord
 import Data.Maybe as Maybe
+import Data.Newtype as Newtype
 import Data.Generic.Rep as Generic.Rep
 import Data.Generic.Rep.Show as Generic.Rep.Show
 import Data.Generic.Rep.Bounded as Generic.Rep.Bounded
@@ -258,6 +259,7 @@ import Protobuf.Runtime as Runtime
       , "  }"
       , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
       , "derive instance generic" <> tname <> " :: Generic.Rep.Generic " <> tname <> " _"
+      , "derive instance newtype" <> tname <> " :: Newtype.Newtype " <> tname <> " _"
       , ""
       , "put" <> tname <> " :: forall m. Effect.MonadEffect m => " <> tname <> " -> ArrayBuffer.Builder.PutM m Unit.Unit"
       , "put" <> tname <> " (" <> tname <> " r) = do"
