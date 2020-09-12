@@ -519,7 +519,12 @@ import Protobuf.Runtime as Runtime
     f _ TYPE_INT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.int64"
-      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x "
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
+      ]
+    f _ TYPE_UINT64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.uint64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _  TYPE_INT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"

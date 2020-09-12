@@ -18,14 +18,14 @@ where
 import Prelude
 import Effect.Class (class MonadEffect)
 import Data.ArrayBuffer.Builder as Builder
-import Data.UInt (UInt, fromInt, (.&.), (.|.), (.^.), shl, zshr)
+import Data.UInt (UInt, fromInt, (.&.), (.|.), (.^.), shl, shr, zshr)
 import Data.Enum (fromEnum)
 import Protobuf.Common (FieldNumber, WireType)
 
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
 zigzag32 :: Int -> UInt
-zigzag32 n = let n' = fromInt n in (n' `shl` (fromInt 1)) .^. (n' `zshr` (fromInt 31))
+zigzag32 n = let n' = fromInt n in (n' `shl` (fromInt 1)) .^. (n' `shr` (fromInt 31))
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#structure
 tag32 :: forall m. MonadEffect m => FieldNumber -> WireType -> Builder.PutM m Unit

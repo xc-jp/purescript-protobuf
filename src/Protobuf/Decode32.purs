@@ -38,7 +38,7 @@ zigzag32 n = toInt $ (n `shr` (fromInt 1)) .^. (unegate (n .&. (fromInt 1)))
 tag32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber WireType)
 tag32 = do
   n <- varint32
-  let wireTypeInt = toInt $ n .&. (fromInt 3)
+  let wireTypeInt = toInt $ n .&. (fromInt 7)
   case toEnum wireTypeInt of
     Just wireType -> pure $ Tuple (n `shr` (fromInt 3)) wireType
     Nothing       -> fail $ "Unknown WireType " <> show wireTypeInt
@@ -69,7 +69,7 @@ varint32 = do
                   n_4 <- Parse.anyUint8
                   if n_4 < u0x10
                     then pure $ acc_3 .|. (n_4 `shl` u28)
-                    else fail "varint32 overflow. We assumed that this varint would fit in 32 bits but it didn't. Please report issues at https://github.com/xc-jp/purescript-protobuf-library/issues"
+                    else fail "varint32 overflow. This varint was expected to fit in 32 bits."
  where
   u7    = fromInt 7
   u14   = fromInt 14

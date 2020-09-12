@@ -57,7 +57,7 @@ int32 = do
   n <- varint64
   case SLong.toInt (unsignedToSigned n) of
     Just x -> pure x
-    Nothing -> fail "int32 overflow. Please report this issue https://github.com/xc-jp/purescript-protobuf/issues"
+    Nothing -> fail "int32 overflow. Decoded varint was more than 32 bits."
     -- But this is a problem with the Protobuf spec?
     -- “If you use int32 or int64 as the type for a negative number, the resulting
     -- varint is always ten bytes long”
@@ -78,12 +78,12 @@ uint32 = do
   n <- varint64
   case SLong.toInt (unsignedToSigned n) of
     Just x -> pure $ UInt.fromInt x
-    Nothing -> fail "uint32 overflow. Please report this issue https://github.com/xc-jp/purescript-protobuf/issues"
+    Nothing -> fail "uint32 overflow. Decoded varint was more than 32 bits."
     -- But this is a problem with the Protobuf spec?
     -- “If you use int32 or int64 as the type for a negative number, the resulting
     -- varint is always ten bytes long”
     -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
-    -- So what are we supposed to do if the field type is int32 but the
+    -- So what are we supposed to do if the field type is uint32 but the
     -- decoded varint is too big? There is no guarantee that either negative
     -- or positive numbers encoded as varints will be in range.
 

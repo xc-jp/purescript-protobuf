@@ -9,14 +9,14 @@ import Prelude
 import Effect.Class (class MonadEffect)
 import Data.ArrayBuffer.Builder as Builder
 import Data.Long (toUnsigned)
-import Data.Long.Internal (Long, Signed, Unsigned, lowBits, unsafeFromInt, shl, zshr)
+import Data.Long.Internal (Long, Signed, Unsigned, lowBits, unsafeFromInt, shl, shr, zshr)
 import Data.Long.Bits ((.^.))
 import Data.UInt (UInt, (.&.), (.|.))
 import Data.UInt as UInt
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
 zigzag64 :: Long Signed -> Long Unsigned
-zigzag64 n = toUnsigned $ (n `shl` (unsafeFromInt 1)) .^. (n `zshr` (unsafeFromInt 31))
+zigzag64 n = toUnsigned $ (n `shl` (unsafeFromInt 1)) .^. (n `shr` (unsafeFromInt 63))
 
 varint64 :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
 varint64 n_0 = do
