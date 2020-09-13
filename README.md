@@ -41,7 +41,25 @@ To generate Purescript .purs files from .proto files, run:
 [nix-shell]$
 ```
 
-## Importing the generated code
+### Protobuf imports
+
+The code generator will use the `package` statement in the `.proto` file
+as the Purescript module name for that file.
+
+The protobuf `import` statement allows Protobuf messages to have fields
+consisting of other Protobuf messages. In order to generate the correct
+Purescript module name qualifier on the types of imported message fields,
+the code generator must be able to lookup the package name
+statement in the imported file.
+
+For that reason, when compiling `.proto` files which `import` each other,
+all the `.proto` files must be passed together in one `protoc` command,
+so the code generator has global knowledge of file imports and packages.
+
+Also for that reason, only top-level `message` and `enum` types from an
+`import` may be used.
+
+## Writing programs with the generated code
 
 None of the modules in this package should be imported directly in your program.
 Rather, you'll import the message modules from the generated `.purs` files,

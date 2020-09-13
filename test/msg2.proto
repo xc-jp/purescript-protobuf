@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package pack2;
+
+message msg2 {
+  repeated double f1 = 1;
+  repeated float f2 = 2;
+  repeated int32 f3 = 3;
+  repeated int64 f4 = 4;
+  repeated uint32 f5 = 5;
+  repeated uint64 f6 = 6;
+  repeated sint32 f7 = 7;
+  repeated sint64 f8 = 8;
+  repeated fixed32 f9 = 9;
+  repeated fixed64 f10 = 10;
+  repeated sfixed64 f11 = 11;
+  repeated bool f12 = 12;
+  repeated string f13 = 13;
+  // repeated bytes f14 = 14;
+  enum e1 {
+    one = 0;
+    two = 2;
+    three = 3;
+  }
+  repeated e1 f15 = 15;
+}
