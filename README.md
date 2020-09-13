@@ -75,10 +75,25 @@ import Data.ArrayBuffer.Builder (execPut)
 The generated code modules will import modules from this
 package.
 
-The generated code depends on 
+The generated code depends on packages
+
+```
+  , "parsing"
+  , "parsing-dataview"
+  , "arraybuffer-types"
+  , "arraybuffer"
+  , "arraybuffer-builder"
+  , "uint"
+  , "text-encoding"
+```
+
+which are in
+[__package-sets__](https://github.com/purescript/package-sets),
+plus
 [__purescript-longs__](https://pursuit.purescript.org/packages/purescript-longs)
 and the Javascript package
-[__long__](https://www.npmjs.com/package/long).
+[__long__](https://www.npmjs.com/package/long)
+(see `spago.dhall` in this package for the particulars).
 
 ## Generated message instances
 
