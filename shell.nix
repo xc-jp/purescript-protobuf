@@ -28,12 +28,12 @@ pkgs.mkShell {
   echo ""
   echo "To test purescript-protobuf, run:"
   echo ""
-  echo "    protoc --purescript_out=./test test/test.proto"
+  echo "    protoc --purescript_out=./test/generated test/TestMsgs.proto"
   echo "    spago -x test.dhall test"
   echo ""
   echo "To generate Purescript .purs files from .proto files, run:"
   echo ""
-  echo "    protoc --purescript_out=path_to_output intput_file.proto"
+  echo "    protoc --purescript_out=path_to_output path_to_input_file.proto"
   echo ""
   '';
   LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507
