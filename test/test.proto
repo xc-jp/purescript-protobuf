@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package my.module;
+package generated;
 
 message msg1 {
   double f1 = 1;
