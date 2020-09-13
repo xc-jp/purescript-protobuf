@@ -84,16 +84,18 @@ The generated code depends on packages
   , "arraybuffer"
   , "arraybuffer-builder"
   , "uint"
+  , "long"
   , "text-encoding"
 ```
 
 which are in
 [__package-sets__](https://github.com/purescript/package-sets),
-plus
+except for
 [__purescript-longs__](https://pursuit.purescript.org/packages/purescript-longs)
-and the Javascript package
-[__long__](https://www.npmjs.com/package/long)
 (see `spago.dhall` in this package for the particulars).
+
+It also depends on the Javascript package
+[__long__](https://www.npmjs.com/package/long).
 
 ## Generated message instances
 
