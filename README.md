@@ -31,12 +31,13 @@ To build purescript-protobuf, run:
 
 To test purescript-protobuf, run:
 
-    protoc --purescript_out=./test test/test.proto
+    protoc --purescript_out=./test/generated test/*.proto
+    spago -x test.dhall build
     spago -x test.dhall test
 
 To generate Purescript .purs files from .proto files, run:
 
-    protoc --purescript_out=path_to_output intput_file.proto
+    protoc --purescript_out=path_to_output *.proto
 
 [nix-shell]$
 ```
