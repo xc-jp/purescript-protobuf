@@ -67,9 +67,9 @@ Then, in our program, our imports will look something like this.
 
 
 ```purescript
-import GeneratedMessages (MyMessage, putMyMessage, parseMyMessage)
+import Generated.Module (MyMessage(..), putMyMessage, parseMyMessage)
 import Text.Parsing.Parser (runParserT)
-import Data.ArrayBuffer.Builder (execPut)
+import Data.ArrayBuffer.Builder (execPutM)
 ```
 
 The generated code modules will import modules from this
