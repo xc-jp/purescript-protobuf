@@ -17,7 +17,7 @@ import Data.Long.Internal as Long
 import Data.UInt as UInt
 import Data.Generic.Rep.Eq (genericEq)
 
-import Generated.TestMsgs as TestMsgs
+import Generated as TestMsgs
 import Test.Assert (assert')
 
 billion' :: Int

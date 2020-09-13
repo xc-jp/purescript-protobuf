@@ -29,6 +29,7 @@ pkgs.mkShell {
   echo "To test purescript-protobuf, run:"
   echo ""
   echo "    protoc --purescript_out=./test/generated test/TestMsgs.proto"
+  echo "    spago -x test.dhall build"
   echo "    spago -x test.dhall test"
   echo ""
   echo "To generate Purescript .purs files from .proto files, run:"
