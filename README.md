@@ -155,11 +155,7 @@ correct Purescript module name qualifier on the types of imported message
 fields, the code generator must be able to lookup the package name
 statement in the imported file.
 
-For that reason, when compiling `.proto` files which `import` each other,
-we must pass all the `.proto` files together in one `protoc` command,
-so that the code generator has global knowledge of file imports and packages.
-
-Also for that reason, we can only use top-level
+For that reason, we can only use top-level
 (not [nested](https://developers.google.com/protocol-buffers/docs/proto3#nested))
 `message` and `enum` types from an `import`.
 
