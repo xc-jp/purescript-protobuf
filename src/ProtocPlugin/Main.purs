@@ -22,7 +22,6 @@
 -- | * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.descriptor.pb
 module Main where
 
--- import Debug.Trace (trace)
 import Prelude
 
 import Effect (Effect)
@@ -57,7 +56,6 @@ import Node.Encoding (Encoding(..))
 import Node.Path (basenameWithoutExt)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Types (DataView)
--- import Google.Protobuf.Descriptor as G
 
 import Protobuf.Runtime
   ( parseMessage
@@ -108,18 +106,6 @@ data ScopedMsg = ScopedMsg NameSpace DescriptorProto
 -- | An enum descriptor, plus the names of all parent messages.
 data ScopedEnum = ScopedEnum NameSpace EnumDescriptorProto
 
--- moduleNameFromFilename :: [FileDescriptorProto] -> String -> Maybe String
--- moduleNameFromFilename filesAll fileName =
-
--- -- | A type for looking up information about import files
--- type FileInfo =
---   { filePath :: String -- "src/descriptor.proto"
---   , fileBaseName :: String -- "descriptor"
---   , package :: Array String -- ["google", "protobuf"] , from "google.protobuf"
---   , module :: Array String -- package <> [fileBaseName]
---   , moduleField :: ArrayString -- == package. The "fully-qualified package name" for fields.
---   }
-
 
 genFile :: Array FileDescriptorProto -> FileDescriptorProto -> CodeGeneratorResponse_File
 genFile proto_file (FileDescriptorProto
@@ -148,7 +134,7 @@ genFile proto_file (FileDescriptorProto
 
   messages = flattenMessages [] message_type
   enums = (ScopedEnum [] <$> enum_type) <> flattenEnums [] message_type
-  fileNameOut = (String.joinWith "." ((map capitalize packageName))) <> "." <> capitalize baseName <> ".purs"
+  fileNameOut = baseName <> "." <> (String.joinWith "." ((map capitalize packageName))) <> ".purs"
 
   packageName = case package of
     Nothing -> []
@@ -219,27 +205,6 @@ import Protobuf.Runtime as Runtime
     mname = case lookupPackageByFilepath fpath of
       Nothing -> "Error, module name for file path not found."
       Just ps -> String.joinWith "." $ map capitalize ps
-
-  -- genImport :: String -> String
-  -- genImport x =
-  --   let mname =
-  --         ( String.joinWith "."
-  --         $ map capitalize
-  --         $ map (\y -> basenameWithoutExt y ".proto")
-  --         $ String.split (String.Pattern.Pattern "/") x
-  --         )
-  --       qname =
-  --         ( String.joinWith "."
-  --         $ map capitalize
-  --         -- $ map (\y -> basenameWithoutExt y ".proto")
-  --         -- TODO can't use the filename because the fully-qualified field
-  --         -- names for imported messages don't know about the filename.
-  --         -- But then we will have module name collisions?
-  --         $ Array.dropEnd 1
-  --         $ String.split (String.Pattern.Pattern "/") x
-  --         )
-  --   in
-  --   "import " <> mname <> " as " <> qname
 
   -- | Pull all of the enums out of of the nested messages and bring them
   -- | to the top, with their namespace.
@@ -742,7 +707,6 @@ import Protobuf.Runtime as Runtime
     if names `beginsWith` packageName
       then
         -- it's a name in this package
-        -- mkTypeName $ nameSpace <> [name]
         prefix <> (mkTypeName $ Array.drop (Array.length packageName) names <> [name])
       else
         -- it's a name in the top-level of an imported package
@@ -763,18 +727,6 @@ import Protobuf.Runtime as Runtime
 
   mkTypeName :: Array String -> String
   mkTypeName ns = String.joinWith "_" $ map capitalize ns
-
-  -- parseFieldName :: String -> Array String
-  -- parseFieldName fname = Array.dropWhile (_ == "") $ String.split (String.Pattern.Pattern ".") fname
-
-
-  -- trimPackage :: Array String -> Array String
-  -- trimPackage ns =
-  --   let len = Array.length packageName
-  --   in
-  --   if Array.take len ns == packageName
-  --     then Array.drop len ns
-  --     else ns
 
 
 -- | Scoped field name which has the qualified package namespace and the field name.

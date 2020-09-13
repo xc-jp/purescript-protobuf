@@ -24,3 +24,4 @@ message msg2 {
   }
   repeated e1 f15 = 15;
 }
+

@@ -20,6 +20,7 @@ import Data.Generic.Rep.Eq (genericEq)
 import Pack1 as Pack1
 import Pack2 as Pack2
 import Pack3 as Pack3
+import Pack4 as Pack4
 
 import Test.Assert (assert')
 
@@ -34,6 +35,10 @@ billion2 = Long.fromLowHighBits 1000000000 1000000000
 
 main :: Effect Unit
 main = do
+
+  let msg4 = (Pack4.Msg2 -- this is just a compile test
+    { f1: Just $ Pack4.Msg1_Msg2 { nested: Just "nested" }
+    })
 
   let msg1 = (Pack1.Msg1
     { f1: Just 1234.5

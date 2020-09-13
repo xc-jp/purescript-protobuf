@@ -3,24 +3,24 @@ syntax = "proto3";
 package pack1;
 
 message msg1 {
-  double f1 = 1;
-  float f2 = 2;
-  int32 f3 = 3;
-  int64 f4 = 4;
-  uint32 f5 = 5;
-  uint64 f6 = 6;
-  sint32 f7 = 7;
-  sint64 f8 = 8;
-  fixed32 f9 = 9;
-  fixed64 f10 = 10;
-  sfixed64 f11 = 11;
-  bool f12 = 12;
-  string f13 = 13;
+  double F1 = 1;
+  float F2 = 2;
+  int32 F3 = 3;
+  int64 F4 = 4;
+  uint32 F5 = 5;
+  uint64 F6 = 6;
+  sint32 F7 = 7;
+  sint64 F8 = 8;
+  fixed32 F9 = 9;
+  fixed64 F10 = 10;
+  sfixed64 F11 = 11;
+  bool F12 = 12;
+  string F13 = 13;
   // // bytes f14 = 14;
   enum e1 {
     one = 0;
     two = 2;
     three = 3;
   }
-  e1 f15 = 15;
+  e1 F15 = 15;
 }

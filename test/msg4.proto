@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pack4;
+
+message msg2 {
+  msg1.msg2 F1 = 1;
+}
+
+message msg1 {
+  string Nested = 1;
+  message msg2 {
+    string Nested = 1;
+  }
+}
+
