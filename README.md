@@ -48,20 +48,26 @@ None of the modules in this package should be imported directly in our program.
 Rather, we'll import the message modules from the generated `.purs` files,
 as well as modules for reading and writing `ArrayBuffer`s.
 
-Each `.proto` message will export four names in the generated `.purs` modules.
+For example, a message in a `.proto` file declared as
 
-1. A message record type, for example
-   * `type MyMessageR = { field :: Maybe Int }`.
-2. A message data type, for example
+```
+message MyMessage {
+  sint32 my_field = 1;
+}
+```
+
+will export these four names in the generated `.purs` modules.
+
+1. A message record type
+   * `type MyMessageR = { my_field :: Maybe Int }`.
+2. A message data type
    * `newtype MyMessage = MyMessage MyMessageR`.
 3. A message encoder which works with 
-   [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/),
-   for example
+   [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
    * `putMyMessage :: forall m. MonadEffect m => MyMessage -> PutM m Unit`
 4. A message decoder which works with
-   [__purescript-parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/),
-   for example
-   * `parseMyMessage :: forall m. MonadEffect m => ParserT DataView m MyMessage`
+   [__purescript-parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
+   * `parseMyMessage :: forall m. MonadEffect m => Int -> ParserT DataView m MyMessage`
 
 Then, in our program, our imports will look something like this.
 
@@ -145,10 +151,6 @@ We do not preserve
 
 We do not support the
 [Any message type](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#any).
-
-We do not support
-[`oneof`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#oneof).
-The fields in a `oneof` will all be added to the message record product type.
 
 We do not support
 [maps](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#maps).

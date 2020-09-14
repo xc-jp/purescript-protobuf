@@ -54,7 +54,6 @@ import Google.Protobuf
   , OneofDescriptorProto(..)
   , EnumDescriptorProto(..)
   , EnumValueDescriptorProto(..)
-  , OneofOptions(..)
   , FieldDescriptorProto_Type(..)
   , FieldDescriptorProto_Label(..)
   )
@@ -269,9 +268,13 @@ import Protobuf.Runtime as Runtime
 
 
   genMessageExport :: ScopedMsg -> String
-  genMessageExport (ScopedMsg namespace (DescriptorProto {name: Just msgName})) =
-    let tname = mkTypeName $ namespace <> [msgName]
-    in tname <> "(..), " <> tname <> "R, parse" <> tname <> ", put" <> tname
+  genMessageExport (ScopedMsg namespace (DescriptorProto {name: Just msgName, oneof_decl})) =
+    tname <> "(..), " <> tname <> "R, parse" <> tname <> ", put" <> tname
+      <> String.joinWith "" (map genOneofExport oneof_decl)
+   where
+    tname = mkTypeName $ namespace <> [msgName]
+    genOneofExport (OneofDescriptorProto {name: Just oname}) = ", " <> mkTypeName (namespace <> [msgName,oname]) <> "(..)"
+    genOneofExport _ = "" -- error, no oname
   genMessageExport _ = "" -- error, no name
 
 
@@ -310,7 +313,7 @@ import Protobuf.Runtime as Runtime
     :: Runtime.FieldNumberInt
     -> Common.WireType"""
       , "    -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
-      , String.joinWith "\n" (map (genFieldParser nameSpace) field)
+      , String.joinWith "\n" (map (genFieldParser (nameSpace <> [msgName]) oneof_decl) field)
       , "  parseField _ wireType = Runtime.parseFieldUnknown wireType"
       , "  default ="
       , "    { " <> String.joinWith "\n    , "
@@ -329,8 +332,9 @@ import Protobuf.Runtime as Runtime
     -> OneofDescriptorProto
     -> String
   genTypeOneof nameSpace field indexOneof (OneofDescriptorProto {name: Just oname}) =
-    "data " <> cname <> "\n  = "
+    "\ndata " <> cname <> "\n  = "
     <> (String.joinWith "\n  | " (mapMaybe go field))
+    <> "\nderive instance generic" <> cname <> " :: Generic.Rep.Generic " <> cname <> " _"
    where
     cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
     go :: FieldDescriptorProto -> Maybe String
@@ -367,10 +371,6 @@ import Protobuf.Runtime as Runtime
     go _ = Nothing
   genTypeOneof _ _ _ _ = "" -- error no name
 
-
-  lookupOneof :: Array OneofDescriptorProto -> Maybe Int -> Maybe OneofDescriptorProto
-  lookupOneof _ Nothing = Nothing
-  lookupOneof oneof_decl (Just oneof_index) = Array.index oneof_decl oneof_index
 
   genOneofPut :: NameSpace -> Array FieldDescriptorProto -> Int -> OneofDescriptorProto -> Maybe String
   genOneofPut nameSpace field oindex (OneofDescriptorProto {name: Just oname}) =
@@ -519,20 +519,30 @@ import Protobuf.Runtime as Runtime
     go _ _ _ = "" -- error, maybe its a TYPE_GROUP
   genFieldPut _ _ = Nothing -- it's a oneof, or error not enough information
 
-  genFieldParser :: NameSpace -> FieldDescriptorProto -> String
-  genFieldParser nameSpace (FieldDescriptorProto
+  genFieldParser :: NameSpace -> Array OneofDescriptorProto -> FieldDescriptorProto -> String
+  genFieldParser nameSpace oneof_decl (FieldDescriptorProto
     { name: Just name'
     , number: Just fnumber
     , label: Just flabel
     , type: Just ftype
     , type_name
-    }) = f flabel ftype type_name
+    , oneof_index
+    }) = go (lookupOneof oneof_index) flabel ftype type_name
    where
+    lookupOneof :: Maybe Int -> Maybe String
+    lookupOneof Nothing = Nothing
+    lookupOneof (Just i) =
+      case Array.index oneof_decl i of
+        Just (OneofDescriptorProto {name}) -> name
+        _-> Nothing
+
     fname = decapitalize name'
+    mkConstructor oname = mkTypeName (nameSpace <> [oname,name'])
+
     -- For repeated fields of primitive numeric types, also parse the packed
     -- encoding.
     -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
       , "    x <- Decode.double"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -540,7 +550,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.double"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.float"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -548,7 +558,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.float"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.int64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -556,7 +566,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.int64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.uint64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -564,7 +574,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.uint64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.int32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -572,7 +582,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.int32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
       , "    x <- Decode.fixed64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -580,7 +590,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.fixed32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -588,7 +598,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.bool"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -596,22 +606,22 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.bool"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Decode.string"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Decode.bytes"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.uint32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -619,7 +629,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.uint32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Runtime.parseEnum"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -627,7 +637,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Runtime.parseEnum"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.sfixed32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -635,7 +645,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
       , "    x <- Decode.sfixed64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -643,7 +653,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.sint32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -651,7 +661,7 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sint32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ = String.joinWith "\n"
+    go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.sint64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
@@ -659,93 +669,180 @@ import Protobuf.Runtime as Runtime
       , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sint64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_DOUBLE _ = String.joinWith "\n"
+
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_DOUBLE _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
+      , "    x <- Decode.double"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_FLOAT _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
+      , "    x <- Decode.float"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_INT64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.int64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_UINT64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.uint64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _  FieldDescriptorProto_Type_TYPE_INT32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.int32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_FIXED64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
+      , "    x <- Decode.fixed64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_FIXED32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
+      , "    x <- Decode.fixed32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_BOOL _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.bool"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_STRING _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.LenDel = do"
+      , "    x <- Decode.string"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.LenDel = do"
+      , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_BYTES _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.LenDel = do"
+      , "    x <- Decode.bytes"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_UINT32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.uint32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_ENUM _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Runtime.parseEnum"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
+      , "    x <- Decode.sfixed32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
+      , "    x <- Decode.sfixed64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_SINT32 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.sint32"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+    go (Just oname) _ FieldDescriptorProto_Type_TYPE_SINT64 _ = String.joinWith "\n"
+      [ "  parseField " <> show fnumber <> " Common.VarInt = do"
+      , "    x <- Decode.sint64"
+      , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+      ]
+
+    go _ _ FieldDescriptorProto_Type_TYPE_DOUBLE _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
       , "    x <- Decode.double"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_FLOAT _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_FLOAT _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.float"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_INT64 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_INT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.int64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_UINT64 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_UINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.uint64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _  FieldDescriptorProto_Type_TYPE_INT32 _ = String.joinWith "\n"
+    go _ _  FieldDescriptorProto_Type_TYPE_INT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.int32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_FIXED64 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_FIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
       , "    x <- Decode.fixed64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_FIXED32 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_FIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.fixed32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_BOOL _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_BOOL _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.bool"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_STRING _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_STRING _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Decode.string"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_BYTES _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_BYTES _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
       , "    x <- Decode.bytes"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_UINT32 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_UINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.uint32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_ENUM _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_ENUM _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Runtime.parseEnum"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits32 = do"
       , "    x <- Decode.sfixed32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.Bits64 = do"
       , "    x <- Decode.sfixed64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_SINT32 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_SINT32 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.sint32"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ FieldDescriptorProto_Type_TYPE_SINT64 _ = String.joinWith "\n"
+    go _ _ FieldDescriptorProto_Type_TYPE_SINT64 _ = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.VarInt = do"
       , "    x <- Decode.sint64"
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
-    f _ _ _ = "" -- error, maybe its a TYPE_GROUP
-  genFieldParser _ _ = "" -- error, not enough information
+    go _ _ _ _ = "" -- error, maybe its a TYPE_GROUP
+  genFieldParser _ _ _ = "" -- error, not enough information
 
   -- | For embedded message fields, the parser merges multiple instances of the same field,
   -- | https://developers.google.com/protocol-buffers/docs/encoding?hl=en#optional

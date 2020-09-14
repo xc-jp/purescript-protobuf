@@ -5,7 +5,24 @@ package pack5;
 message Msg1 {
   oneof Sum1 {
     double F1 = 1;
-    double F2 = 2;
+    float F2 = 2;
+    int32 F3 = 3;
+    int64 F4 = 4;
+    uint32 F5 = 5;
+    uint64 F6 = 6;
+    sint32 F7 = 7;
+    sint64 F8 = 8;
+    fixed32 F9 = 9;
+    fixed64 F10 = 10;
+    sfixed64 F11 = 11;
+    bool F12 = 12;
+    string F13 = 13;
+    e1 F15 = 15;
+  }
+  enum e1 {
+    one = 0;
+    two = 2;
+    three = 3;
   }
 }
 

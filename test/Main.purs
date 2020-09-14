@@ -21,6 +21,7 @@ import Pack1 as Pack1
 import Pack2 as Pack2
 import Pack3 as Pack3
 import Pack4 as Pack4
+import Pack5 as Pack5
 
 import Test.Assert (assert')
 
@@ -38,6 +39,12 @@ main = do
 
   let msg4 = (Pack4.Msg2 -- this is just a compile test
     { f1: Just $ Pack4.Msg1_Msg2 { nested: Just "nested" }
+    })
+
+  let msg6 = (Pack5.Msg2 -- this is just a compile test
+    { sum1: Just $ Pack5.Msg2_Sum1_F1 $ Pack5.Msg1
+      { sum1: Just $ Pack5.Msg1_Sum1_F3 billion'
+      }
     })
 
   let msg1 = (Pack1.Msg1
@@ -105,3 +112,5 @@ main = do
       (and $ zipWith genericEq f1 f1') && (and $ zipWith genericEq f2 f2')
      where
       Pack3.Msg3 {f1,f2} = msg3
+
+
