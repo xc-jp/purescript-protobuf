@@ -4,8 +4,8 @@ package pack5;
 
 message Msg1 {
   oneof Sum1 {
-    string F1 = 1;
-    sint32 F2 = 2;
+    double F1 = 1;
+    double F2 = 2;
   }
 }
 
