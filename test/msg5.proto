@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package pack5;
+
+message Msg1 {
+  oneof Sum1 {
+    string F1 = 1;
+    sint32 F2 = 2;
+  }
+}
+
+
+message msg2 {
+  oneof sum1 {
+    Msg1 f1 = 1;
+    string f2 = 2;
+  }
+}

@@ -27,7 +27,7 @@ import Prelude
 import Effect (Effect)
 import Data.Maybe (Maybe(..),fromMaybe,maybe)
 import Data.Either (Either(..))
-import Data.Array (concatMap)
+import Data.Array (concatMap, mapMaybe)
 import Data.Array as Array
 import Data.String as String
 import Data.String.Pattern as String.Pattern
@@ -282,12 +282,15 @@ import Protobuf.Runtime as Runtime
 -- | And so that we can assign instances.
 -- | We also get the cycle error if we try to give the messages Show instances.
   genMessage :: ScopedMsg -> String
-  genMessage (ScopedMsg namespace (DescriptorProto {name: Just msgName, field})) =
-    let tname = mkTypeName $ namespace <> [msgName]
+  genMessage (ScopedMsg nameSpace (DescriptorProto {name: Just msgName, field, oneof_decl})) =
+    let tname = mkTypeName $ nameSpace <> [msgName]
     in
-    String.joinWith "\n"
+    String.joinWith "\n" $
       [ "\ntype " <> tname <> "R ="
-      , "  { " <> String.joinWith "\n  , " (map (genFieldRecord namespace) field)
+      , "  { " <> String.joinWith "\n  , "
+            (  (mapMaybe (genFieldRecord nameSpace) field)
+            <> (map (genFieldRecordOneof (nameSpace <> [msgName])) oneof_decl)
+            )
       , "  }"
       , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
       , "derive instance generic" <> tname <> " :: Generic.Rep.Generic " <> tname <> " _"
@@ -295,7 +298,7 @@ import Protobuf.Runtime as Runtime
       , ""
       , "put" <> tname <> " :: forall m. Effect.MonadEffect m => " <> tname <> " -> ArrayBuffer.Builder.PutM m Unit.Unit"
       , "put" <> tname <> " (" <> tname <> " r) = do"
-      , String.joinWith "\n" (map (genFieldPut namespace) field)
+      , String.joinWith "\n" (map (genFieldPut nameSpace) field)
       , ""
       , "parse" <> tname <> " :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m " <> tname
       , "parse" <> tname <> " length ="
@@ -305,14 +308,63 @@ import Protobuf.Runtime as Runtime
     :: Runtime.FieldNumberInt
     -> Common.WireType"""
       , "    -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
-      , String.joinWith "\n" (map (genFieldParser namespace) field)
+      , String.joinWith "\n" (map (genFieldParser nameSpace) field)
       , "  parseField _ wireType = Runtime.parseFieldUnknown wireType"
       , "  default ="
-      , "    { " <> String.joinWith "\n    , " (map genFieldDefault field)
+      , "    { " <> String.joinWith "\n    , "
+              (  (mapMaybe genFieldDefault field)
+              <> (map genFieldDefaultOneof oneof_decl)
+              )
       , "    }"
-
+      , String.joinWith "\n" (Array.mapWithIndex (genTypeOneof (nameSpace <> [msgName]) field) oneof_decl)
       ]
-  genMessage _ = ""
+  genMessage _ = "" -- error not enough information
+
+  genTypeOneof
+    :: NameSpace
+    -> Array FieldDescriptorProto
+    -> Int
+    -> OneofDescriptorProto
+    -> String
+  genTypeOneof nameSpace field indexOneof (OneofDescriptorProto {name: Just oname}) =
+    "data " <> cname <> "\n  = "
+    <> (String.joinWith "\n  | " (mapMaybe go field))
+   where
+    cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
+    go :: FieldDescriptorProto -> Maybe String
+    go f@(FieldDescriptorProto
+                      {name: Just fname
+                      , oneof_index: Just index
+                      , type: Just ftype
+                      , type_name
+                      }) =
+      if index == indexOneof
+        then Just $ (String.joinWith "_" $ map capitalize [cname,fname]) <> " " <> genFieldType ftype type_name
+        else Nothing
+     where
+      genFieldType :: FieldDescriptorProto_Type -> Maybe String -> String
+      genFieldType FieldDescriptorProto_Type_TYPE_DOUBLE _ = "Number"
+      genFieldType FieldDescriptorProto_Type_TYPE_FLOAT _ = "Float32.Float32"
+      genFieldType FieldDescriptorProto_Type_TYPE_INT64 _ = "(Long.Long Long.Signed)"
+      genFieldType FieldDescriptorProto_Type_TYPE_UINT64 _ = "(Long.Long Long.Unsigned)"
+      genFieldType FieldDescriptorProto_Type_TYPE_INT32 _ = "Int"
+      genFieldType FieldDescriptorProto_Type_TYPE_FIXED64 _ = "(Long.Long Long.Unsigned)"
+      genFieldType FieldDescriptorProto_Type_TYPE_FIXED32 _ = "UInt.UInt"
+      genFieldType FieldDescriptorProto_Type_TYPE_BOOL _ = "Boolean"
+      genFieldType FieldDescriptorProto_Type_TYPE_STRING _ = "String"
+      genFieldType FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = mkFieldType "" tname
+      genFieldType FieldDescriptorProto_Type_TYPE_BYTES _ = "ArrayBuffer.Types.ArrayBuffer"
+      genFieldType FieldDescriptorProto_Type_TYPE_UINT32 _ = "UInt.UInt"
+      genFieldType FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = mkFieldType "" tname
+      genFieldType FieldDescriptorProto_Type_TYPE_SFIXED32 _ = "Int"
+      genFieldType FieldDescriptorProto_Type_TYPE_SFIXED64 _ = "(Long.Long Long.Signed)"
+      genFieldType FieldDescriptorProto_Type_TYPE_SINT32 _ = "Int"
+      genFieldType FieldDescriptorProto_Type_TYPE_SINT64 _ = "(Long.Long Long.Signed)"
+      genFieldType FieldDescriptorProto_Type_TYPE_GROUP _ = "" -- error ignore
+      genFieldType _ _ = "" -- error, not enough information
+    go _ = Nothing
+  genTypeOneof _ _ _ _ = "" -- error no name
+
 
 
   genFieldPut :: NameSpace -> FieldDescriptorProto -> String
@@ -365,9 +417,9 @@ import Protobuf.Runtime as Runtime
     f _ FieldDescriptorProto_Type_TYPE_STRING _ =
       "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.string"
     f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
-      "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" nameSpace tname
+      "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" tname
     f _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
-      "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" nameSpace tname
+      "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" tname
     f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ =
       "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Encode.bytes"
     f _ FieldDescriptorProto_Type_TYPE_BYTES _ =
@@ -484,7 +536,7 @@ import Protobuf.Runtime as Runtime
       ]
     f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
-      , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" nameSpace tname
+      , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
       ]
     f FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ = String.joinWith "\n"
@@ -587,7 +639,7 @@ import Protobuf.Runtime as Runtime
       ]
     f _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = String.joinWith "\n"
       [ "  parseField " <> show fnumber <> " Common.LenDel = do"
-      , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" nameSpace tname
+      , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
       , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
       ]
     f _ FieldDescriptorProto_Type_TYPE_BYTES _ = String.joinWith "\n"
@@ -630,70 +682,90 @@ import Protobuf.Runtime as Runtime
 
   -- | For embedded message fields, the parser merges multiple instances of the same field,
   -- | https://developers.google.com/protocol-buffers/docs/encoding?hl=en#optional
-  genFieldRecord :: NameSpace -> FieldDescriptorProto -> String
+  genFieldRecord :: NameSpace -> FieldDescriptorProto -> Maybe String
   genFieldRecord nameSpace (FieldDescriptorProto
     { name: Just name'
     , number: Just fnumber
     , label: Just flabel
     , type: Just ftype
     , type_name
-    }) = fname <> " :: " <> ptype flabel ftype type_name
+    , oneof_index
+    }) = (\x -> fname <> " :: " <> x) <$> ptype oneof_index flabel ftype type_name
    where
     fname = decapitalize name'
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ = "Array Number"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ = "Array Float32.Float32"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = "Array (Long.Long Long.Signed)"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ = "Array (Long.Long Long.Unsigned)"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ = "Array Int"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ = "Array (Long.Long Long.Unsigned)"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ = "Array UInt.UInt"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ = "Array Boolean"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ = "Array String"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = "Array " <> mkFieldType "" nameSpace tname
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ = "Array ArrayBuffer.Types.ArrayBuffer"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ = "Array UInt.UInt"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = "Array " <> mkFieldType "" nameSpace tname
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ = "Array Int"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ = "Array (Long.Long Long.Signed)"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ = "Array Int"
-    ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ = "Array (Long.Long Long.Signed)"
-    ptype _ FieldDescriptorProto_Type_TYPE_DOUBLE _ = "Maybe.Maybe Number"
-    ptype _ FieldDescriptorProto_Type_TYPE_FLOAT _ = "Maybe.Maybe Float32.Float32"
-    ptype _ FieldDescriptorProto_Type_TYPE_INT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
-    ptype _ FieldDescriptorProto_Type_TYPE_UINT64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
-    ptype _ FieldDescriptorProto_Type_TYPE_INT32 _ = "Maybe.Maybe Int"
-    ptype _ FieldDescriptorProto_Type_TYPE_FIXED64 _ = "Maybe.Maybe (Long.Long Long.Unsigned)"
-    ptype _ FieldDescriptorProto_Type_TYPE_FIXED32 _ = "Maybe.Maybe UInt.UInt"
-    ptype _ FieldDescriptorProto_Type_TYPE_BOOL _ = "Maybe.Maybe Boolean"
-    ptype _ FieldDescriptorProto_Type_TYPE_STRING _ = "Maybe.Maybe String"
-    ptype _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = "Maybe.Maybe " <> mkFieldType "" nameSpace tname
-    ptype _ FieldDescriptorProto_Type_TYPE_BYTES _ = "Maybe.Maybe ArrayBuffer.Types.ArrayBuffer"
-    ptype _ FieldDescriptorProto_Type_TYPE_UINT32 _ = "Maybe.Maybe UInt.UInt"
-    ptype _ FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = "Maybe.Maybe " <> mkFieldType "" nameSpace tname
-    ptype _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ = "Maybe.Maybe Int"
-    ptype _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
-    ptype _ FieldDescriptorProto_Type_TYPE_SINT32 _ = "Maybe.Maybe Int"
-    ptype _ FieldDescriptorProto_Type_TYPE_SINT64 _ = "Maybe.Maybe (Long.Long Long.Signed)"
-    ptype _ _ _ = "" -- error, maybe its a TYPE_GROUP
-  genFieldRecord _ _ = "" -- error, not enough information
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ = Just "Array Number"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ = Just "Array Float32.Float32"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = Just "Array (Long.Long Long.Signed)"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ = Just "Array (Long.Long Long.Unsigned)"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ = Just "Array Int"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ = Just "Array (Long.Long Long.Unsigned)"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ = Just "Array UInt.UInt"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ = Just "Array Boolean"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ = Just "Array String"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = Just $ "Array " <> mkFieldType "" tname
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ = Just "Array ArrayBuffer.Types.ArrayBuffer"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ = Just "Array UInt.UInt"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = Just $"Array " <> mkFieldType "" tname
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ = Just "Array Int"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Just "Array (Long.Long Long.Signed)"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ = Just "Array Int"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ = Just "Array (Long.Long Long.Signed)"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_DOUBLE _ = Just "Maybe.Maybe Number"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_FLOAT _ = Just "Maybe.Maybe Float32.Float32"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_INT64 _ = Just "Maybe.Maybe (Long.Long Long.Signed)"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_UINT64 _ = Just "Maybe.Maybe (Long.Long Long.Unsigned)"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_INT32 _ = Just "Maybe.Maybe Int"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_FIXED64 _ = Just "Maybe.Maybe (Long.Long Long.Unsigned)"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_FIXED32 _ = Just "Maybe.Maybe UInt.UInt"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_BOOL _ = Just "Maybe.Maybe Boolean"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_STRING _ = Just "Maybe.Maybe String"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = Just $ "Maybe.Maybe " <> mkFieldType "" tname
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_BYTES _ = Just "Maybe.Maybe ArrayBuffer.Types.ArrayBuffer"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_UINT32 _ = Just "Maybe.Maybe UInt.UInt"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = Just $ "Maybe.Maybe " <> mkFieldType "" tname
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ = Just "Maybe.Maybe Int"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Just "Maybe.Maybe (Long.Long Long.Signed)"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_SINT32 _ = Just "Maybe.Maybe Int"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_SINT64 _ = Just "Maybe.Maybe (Long.Long Long.Signed)"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_GROUP _ = Nothing -- ignore
+    ptype _ _ _ _ = Nothing -- its a Oneof
+  genFieldRecord _ _ = Nothing -- error, not enough information
 
-  genFieldDefault :: FieldDescriptorProto -> String
+
+  -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
+  -- “A oneof cannot be repeated.”
+  genFieldRecordOneof :: NameSpace -> OneofDescriptorProto -> String
+  genFieldRecordOneof nameSpace (OneofDescriptorProto {name: Just fname}) =
+    decapitalize fname <> ": Maybe.Maybe " <> (String.joinWith "_" $ map capitalize $ nameSpace <> [fname])
+  genFieldRecordOneof _ _ = "" -- error no name
+
+  genFieldDefault :: FieldDescriptorProto -> Maybe String
   genFieldDefault (FieldDescriptorProto
     { name: Just name'
     , label: Just flabel
-    }) = fname <> ": " <> dtype flabel
+    , oneof_index
+    }) = (\x -> fname <> ": " <> x) <$> dtype oneof_index flabel
    where
     fname = decapitalize name'
-    dtype FieldDescriptorProto_Label_LABEL_REPEATED = "[]"
-    dtype _              = "Maybe.Nothing"
-  genFieldDefault _ = "" -- error, not enough information
+    dtype Nothing FieldDescriptorProto_Label_LABEL_REPEATED = Just "[]"
+    dtype Nothing _              = Just "Maybe.Nothing"
+    dtype _ _ = Nothing -- it's a Oneof
+  genFieldDefault _ = Nothing -- error, not enough information
+
+  -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
+  -- “A oneof cannot be repeated.”
+  genFieldDefaultOneof :: OneofDescriptorProto -> String
+  genFieldDefaultOneof (OneofDescriptorProto {name: Just fname}) =
+    -- (String.joinWith "_" $ map capitalize $ nameSpace <> [fname]) <> ": Nothing"
+    decapitalize fname <> ": Nothing"
+  genFieldDefaultOneof _ = "" -- error no name
+
 
   mkFieldType
     :: String -- prefix for the name, i.e. "put" "parse"
-    -> NameSpace  -- local module namespace
     -> String -- package-qualified period-separated field name
     -> String
-  mkFieldType prefix nameSpace s =
+  mkFieldType prefix s =
     let (ScopedField names name) = parseFieldName s
     in
     if names `beginsWith` packageName
