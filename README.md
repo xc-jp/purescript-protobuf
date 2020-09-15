@@ -1,10 +1,7 @@
 # purescript-protobuf
 
-Purescript library and code generator for Google Protocol Buffers.
-
-Only
-[Protocol Buffers Version 3](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec)
-is supported.
+Purescript library and code generator for
+[Google Protocol Buffers Version 3](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec).
 
 This library operates on
 [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer), so it will run both
@@ -137,7 +134,9 @@ formula `column - 1`.
 
 ## Features
 
-We aim to support __proto3__. Many __proto2__-syntax descriptor files will
+We aim to support
+[__proto3__](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec).
+Many __proto2__-syntax descriptor files will
 also work, as long as they don't have __proto2__ features.
 
 We don't support
@@ -149,22 +148,20 @@ The generated optional record fields will use `Nothing` instead of the
 We do not preserve
 [unknown fields](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#unknowns).
 
-We do not support the
-[Any message type](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#any).
-
 We do not support
 [services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
 
 ### Imports
 
 The code generator will use the `package` statement in the `.proto` file
-as the Purescript module name for that file.
+and the base file name as the Purescript module name for that file.
 
 The Protobuf
 [`import`](https://developers.google.com/protocol-buffers/docs/proto3#importing_definitions)
 statement allows Protobuf messages to have fields
-consisting of Protobuf messages from another file. In order to generate the
-correct Purescript module name qualifier on the types of imported message
+consisting of Protobuf messages imported from another file, and qualified
+by the package name in that file. In order to generate
+the correct Purescript module name qualifier on the types of imported message
 fields, the code generator must be able to lookup the package name
 statement in the imported file.
 
