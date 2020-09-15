@@ -11,6 +11,6 @@
 let conf = ./spago.dhall
 
 in conf //
-  { sources = conf.sources # [ "test/**/*.purs" ]
+  { sources = [ "test/**/*.purs", "src/Protobuf/*.purs" ]
   , dependencies = conf.dependencies # [ "assert" ]
   }

@@ -191,6 +191,12 @@ import Protobuf.Runtime as Runtime
     ["\n"]
 
 
+  -- We have to import the modules qualified in the way because
+  -- 1. When protoc "fully qualifies" a field type from an imported
+  --    desriptor, the qualification consists of only the package name
+  -- 2. protoc allows multiple files to have the same package name,
+  --    such as descriptor.proto and any.proto (package "google.protobuf")
+  --    but Purescript requires each file to have a different module name.
   genImport :: String -> String
   genImport fpath = "import " <> make moduleName <> " as " <> make qualifiedName
    where
@@ -198,13 +204,6 @@ import Protobuf.Runtime as Runtime
     moduleName = mkModuleName (Just fpath) pkg
     qualifiedName = Array.dropEnd 1 moduleName
     make = String.joinWith "." <<< map capitalize
-
-    -- moduleName = case pkg of
-    --   Nothing -> "Error, module name for file path not found."
-    --   Just ps -> String.joinWith "." $ map capitalize ps
-    -- qualifiedName = case pkg of
-    --   Nothing -> "Error, module name for file path not found."
-    --   Just ps -> String.joinWith "." $ map capitalize $ Array.dropEnd 1 ps
 
   mkModuleName
     :: Maybe String -- file path
