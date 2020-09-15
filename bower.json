@@ -22,4 +22,18 @@
     "type": "git",
     "url": "https://github.com/xc-jp/purescript-protobuf.git"
   }
+  "dependencies": {
+    "purescript-parsing": "^5.0.3",
+    "purescript-arraybuffer-types": "^2.0.0",
+    "purescript-arraybuffer": "^10.0.2",
+    "purescript-uint": "^5.1.4",
+    "purescript-text-encoding": "^1.0.0",
+    "purescript-longs": "^0.1.1",
+    "purescript-node-streams": "^4.0.1",
+    "purescript-node-process": "^7.0.0",
+    "purescript-node-buffer": "^6.0.0",
+    "purescript-node-path": "^3.0.0",
+    "purescript-arraybuffer-builder": "jamesdbrock/purescript-arraybuffer-builder#1.1.0",
+    "purescript-parsing-dataview": "jamesdbrock/purescript-parsing-dataview#1.1.1"
+  }
 }
