@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package pack4;
 
+// import "google/protobuf/any.proto";
+
 message msg2 {
   msg1.msg2 F1 = 1;
 }
@@ -11,5 +13,7 @@ message msg1 {
   message msg2 {
     string Nested = 1;
   }
+  map<string,string> mappy = 2;
+  // repeated google.protobuf.Any details = 3;
 }
 

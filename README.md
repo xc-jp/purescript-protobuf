@@ -153,13 +153,7 @@ We do not support the
 [Any message type](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#any).
 
 We do not support
-[maps](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#maps).
-
-We do not support
 [services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
-
-We do not support any
-[options](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#options).
 
 ### Imports
 
