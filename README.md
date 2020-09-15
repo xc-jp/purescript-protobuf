@@ -140,9 +140,9 @@ formula `column - 1`.
 ## Features
 
 We aim to support
-[__proto3__](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec).
+[__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
 Many __proto2__-syntax descriptor files will
-also work, as long as they don't have __proto2__ features.
+also work, as long as they don't use __proto2__ features.
 
 We don't support
 [extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
