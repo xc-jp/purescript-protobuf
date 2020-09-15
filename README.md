@@ -100,7 +100,7 @@ except for
 It also depends on the Javascript package
 [__long__](https://www.npmjs.com/package/long).
 
-## Generated message instances
+### Generated message instances
 
 We cannot easily derive common instances like `Eq` for the
 generated message types because
@@ -121,7 +121,7 @@ our particular message types.
 All of the generated message types have an instance of
 [`NewType`](https://pursuit.purescript.org/packages/purescript-newtype/docs/Data.Newtype#t:Newtype).
 
-## Interpreting invalid encoding parse errors
+### Interpreting invalid encoding parse errors
 
 When the decode parser encounters an invalid encoding in the protobuf input
 stream then it will fail to parse.
