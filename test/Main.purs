@@ -17,8 +17,8 @@ import Data.Long.Internal as Long
 import Data.UInt as UInt
 import Data.Generic.Rep.Eq (genericEq)
 
-import Pack1.Msg1 as Pack1
-import Pack2.Msg2 as Pack2
+import Pack.Msg1 as Pack1
+import Pack.Msg2 as Pack2
 import Pack3.Msg3 as Pack3
 import Pack4.Msg4 as Pack4
 import Pack5.Msg5 as Pack5

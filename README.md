@@ -172,6 +172,9 @@ For that reason, we can only use top-level
 (not [nested](https://developers.google.com/protocol-buffers/docs/proto3#nested))
 `message` and `enum` types from an `import`.
 
+The generated Purescript code will usually have module imports which cause
+the `purs` compiler to emit warnings. Sorry.
+
 ## Performance
 
 The implementation is simple and straightforward. We haven't done

@@ -6,8 +6,8 @@ import "test/msg1.proto";
 import "test/msg2.proto";
 
 message msg3 {
-  repeated pack1.msg1 f1 = 1;
-  repeated pack2.msg2 f2 = 2;
+  repeated pack.msg1 f1 = 1;
+  repeated pack.msg2 f2 = 2;
 
   // message msg4 {
   //   int32 f1 = 1;

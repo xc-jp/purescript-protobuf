@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pack2;
+package pack;
 
 message msg2 {
   repeated double f1 = 1;
