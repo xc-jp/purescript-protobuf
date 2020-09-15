@@ -1,5 +1,8 @@
 -- | Primitive `UInt`-based parsers for decoding Google Protocol Buffers.
 -- |
+-- | Do not import this module, or any module from the package __purescript-protobuf__.
+-- | See package README for explanation.
+-- |
 -- | There is no `varint32` in the Protbuf spec, this is
 -- | just a performance-improving assumption we make
 -- | in cases where only a deranged lunatic would use a value

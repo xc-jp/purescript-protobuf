@@ -1,4 +1,7 @@
 -- | This module is for import by the generated .purs message modules.
+-- |
+-- | Do not import this module, or any module from the package __purescript-protobuf__.
+-- | See package README for explanation.
 module Protobuf.Runtime
 ( parseMessage
 , parseFieldUnknown

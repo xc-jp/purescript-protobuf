@@ -1,3 +1,5 @@
+-- | Do not import this module, or any module from the package __purescript-protobuf__.
+-- | See package README for explanation.
 module Protobuf.Common
 ( FieldNumber
 , WireType(..)

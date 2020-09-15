@@ -1,4 +1,7 @@
 -- | Primitive parsers for decoding Google Protocol Buffers.
+-- |
+-- | Do not import this module, or any module from the package __purescript-protobuf__.
+-- | See package README for explanation.
 module Protobuf.Decode
 ( double
 , float

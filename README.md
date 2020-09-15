@@ -44,7 +44,8 @@ To generate Purescript .purs files from .proto files, run:
 
 ## Writing programs with the generated code
 
-None of the modules in this package should be imported directly in our program.
+*None of the modules in this package should be imported directly in our program.*
+
 Rather, we'll import the message modules from the generated `.purs` files,
 as well as modules for reading and writing `ArrayBuffer`s.
 
@@ -62,7 +63,7 @@ will export these four names in the generated `.purs` modules.
    * `type MyMessageR = { my_field :: Maybe Int }`.
 2. A message data type
    * `newtype MyMessage = MyMessage MyMessageR`.
-3. A message encoder which works with 
+3. A message encoder which works with
    [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
    * `putMyMessage :: forall m. MonadEffect m => MyMessage -> PutM m Unit`
 4. A message decoder which works with
@@ -84,11 +85,12 @@ package.
 The generated code depends on packages
 
 ```
+  , "protobuf"
+  , "arraybuffer"
+  , "arraybuffer-types"
+  , "arraybuffer-builder"
   , "parsing"
   , "parsing-dataview"
-  , "arraybuffer-types"
-  , "arraybuffer"
-  , "arraybuffer-builder"
   , "uint"
   , "long"
   , "text-encoding"
@@ -109,7 +111,7 @@ We cannot easily derive common instances like `Eq` for the
 generated message types because
 1. The types [might be recursive](https://github.com/purescript/documentation/blob/master/errors/CycleInDeclaration.md).
 2. The types might contain fields of type
-   [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer)
+   [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer),
    which doesn't have those instances.
 
 All of the generated message types have an instance of
@@ -118,8 +120,8 @@ This allows us to sometimes use
 [`genericEq`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep.Eq#v:genericEq)
 and
 [`genericShow`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep.Show#v:genericShow)
-on the generated messages, if neither of two conditions above apply to
-our particular message types.
+on a generated message, if the generated message has those instances for
+all of its fields.
 
 All of the generated message types have an instance of
 [`NewType`](https://pursuit.purescript.org/packages/purescript-newtype/docs/Data.Newtype#t:Newtype).

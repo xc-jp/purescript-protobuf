@@ -1,18 +1,21 @@
+-- | Entry point for the code-generating executable `protoc` plugin. See the
+-- | package README for instructions on how to run the code generator.
+-- |
 -- | The funny thing about writing a `protoc` compiler plugin codec is that it
 -- | bootstraps itself. We just have to write enough of the compiler plugin codec
 -- | that it can handle the `plugin.proto` and `descriptor.proto` files, and
 -- | then we call the compiler plugin on these `.proto` files and the compiler
 -- | plugin codec generates the rest of itself.
 -- |
--- | Then we can delete the hand-written code and generate code to replace it.
+-- | Then we can delete the hand-written code and generate code to replace it
+-- | with this command.
 -- |
--- |     spago build
 -- |     protoc --purescript_out=./src/ProtocPlugin google/protobuf/compiler/plugin.proto
 -- |
 -- | See
 -- | * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
 -- | * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.descriptor.pb
-module ProtocPlugin.Main where
+module ProtocPlugin.Main (main) where
 
 import Prelude
 
