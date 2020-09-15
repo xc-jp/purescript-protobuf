@@ -1,6 +1,7 @@
 # purescript-protobuf
 
-![Test](https://github.com/xc-jp/purescript-protobuf/workflows/Test/badge.svg)
+[![Test](https://github.com/xc-jp/purescript-protobuf/workflows/Test/badge.svg?branch=master)](https://github.com/xc-jp/purescript-protobuf/actions)
+[![Pursuit](http://pursuit.purescript.org/packages/purescript-protobuf/badge)](http://pursuit.purescript.org/packages/purescript-protobuf/)
 
 Purescript library and code generator for
 [Google Protocol Buffers Version 3](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec).
