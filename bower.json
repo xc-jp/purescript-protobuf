@@ -1,0 +1,25 @@
+{
+  "name": "purescript-protobuf",
+  "description": "Google Protocol Buffers for Purescript",
+  "main": "src/ProtocPlugin/Main.purs",
+  "authors": [
+    "Cross Compass LLC.",
+    "jamesbrock@gmail.com"
+  ],
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "protobuf"
+  ],
+  "homepage": "https://github.com/xc-jp/purescript-protobuf",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xc-jp/purescript-protobuf.git"
+  }
+}
