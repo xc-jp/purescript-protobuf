@@ -1,2 +1,2 @@
-# $(spago run --main ProtocPlugin.Main 1>&2)
-spago run --main Main
+#!/usr/bin/env bash
+node -e "require('./output/ProtocPlugin.Main/index.js').main()"
