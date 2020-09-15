@@ -1,0 +1,22 @@
+{
+  "name": "protobuf",
+  "set": "local",
+  "source": "packages.json",
+  "depends":
+    [ "prelude"
+    , "parsing"
+    , "parsing-dataview"
+    , "arraybuffer-types"
+    , "arraybuffer"
+    , "arraybuffer-builder"
+    , "uint"
+    , "text-encoding"
+    , "longs"
+    , "node-streams"
+    , "node-process"
+    , "node-buffer"
+    , "node-path"
+    , "assert"
+    ]
+}
+

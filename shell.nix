@@ -17,6 +17,10 @@ pkgs.mkShell {
     pkgs.nodejs-14_x
     easy-ps.pulp
     pkgs.protobuf3_9
+    pkgs.nodePackages.bower
+    easy-ps.psc-package
+    pkgs.dhall
+    pkgs.dhall-json
   ];
   shellHook = ''
   export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
