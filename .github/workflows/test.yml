@@ -1,0 +1,18 @@
+# https://github.com/marketplace/actions/install-nix?version=v10
+name: "Test"
+on:
+  pull_request:
+  push:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@v9
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - run: nix-shell --command 'npm install'
+    - run: nix-shell --command 'spago build'
+    - run: nix-shell --command 'protoc --purescript_out=./test/generated test/*.proto'
+    - run: nix-shell --command 'spago -x test.dhall build'
+    - run: nix-shell --command 'spago -x test.dhall test'
