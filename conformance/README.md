@@ -22,3 +22,8 @@ We can do
 ```
 ./result/bin/conformance-test-runner --enforce_recommended ./result/bin/conformance-cpp
 ```
+
+## Writing a conformance test program
+
+See `./result/conformance/conformance.proto`.
+
