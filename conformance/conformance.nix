@@ -15,45 +15,12 @@ let
     inherit sha256;
   };
 
-  protobuf = pkgs.stdenv.mkDerivation {
-    name = "protobuf-${version}";
+  # This is pretty much what's in nixpkgs as "protobuf"
+  protoc = pkgs.stdenv.mkDerivation {
+    name = "protoc-${version}";
     buildInputs = [ pkgs.autoreconfHook ];
     src = protobufRepo;
   };
-
-  protobufBuilt = pkgs.stdenv.mkDerivation {
-    name = "protbufBuilt-${version}";
-    # buildInputs = [pkgs.autoreconfHook ];
-    # src = "${protobufRepo}/conformance";
-    nativeBuildInputs = with pkgs; [ autogen automake autoconf libtool rsync ];
-    src = protobufRepo;
-    # unpackPhase = ''
-    # '';
-    # https://laptrinhx.com/an-elixir-library-for-protocol-buffers-2920413944/#conformance
-    # preconfigure = ''
-    #   ./autogen.sh
-    #   '';
-    configurePhase = ''
-      ./autogen.sh
-      ./configure --prefix=$out
-      '';
-    buildPhase = ''
-      make -j$(_ncpus)
-      cd conformance
-      make
-      cd ..
-      '';
-    installPhase = ''
-      mkdir -p $out
-      make install
-      cd conformance
-      make install
-      cd ..
-      cp ./test-driver $out/bin/test-driver
-      # Copy the conformance test messages, especially ./src/google/protobuf/test_messages_proto3.proto
-      rsync -am --include='*.proto' --include='*/' --exclude='*' src $out/
-      '';
-    };
 
   # https://github.com/protocolbuffers/protobuf/tree/master/conformance
   # See the Travis test runner script
@@ -62,64 +29,33 @@ let
     name = "conformance-${version}";
     # buildInputs = [pkgs.autoreconfHook ];
     # src = "${protobufRepo}/conformance";
-    nativeBuildInputs = [ pkgs.autogen pkgs.automake pkgs.autoconf pkgs.libtool];
-    # src = protobufRepo;
-    src = protobufBuilt;
-    # # unpackPhase = ''
-    # # '';
-    # # https://laptrinhx.com/an-elixir-library-for-protocol-buffers-2920413944/#conformance
-    # # preconfigure = ''
-    # #   ./autogen.sh
-    # #   '';
-    # configurePhase = ''
-    #   ./autogen.sh
-    #   ./configure
-    #   '';
-    # # buildPhase = ''
-    # #   # make -j
-    # #   make
-    # #   cd conformance
-    # #   # make -j
-    # #   make
-    # #   cd ..
-    # #   # ./tests.sh cpp
-    # #   '';
-    # # installPhase = ''
-    # #   # mkdir -p $out/bin
-    # #   # cp conformance/conformance-cpp $out/bin/conformance-cpp
-    # #   # cp conformance/conformance-test-runner $out/bin/conformance-test-runner
-    # #   # cp ./test-driver $out/bin/test-driver
-    # #   #./install-sh -t $out
-    # #   make dist
-    # #   cd conformance
-    # #   make dist
-    # #   cd ..
-    # #   '';
-    # buildPhase = ''
-    #   make
-    #   cd conformance
-    #   make
-    #   cd ..
-    #   '';
-    installPhase = ''
-      mkdir -p $out/bin
-      cp ./conformance/conformance-cpp $out/bin/conformance-cpp
-      cp ./conformance/conformance-test-runner $out/bin/conformance-test-runner
-      cp ./test-driver $out/bin/test-driver
-      mkdir -p $out/include
-      cp ./conformance/conformance.proto $out/include/
-      mkdir -p $out/include/google/protobuf
-      cp ./src/google/protobuf/*.proto $out/include/google/protobuf/
-      mkdir -p $out/lib/conformance
-      cp ./conformance/conformance_test*.o $out/lib/conformance/
-      rsync -am --include='*.proto' --include='*/' --exclude='*' . $out/
+    nativeBuildInputs = with pkgs; [ autogen automake autoconf libtool rsync ];
+    src = protobufRepo;
+    # https://laptrinhx.com/an-elixir-library-for-protocol-buffers-2920413944/#conformance
+    configurePhase = ''
+      ./autogen.sh
+      ./configure --prefix=$out
       '';
+    buildPhase = ''
+      make --jobs=$(_ncpus)
+      cd conformance
+      make
+      cd ..
+      '';
+    # Copy the conformance test .proto files, especially ./src/google/protobuf/test_messages_proto3.proto
+    installPhase = ''
+      mkdir -p $out
+      make install
+      cd conformance
+      make install
+      cd ..
+      cp ./test-driver $out/bin/test-driver
+      rsync -am --include='*.proto' --include='*/' --exclude='*' src $out/
+      '';
+    };
 
-    # LANGUAGE = "en_US:en";
-    # LC_ALL = (unset);
-    # LANG = "en_US.utf8";
 
     LC_ALL = "C.UTF-8";
   };
 
-in { inherit protobuf protobufBuilt conformance; }
+in { inherit protoc conformance; }
