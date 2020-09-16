@@ -9,9 +9,10 @@ let
     }) {
     inherit pkgs;
   };
+  conformance = import ./conformance/protobuf.nix { inherit pkgs; };
 in
 pkgs.mkShell {
-  buildInputs = [
+  nativeBuildInputs = [
     easy-ps.purs-0_13_8
     easy-ps.spago
     pkgs.nodejs-14_x
@@ -21,6 +22,7 @@ pkgs.mkShell {
     easy-ps.psc-package
     pkgs.dhall
     pkgs.dhall-json
+    conformance.conformance
   ];
   shellHook = ''
   export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
@@ -40,6 +42,11 @@ pkgs.mkShell {
   echo ""
   echo "    protoc --purescript_out=path_to_output *.proto"
   echo ""
+  echo "To run the Google conformance test on purescript-protobuf, run:"
+  echo ""
+  echo "    protoc --purescript_out=./generate-conformance --proto_path=conformance/result/src/  --proto_path=conformance/result/conformance/ ./conformance/result/src/google/protobuf/test_messages_proto3.proto"
+  echo "    spago -x conformance.dhall build"
+  echo "    spago -x conformance.dhall build"
   '';
   LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507
 }
