@@ -52,9 +52,6 @@ let
       cp ./test-driver $out/bin/test-driver
       rsync -am --include='*.proto' --include='*/' --exclude='*' src $out/
       '';
-    };
-
-
     LC_ALL = "C.UTF-8";
   };
 
