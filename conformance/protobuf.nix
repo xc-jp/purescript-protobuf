@@ -1,6 +1,7 @@
 { pkgs ? import <nixpkgs> { } }:
 
 # https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats
+# https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/libraries/protobuf/generic-v3.nix
 
 let
   # version = "v3.13.0";
