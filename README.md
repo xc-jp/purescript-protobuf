@@ -51,7 +51,7 @@ as well as modules for reading and writing `ArrayBuffer`s.
 
 For example, a message in a `.proto` file declared as
 
-```purescript
+```
 message MyMessage {
   sint32 my_field = 1;
 }
