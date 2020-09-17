@@ -24,17 +24,16 @@ import Data.Enum (toEnum)
 import Data.Maybe (Maybe(..))
 import Text.Parsing.Parser (ParserT, fail)
 import Text.Parsing.Parser.DataView as Parse
-import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.), shr, shl)
+import Data.UInt (UInt, fromInt, toInt, (.&.), (.|.), (.^.), zshr, shr, shl)
 import Data.ArrayBuffer.Types (DataView)
 import Protobuf.Common (FieldNumber, WireType)
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
 zigzag32 :: UInt -> Int
-zigzag32 n = toInt $ (n `shr` (fromInt 1)) .^. (unegate (n .&. (fromInt 1)))
+zigzag32 n = toInt $ (n `zshr` (fromInt 1)) .^. (unegate (n .&. (fromInt 1)))
  where
   unegate :: UInt -> UInt
   unegate = fromInt <<< negate <<< toInt
-    -- unegate x = complement x + (fromInt 1) -- TODO switch to this definition?
 
 -- | Parse the field number and wire type of the next field.
 -- | https://developers.google.com/protocol-buffers/docs/encoding#structure

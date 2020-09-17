@@ -23,8 +23,8 @@ import Data.Long.Internal
   , or
   , xor
   , complement
-  , shr
   , shl
+  , zshr
   )
 import Data.UInt (UInt)
 import Data.UInt as UInt
@@ -44,7 +44,7 @@ fromInt = signedToUnsigned <<< signedLongFromInt <<< UInt.toInt
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
 zigzag64 :: Long Unsigned -> Long Signed
-zigzag64 n = let n' = unsignedToSigned n in (n' `shr` u1) .^. (lnegate (n' .&. u1))
+zigzag64 n = let n' = unsignedToSigned n in (n' `zshr` u1) .^. (lnegate (n' .&. u1))
  where
    lnegate x = complement x + u1
    u1    = unsafeFromInt 1
@@ -100,7 +100,7 @@ varint64 = do
                                       n_9 <- fromInt <$> Parse.anyUint8
                                       if n_9 < u0x02
                                         then pure $ acc_8 .|. (n_9 `shl` u63)
-                                        else fail "varint64 overflow. Possibly there is an encoding error in the input stream. Please report issues at https://github.com/xc-jp/purescript-protobuf-library/issues"
+                                        else fail "varint64 overflow. Possibly there is an encoding error in the input stream."
  where
   u7    = unsafeFromInt 7
   u14   = unsafeFromInt 14

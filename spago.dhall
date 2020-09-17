@@ -2,18 +2,18 @@
 -}
 { name = "protobuf-library"
 , dependencies =
-  [ "parsing"
-  , "parsing-dataview"
-  , "arraybuffer-types"
-  , "arraybuffer"
+  [ "arraybuffer"
   , "arraybuffer-builder"
-  , "uint"
-  , "text-encoding"
+  , "arraybuffer-types"
   , "longs"
-  , "node-streams"
-  , "node-process"
   , "node-buffer"
   , "node-path"
+  , "node-process"
+  , "node-streams"
+  , "parsing"
+  , "parsing-dataview"
+  , "text-encoding"
+  , "uint"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

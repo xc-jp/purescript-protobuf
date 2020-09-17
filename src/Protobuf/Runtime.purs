@@ -74,7 +74,9 @@ parseMessage construct default parseField length = do
  where
   applyParser = do
     Tuple fieldNumber wireType <- Decode.tag32
-    parseField (UInt.toInt fieldNumber) wireType
+    if fieldNumber == UInt.fromInt 0
+      then fail "Field number 0 not allowed." -- Conformance tests require this
+      else parseField (UInt.toInt fieldNumber) wireType
 
 -- | Parse position, zero-based, unlike Text.Parsing.Parser.Position which is one-based.
 type Pos = Int
