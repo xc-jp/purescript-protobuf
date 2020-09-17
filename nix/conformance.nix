@@ -1,6 +1,6 @@
-{ pkgs ? import ./nix/pkgs.nix { } }:
+{ pkgs ? import ./pkgs.nix { } }:
 let
-  protobuf = import ./nix/protobuf.nix { inherit pkgs; };
+  protobuf = import ./protobuf.nix { inherit pkgs; };
 in
 pkgs.mkShell {
   nativeBuildInputs = [
