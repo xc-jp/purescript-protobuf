@@ -16,12 +16,12 @@ let
     inherit sha256;
   };
 
-  # This is pretty much what's in nixpkgs as "protobuf", just `protoc`.
-  protoc = pkgs.stdenv.mkDerivation {
-    name = "protoc-${version}";
-    buildInputs = [ pkgs.autoreconfHook ];
-    src = protobufRepo;
-  };
+  # # This is pretty much what's in nixpkgs as "protobuf", just `protoc`.
+  # protoc = pkgs.stdenv.mkDerivation {
+  #   name = "protoc-${version}";
+  #   buildInputs = [ pkgs.autoreconfHook ];
+  #   src = protobufRepo;
+  # };
 
   # Builds `protoc`, plus the conformance test runners, and also copies
   # in the .proto files for the conformance test protocol,
@@ -33,7 +33,7 @@ let
   # https://github.com/protocolbuffers/protobuf/blob/master/tests.sh
   #
   # https://laptrinhx.com/an-elixir-library-for-protocol-buffers-2920413944/#conformance
-  conformance = pkgs.stdenv.mkDerivation {
+  protobuf = pkgs.stdenv.mkDerivation {
     name = "conformance-${version}";
     nativeBuildInputs = with pkgs; [ autogen automake autoconf libtool rsync ];
     src = protobufRepo;
@@ -61,4 +61,4 @@ let
     LC_ALL = "C.UTF-8";
   };
 
-in { inherit protoc conformance; }
+in protobuf
