@@ -28,7 +28,7 @@ pkgs.mkShell {
     export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
     # export NODE_PATH="$PWD/output:$PWD/node_modules:$NODE_PATH"   # PATH to protoc-gen-purescript
     set -e
-    npm install
+    # npm install
     spago build
     protoc --purescript_out=./conformance/generated --proto_path=${protobuf}/src --proto_path=${protobuf}/conformance ${protobuf}/conformance/conformance.proto
     protoc --purescript_out=./conformance/generated --proto_path=${protobuf}/src --proto_path=${protobuf}/conformance ${protobuf}/src/google/protobuf/test_messages_proto3.proto
