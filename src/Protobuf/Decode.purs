@@ -23,25 +23,24 @@ module Protobuf.Decode
 ) where
 
 import Prelude
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
+
 import Control.Monad.Trans.Class (lift)
-import Text.Parsing.Parser (ParserT, fail)
-import Text.Parsing.Parser.DataView as Parse
-import Data.UInt (UInt)
-import Data.UInt as UInt
-import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, unsignedToSigned)
-import Data.Long as SLong
-import Data.Float32 (Float32)
-import Data.ArrayBuffer.Types (ArrayBuffer, DataView, Uint8Array)
-import Data.ArrayBuffer.Typed as AT
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
+import Data.ArrayBuffer.Typed as AT
+import Data.ArrayBuffer.Types (ArrayBuffer, DataView, Uint8Array)
+import Data.Either (Either(..))
+import Data.Float32 (Float32)
+import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, unsignedToSigned, lowBits)
 import Data.TextDecoding (decodeUtf8)
+import Data.UInt (UInt)
+import Data.UInt as UInt
+import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Protobuf.Decode32 (varint32, zigzag32, tag32)
 import Protobuf.Decode64 (varint64, zigzag64)
+import Text.Parsing.Parser (ParserT, fail)
+import Text.Parsing.Parser.DataView as Parse
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -58,9 +57,7 @@ float = Parse.anyFloat32le
 int32 :: forall m. MonadEffect m => ParserT DataView m Int
 int32 = do
   n <- varint64
-  case SLong.toInt (unsignedToSigned n) of
-    Just x -> pure x
-    Nothing -> fail "int32 overflow. Decoded varint was more than 32 bits."
+  pure $ lowBits n
     -- But this is a problem with the Protobuf spec?
     -- “If you use int32 or int64 as the type for a negative number, the resulting
     -- varint is always ten bytes long”
@@ -68,6 +65,10 @@ int32 = do
     -- So what are we supposed to do if the field type is int32 but the
     -- decoded varint is too big? There is no guarantee that either negative
     -- or positive numbers encoded as varints will be in range.
+    -- I suppose we could check that the high bits are all 0
+    -- for positive or all 1 for negative.
+    -- The conformance tests seem to like it if we just throw away
+    -- the hight bits. So that's what we'll do.
 
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -79,16 +80,7 @@ int64 = unsignedToSigned <$> varint64
 uint32 :: forall m. MonadEffect m => ParserT DataView m UInt
 uint32 = do
   n <- varint64
-  case SLong.toInt (unsignedToSigned n) of
-    Just x -> pure $ UInt.fromInt x
-    Nothing -> fail "uint32 overflow. Decoded varint was more than 32 bits."
-    -- But this is a problem with the Protobuf spec?
-    -- “If you use int32 or int64 as the type for a negative number, the resulting
-    -- varint is always ten bytes long”
-    -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
-    -- So what are we supposed to do if the field type is uint32 but the
-    -- decoded varint is too big? There is no guarantee that either negative
-    -- or positive numbers encoded as varints will be in range.
+  pure $ UInt.fromInt $ lowBits n
 
 -- | __uint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
