@@ -37,7 +37,7 @@ To test purescript-protobuf, run:
 
 To generate Purescript .purs files from .proto files, run:
 
-    protoc --purescript_out=path_to_output *.proto
+    protoc --purescript_out=path_to_output file.proto
 
 [nix-shell]$
 ```
@@ -51,7 +51,7 @@ as well as modules for reading and writing `ArrayBuffer`s.
 
 For example, a message in a `.proto` file declared as
 
-```
+```purescript
 message MyMessage {
   sint32 my_field = 1;
 }
@@ -60,15 +60,23 @@ message MyMessage {
 will export these four names in the generated `.purs` modules.
 
 1. A message record type
-   * `type MyMessageR = { my_field :: Maybe Int }`.
+   * ```purescript
+     type MyMessageR = { my_field :: Maybe Int }
+     ```
 2. A message data type
-   * `newtype MyMessage = MyMessage MyMessageR`.
+   * ```purescript
+     newtype MyMessage = MyMessage MyMessageR
+     ```
 3. A message encoder which works with
    [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
-   * `putMyMessage :: forall m. MonadEffect m => MyMessage -> PutM m Unit`
+   * ```purescript
+     putMyMessage :: forall m. MonadEffect m => MyMessage -> PutM m Unit
+     ```
 4. A message decoder which works with
    [__purescript-parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
-   * `parseMyMessage :: forall m. MonadEffect m => Int -> ParserT DataView m MyMessage`
+   * ```purescript
+     parseMyMessage :: forall m. MonadEffect m => Int -> ParserT DataView m MyMessage
+     ```
 
 Then, in our program, our imports will look something like this.
 
@@ -139,7 +147,7 @@ formula `column - 1`.
 
 ## Features
 
-We aim to support
+We aim to support binary-encoded (not JSON-encoded)
 [__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
 Many __proto2__-syntax descriptor files will
 also work, as long as they don't use __proto2__ features.
@@ -155,6 +163,17 @@ We do not preserve
 
 We do not support
 [services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
+
+### Conformance
+
+At the time of this writing, we pass 193 out of 194 of the
+[Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
+for binary-encoded proto3.
+The one test we fail is
+the *Required.Proto3.ProtobufInput.UnknownVarint.ProtobufOutput* test, which
+is the test for preserving unknown fields.
+
+See the `conformance/README.md` in this repository for details.
 
 ### Imports
 
