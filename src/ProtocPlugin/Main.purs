@@ -28,7 +28,6 @@ import Data.String as String
 import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
 import Data.String.Regex.Flags as String.Regex.Flags
--- import Partial.Unsafe (unsafePartial)
 
 import Text.Parsing.Parser (runParserT)
 import Data.ArrayBuffer.Builder (execPut)
@@ -226,7 +225,6 @@ import Protobuf.Runtime as Runtime
     underscoreToUpper = case String.Regex.regex "_([a-z])" flag of
       Left _ -> identity
       Right patt -> String.Regex.replace' patt toUpper
-      -- toUpper :: Partial => String -> Array String -> String
     toUpper _ [x] = String.toUpper x
     toUpper x _ = x
     flag = String.Regex.Flags.RegexFlags

@@ -7,6 +7,10 @@
 --
 --     spago -x test.dhall test
 --
+-- Also use this for a repl:
+--
+--     spago -x test.dhall repl
+--
 
 let conf = ./spago.dhall
 

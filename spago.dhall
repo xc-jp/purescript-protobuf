@@ -1,5 +1,3 @@
-{-
--}
 { name = "protobuf-library"
 , dependencies =
   [ "arraybuffer"

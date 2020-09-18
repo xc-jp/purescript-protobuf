@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix/pkgs.nix { } }:
+{ pkgs ? import ./nix/pkgs.nix {} }:
 let
   conformance = import ./conformance/protobuf.nix { inherit pkgs; };
 in
