@@ -4,7 +4,7 @@
 [![Pursuit](http://pursuit.purescript.org/packages/purescript-protobuf/badge)](http://pursuit.purescript.org/packages/purescript-protobuf/)
 
 Purescript library and code generator for
-[Google Protocol Buffers Version 3](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec).
+[Google Protocol Buffers version 3](https://developers.google.com/protocol-buffers/docs/proto3).
 
 This library operates on
 [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer), so it will run both
