@@ -77,6 +77,9 @@ will export these four names in the generated `.purs` modules.
    * ```purescript
      parseMyMessage :: forall m. MonadEffect m => Int -> ParserT DataView m MyMessage
      ```
+   The message decoder needs an argument which tells it the
+   length of the message which it’s about to decode, because
+   [“the Protocol Buffer wire format is not self-delimiting.”](https://developers.google.com/protocol-buffers/docs/techniques#streaming)
 
 Then, in our program, our imports will look something like this.
 
