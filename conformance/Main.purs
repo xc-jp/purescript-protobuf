@@ -40,21 +40,18 @@ bailOutEither thing = thing >>= case _ of
 main :: Effect Unit
 main = do
   onReadable stdin $ do
+
     msglendv <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No message length" $ read stdin (Just 4))
     msglen <- bailOutEither $ runParserT msglendv $ anyInt32le
     stdinview <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No stdin" $ read stdin (Just msglen))
     request <- bailOutEither $ runParserT stdinview $ parseConformanceRequest $ DV.byteLength stdinview
     response <- reply request
 
-    case response of
-      (C.ConformanceResponse
-        { result:  Just (ConformanceResponse_Result_Runtime_error err)
-        }) -> void $ writeString stderr UTF8 (err <> "\n") (pure unit)
-      _ -> pure unit
     responseab <- execPut $ do
        responsesub <- subBuilder $ putConformanceResponse response
        putInt32le $ Builder.length responsesub
        tell responsesub
+
     responsebuffer <- fromArrayBuffer responseab
     void $ write stdout responsebuffer (pure unit)
 
@@ -79,6 +76,7 @@ reply (ConformanceRequest
         pure $ ConformanceResponse
           { result: Just $ ConformanceResponse_Result_Protobuf_payload reply_payload
           }
+
 reply (ConformanceRequest
   { requested_output_format: _ -- :: Maybe.Maybe WireFormat
   , message_type: Just "protobuf_test_messages.proto2.TestAllTypesProto2"
