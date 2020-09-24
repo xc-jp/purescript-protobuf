@@ -17,11 +17,13 @@ module Protobuf.Runtime
 , putEnum
 , putEnum'
 , parseEnum
+, label
 )
 where
 
 import Prelude
 import Effect.Class (class MonadEffect)
+import Control.Monad.Error.Class (throwError, catchError)
 import Data.Enum (class BoundedEnum, toEnum, fromEnum)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
@@ -30,7 +32,7 @@ import Data.Long.Unsigned (toInt)
 import Data.UInt as UInt
 import Data.List (List(..), (:))
 import Data.Array (fromFoldable)
-import Text.Parsing.Parser (ParserT, fail, position)
+import Text.Parsing.Parser (ParserT, fail, position, ParseError(..))
 import Text.Parsing.Parser.Pos (Position(..))
 import Data.ArrayBuffer.Types (DataView)
 import Text.Parsing.Parser.DataView (takeN)
@@ -111,7 +113,7 @@ manyLength p len = do
   go posBegin = do
     pos <- positionZero
     case compare (pos - posBegin) len of
-      GT -> fail "Length-delimited repeated field consumed too many bytes."
+      GT -> fail "manyLength consumed too many bytes."
       EQ -> pure Nil
       LT -> do
         x <- p
@@ -183,5 +185,12 @@ parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
 parseEnum = do
   x <- Decode.varint32
   case toEnum $ UInt.toInt x of
-    Nothing -> fail "Enum out of bounds" -- TODO better error
+    Nothing -> fail $ "Enum " <> show x <> " out of bounds."
     Just e -> pure e
+
+-- | https://github.com/purescript-contrib/purescript-parsing/pull/96
+-- | If parsing fails inside this labelled context, then prepend the `String`
+-- | to the error `String` in the `ParseError`.
+label :: forall m s a. Monad m => String -> ParserT s m a -> ParserT s m a
+label messagePrefix p = catchError p $ \ (ParseError message pos) ->
+  throwError $ ParseError (messagePrefix <> message) pos

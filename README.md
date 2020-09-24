@@ -152,7 +152,7 @@ for further examples of how to use the generated code.
 3. The Google
    [conformance test program](https://github.com/xc-jp/purescript-protobuf/blob/master/conformance/Main.purs)
 
-## Interpreting invalid encoding parse errors
+## Interpreting invalid encoding parse failures
 
 When the decode parser encounters an invalid encoding in the protobuf input
 stream then it will fail to parse.
@@ -160,8 +160,13 @@ stream then it will fail to parse.
 When
 [`Text.Parsing.Parser.ParserT`](https://pursuit.purescript.org/packages/purescript-parsing/docs/Text.Parsing.Parser#t:ParserT)
 fails it will return a `ParseError String (Position {line::Int,column::Int})`.
-The byte offset at which the invalid encoding occured is given by the
+
+The byte offset at which the parse failure occured is given by the
 formula `column - 1`.
+
+The path to the protobuf definition which failed to parse will be included
+in the `ParseError String` and delimited by `'/'`, something
+like `"Message1 / string_field_1 / Invalid UTF8 encoding."`.
 
 # Features
 
