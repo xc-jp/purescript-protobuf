@@ -103,7 +103,7 @@ The generated code depends on packages
   , "parsing"
   , "parsing-dataview"
   , "uint"
-  , "long"
+  , "longs"
   , "text-encoding"
 ```
 
