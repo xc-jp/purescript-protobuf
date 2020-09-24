@@ -60,26 +60,27 @@ putVersion (Version r) = do
   Runtime.putOptional 4 r.suffix Encode.string
 
 parseVersion :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m Version
-parseVersion length =
+parseVersion length = Runtime.label "Version / " $
   Runtime.parseMessage Version default parseField length
  where
   parseField
     :: Runtime.FieldNumberInt
     -> Common.WireType
     -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder VersionR VersionR)
-  parseField 1 Common.VarInt = do
+  parseField 1 Common.VarInt = Runtime.label "major / " $ do
     x <- Decode.int32
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "major") $ Function.const $ Maybe.Just x
-  parseField 2 Common.VarInt = do
+  parseField 2 Common.VarInt = Runtime.label "minor / " $ do
     x <- Decode.int32
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "minor") $ Function.const $ Maybe.Just x
-  parseField 3 Common.VarInt = do
+  parseField 3 Common.VarInt = Runtime.label "patch / " $ do
     x <- Decode.int32
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "patch") $ Function.const $ Maybe.Just x
-  parseField 4 Common.LenDel = do
+  parseField 4 Common.LenDel = Runtime.label "suffix / " $ do
     x <- Decode.string
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "suffix") $ Function.const $ Maybe.Just x
-  parseField _ wireType = Runtime.parseFieldUnknown wireType
+  parseField fieldNumber wireType = Runtime.label ("Unknown " <> show wireType <> " " <> show fieldNumber <> " / ") $
+    Runtime.parseFieldUnknown wireType
   default =
     { major: Maybe.Nothing
     , minor: Maybe.Nothing
@@ -106,26 +107,27 @@ putCodeGeneratorRequest (CodeGeneratorRequest r) = do
   Runtime.putOptional 3 r.compiler_version $ Runtime.putLenDel putVersion
 
 parseCodeGeneratorRequest :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorRequest
-parseCodeGeneratorRequest length =
+parseCodeGeneratorRequest length = Runtime.label "CodeGeneratorRequest / " $
   Runtime.parseMessage CodeGeneratorRequest default parseField length
  where
   parseField
     :: Runtime.FieldNumberInt
     -> Common.WireType
     -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
-  parseField 1 Common.LenDel = do
+  parseField 1 Common.LenDel = Runtime.label "file_to_generate / " $ do
     x <- Decode.string
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "file_to_generate") $ Function.flip Array.snoc x
-  parseField 2 Common.LenDel = do
+  parseField 2 Common.LenDel = Runtime.label "parameter / " $ do
     x <- Decode.string
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "parameter") $ Function.const $ Maybe.Just x
-  parseField 15 Common.LenDel = do
+  parseField 15 Common.LenDel = Runtime.label "proto_file / " $ do
     x <- Runtime.parseLenDel Google.Protobuf.parseFileDescriptorProto
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "proto_file") $ Function.flip Array.snoc x
-  parseField 3 Common.LenDel = do
+  parseField 3 Common.LenDel = Runtime.label "compiler_version / " $ do
     x <- Runtime.parseLenDel parseVersion
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "compiler_version") $ Function.const $ Maybe.Just x
-  parseField _ wireType = Runtime.parseFieldUnknown wireType
+  parseField fieldNumber wireType = Runtime.label ("Unknown " <> show wireType <> " " <> show fieldNumber <> " / ") $
+    Runtime.parseFieldUnknown wireType
   default =
     { file_to_generate: []
     , parameter: Maybe.Nothing
@@ -148,20 +150,21 @@ putCodeGeneratorResponse (CodeGeneratorResponse r) = do
   Runtime.putRepeated 15 r.file $ Runtime.putLenDel putCodeGeneratorResponse_File
 
 parseCodeGeneratorResponse :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorResponse
-parseCodeGeneratorResponse length =
+parseCodeGeneratorResponse length = Runtime.label "CodeGeneratorResponse / " $
   Runtime.parseMessage CodeGeneratorResponse default parseField length
  where
   parseField
     :: Runtime.FieldNumberInt
     -> Common.WireType
     -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder CodeGeneratorResponseR CodeGeneratorResponseR)
-  parseField 1 Common.LenDel = do
+  parseField 1 Common.LenDel = Runtime.label "error / " $ do
     x <- Decode.string
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "error") $ Function.const $ Maybe.Just x
-  parseField 15 Common.LenDel = do
+  parseField 15 Common.LenDel = Runtime.label "file / " $ do
     x <- Runtime.parseLenDel parseCodeGeneratorResponse_File
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "file") $ Function.flip Array.snoc x
-  parseField _ wireType = Runtime.parseFieldUnknown wireType
+  parseField fieldNumber wireType = Runtime.label ("Unknown " <> show wireType <> " " <> show fieldNumber <> " / ") $
+    Runtime.parseFieldUnknown wireType
   default =
     { error: Maybe.Nothing
     , file: []
@@ -184,23 +187,24 @@ putCodeGeneratorResponse_File (CodeGeneratorResponse_File r) = do
   Runtime.putOptional 15 r.content Encode.string
 
 parseCodeGeneratorResponse_File :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorResponse_File
-parseCodeGeneratorResponse_File length =
+parseCodeGeneratorResponse_File length = Runtime.label "File / " $
   Runtime.parseMessage CodeGeneratorResponse_File default parseField length
  where
   parseField
     :: Runtime.FieldNumberInt
     -> Common.WireType
     -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder CodeGeneratorResponse_FileR CodeGeneratorResponse_FileR)
-  parseField 1 Common.LenDel = do
+  parseField 1 Common.LenDel = Runtime.label "name / " $ do
     x <- Decode.string
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "name") $ Function.const $ Maybe.Just x
-  parseField 2 Common.LenDel = do
+  parseField 2 Common.LenDel = Runtime.label "insertion_point / " $ do
     x <- Decode.string
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "insertion_point") $ Function.const $ Maybe.Just x
-  parseField 15 Common.LenDel = do
+  parseField 15 Common.LenDel = Runtime.label "content / " $ do
     x <- Decode.string
     pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy "content") $ Function.const $ Maybe.Just x
-  parseField _ wireType = Runtime.parseFieldUnknown wireType
+  parseField fieldNumber wireType = Runtime.label ("Unknown " <> show wireType <> " " <> show fieldNumber <> " / ") $
+    Runtime.parseFieldUnknown wireType
   default =
     { name: Maybe.Nothing
     , insertion_point: Maybe.Nothing
