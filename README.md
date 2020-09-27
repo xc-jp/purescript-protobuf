@@ -29,12 +29,6 @@ To build purescript-protobuf, run:
     npm install
     spago build
 
-To test purescript-protobuf, run:
-
-    protoc --purescript_out=./test/generated test/*.proto
-    spago -x test.dhall build
-    spago -x test.dhall test
-
 To generate Purescript .purs files from .proto files, run:
 
     protoc --purescript_out=path_to_output file.proto
@@ -59,14 +53,18 @@ message MyMessage {
 
 will export these four names in the generated `.purs` modules.
 
-1. A message record type
+1. A message data type
    * ```purescript
-     type MyMessageR = { my_field :: Maybe Int }
+     newtype MyMessage = MyMessage { my_field :: Maybe Int }
      ```
-2. A message data type
+2. A message maker which constructs a message from a `Record`
+   with some message fields
    * ```purescript
-     newtype MyMessage = MyMessage MyMessageR
+     mkMyMessage :: forall r. Record r -> MyMessage
      ```
+   All message fields are optional, and can be
+   omitted. If we want the compiler to check our fields, then we can use the
+   normal message data constructor.
 3. A message encoder which works with
    [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
    * ```purescript
@@ -85,7 +83,7 @@ Then, in our program, our imports will look something like this.
 
 
 ```purescript
-import Generated.Module (MyMessage(..), putMyMessage, parseMyMessage)
+import Generated.Module (MyMessage, mkMyMessage, putMyMessage, parseMyMessage)
 import Text.Parsing.Parser (runParserT)
 import Data.ArrayBuffer.Builder (execPutM)
 ```
@@ -107,32 +105,23 @@ The generated code depends on packages
   , "text-encoding"
 ```
 
-which are in
-[__package-sets__](https://github.com/purescript/package-sets),
-except for
-[__purescript-longs__](https://pursuit.purescript.org/packages/purescript-longs)
-(see `spago.dhall` in this package for the particulars).
+which are all in
+[__package-sets__](https://github.com/purescript/package-sets).
 
 It also depends on the Javascript package
 [__long__](https://www.npmjs.com/package/long).
 
 ### Generated message instances
 
-We cannot easily derive common instances like `Eq` for the
+We cannot derive common instances like `Eq` for the
 generated message types because
 1. The types [might be recursive](https://github.com/purescript/documentation/blob/master/errors/CycleInDeclaration.md).
 2. The types might contain fields of type
    [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer),
-   which doesn't have those instances.
+   which cannot have most useful instances because it can only be read in `Effect`.
 
 All of the generated message types have an instance of
 [`Generic`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep#t:Generic).
-This allows us to sometimes use
-[`genericEq`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep.Eq#v:genericEq)
-and
-[`genericShow`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep.Show#v:genericShow)
-on a generated message, if the generated message has those instances for
-all of its fields.
 
 All of the generated message types have an instance of
 [`NewType`](https://pursuit.purescript.org/packages/purescript-newtype/docs/Data.Newtype#t:Newtype).
@@ -173,30 +162,27 @@ like `"Message1 / string_field_1 / Invalid UTF8 encoding."`.
 We aim to support binary-encoded (not JSON-encoded)
 [__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
 Many __proto2__-syntax descriptor files will
-also work, as long as they don't use __proto2__ features.
-
-We don't support
-[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
+also work, as long as they don't use __proto2__ features, like
+[groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
 
 The generated optional record fields will use `Nothing` instead of the
 [default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
 
-We do not preserve
-[unknown fields](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#unknowns).
+We do not support
+[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
 
 We do not support
 [services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
 
-### Conformance
+### Conformance and Testing
 
-At the time of this writing, we pass 193 out of 194 of the
+At the time of this writing, we pass all 194 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-encoded proto3.
-The one test we fail is
-the *Required.Proto3.ProtobufInput.UnknownVarint.ProtobufOutput* test, which
-is the test for preserving unknown fields, which we do not support, see above.
+for binary-wire-format proto3.
 
 See the `conformance/README.md` in this repository for details.
+
+We also have our own unit tests, see `test/README.md` in this repository.
 
 ### Imports
 

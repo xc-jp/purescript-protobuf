@@ -82,6 +82,7 @@ generate (CodeGeneratorRequest{file_to_generate,parameter,proto_file,compiler_ve
   CodeGeneratorResponse
     { error: Nothing
     , file: map (genFile proto_file) proto_file
+    , __unknown_fields : []
     }
 
  -- | Names of parent messages for a message or enum.
@@ -110,6 +111,7 @@ genFile proto_file (FileDescriptorProto
     { name : Just fileNameOut
     , insertion_point : Nothing
     , content : Just content
+    , __unknown_fields : []
     }
  where
   capitalize :: String -> String
@@ -165,8 +167,11 @@ import Data.Generic.Rep.Enum as Generic.Rep.Enum
 import Data.Generic.Rep.Ord as Generic.Rep.Ord
 import Data.Semigroup as Semigroup
 import Data.Symbol as Symbol
+import Record as Record
+import Data.Traversable as Traversable
 import Data.UInt as UInt
 import Data.Unit as Unit
+import Prim.Row as Prim.Row
 import Data.Long.Internal as Long
 import Text.Parsing.Parser as Parser
 import Data.ArrayBuffer.Builder as ArrayBuffer.Builder
@@ -308,7 +313,7 @@ import Protobuf.Runtime as Runtime
 
   genMessageExport :: ScopedMsg -> String
   genMessageExport (ScopedMsg namespace (DescriptorProto {name: Just msgName, oneof_decl})) =
-    tname <> "(..), " <> tname <> "R, parse" <> tname <> ", put" <> tname
+    tname <> "(..), " <> tname <> "Row, " <> tname <> "R, parse" <> tname <> ", put" <> tname <> ", default" <> tname <> ", mk" <> tname
       <> String.joinWith "" (map genOneofExport oneof_decl)
    where
     tname = mkTypeName $ namespace <> [msgName]
@@ -328,12 +333,14 @@ import Protobuf.Runtime as Runtime
     let tname = mkTypeName $ nameSpace <> [msgName]
     in
     String.joinWith "\n" $
-      [ "\ntype " <> tname <> "R ="
-      , "  { " <> String.joinWith "\n  , "
+      [ "\ntype " <> tname <> "Row ="
+      , "  ( " <> String.joinWith "\n  , "
             (  (mapMaybe (genFieldRecord nameSpace) field)
             <> (map (genFieldRecordOneof (nameSpace <> [msgName])) oneof_decl)
             )
-      , "  }"
+      , "  , __unknown_fields :: Array Runtime.UnknownField"
+      , "  )"
+      , "type " <> tname <> "R = Record " <> tname <> "Row"
       , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
       , "derive instance generic" <> tname <> " :: Generic.Rep.Generic " <> tname <> " _"
       , "derive instance newtype" <> tname <> " :: Newtype.Newtype " <> tname <> " _"
@@ -343,24 +350,31 @@ import Protobuf.Runtime as Runtime
       , String.joinWith "\n" $ Array.catMaybes
           $  (map (genFieldPut nameSpace) field)
           <> (Array.mapWithIndex (genOneofPut (nameSpace <> [msgName]) field) oneof_decl)
+      , "  Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields"
       , ""
       , "parse" <> tname <> " :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m " <> tname
       , "parse" <> tname <> " length = Runtime.label \"" <> msgName <> " / \" $"
-      , "  Runtime.parseMessage " <> tname <> " default parseField length"
-      , """ where
-  parseField
-    :: Runtime.FieldNumberInt
-    -> Common.WireType"""
+      , "  Runtime.parseMessage " <> tname <> " default" <> tname <> " parseField length"
+      , " where"
+      , "  parseField"
+      , "    :: Runtime.FieldNumberInt"
+      , "    -> Common.WireType"
       , "    -> Parser.ParserT ArrayBuffer.Types.DataView m (Record.Builder.Builder " <> tname <> "R " <> tname <> "R)"
       , String.joinWith "\n" (map (genFieldParser (nameSpace <> [msgName]) oneof_decl) field)
-      , "  parseField fieldNumber wireType = Runtime.label (\"Unknown \" <> show wireType <> \" \" <> show fieldNumber <> \" / \") $"
-      , "    Runtime.parseFieldUnknown wireType"
-      , "  default ="
-      , "    { " <> String.joinWith "\n    , "
+      , "  parseField fieldNumber wireType = Runtime.parseFieldUnknown fieldNumber wireType"
+      , ""
+      , "default" <> tname <> " :: " <> tname <> "R"
+      , "default" <> tname <> " ="
+      , "  { " <> String.joinWith "\n  , "
               (  (mapMaybe genFieldDefault field)
               <> (map genFieldDefaultOneof oneof_decl)
               )
-      , "    }"
+      , "  , __unknown_fields: []"
+      , "  }"
+      , ""
+      -- , "mk" <> tname <> " :: forall r1. Prim.Row.Union r1 " <> tname <> "Row " <> tname <> "Row => Record r1 -> " <> tname
+      , "mk" <> tname <> " :: forall r1 r3. Prim.Row.Union r1 " <> tname <> "Row r3 => Prim.Row.Nub r3 " <> tname <> "Row => Record r1 -> " <> tname
+      , "mk" <> tname <> " r = " <> tname <> " $ Record.merge r default" <> tname
       , String.joinWith "\n" (Array.mapWithIndex (genTypeOneof (nameSpace <> [msgName]) field) oneof_decl)
       ]
   genMessage _ = "" -- error not enough information
