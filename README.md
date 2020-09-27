@@ -29,12 +29,6 @@ To build purescript-protobuf, run:
     npm install
     spago build
 
-To test purescript-protobuf, run:
-
-    protoc --purescript_out=./test/generated test/*.proto
-    spago -x test.dhall build
-    spago -x test.dhall test
-
 To generate Purescript .purs files from .proto files, run:
 
     protoc --purescript_out=path_to_output file.proto
@@ -180,13 +174,15 @@ We do not support
 We do not support
 [services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
 
-### Conformance
+### Conformance and Testing
 
 At the time of this writing, we pass all 194 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
 for binary-wire-format proto3.
 
 See the `conformance/README.md` in this repository for details.
+
+We also have our own unit tests, see `test/README.md` in this repository.
 
 ### Imports
 
