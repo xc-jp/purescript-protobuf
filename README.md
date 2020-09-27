@@ -62,9 +62,8 @@ will export these four names in the generated `.purs` modules.
    * ```purescript
      mkMyMessage :: forall r. Record r -> MyMessage
      ```
-   All message fields are optional, and can be
-   omitted. If we want the compiler to check our fields, then we can use the
-   normal message data constructor.
+   All message fields are optional, and can be omitted from the `Record`. If we want the compiler to check that we've explicitly supplied all the fields,
+   then we can use the ordinary message data type constructor.
 3. A message encoder which works with
    [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
    * ```purescript
