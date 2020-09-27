@@ -4,7 +4,9 @@
 -- | See package README for explanation.
 module Protobuf.Runtime
 ( parseMessage
+, UnknownField
 , parseFieldUnknown
+, putFieldUnknown
 , parseLenDel
 , Pos
 , FieldNumberInt
@@ -22,43 +24,31 @@ module Protobuf.Runtime
 where
 
 import Prelude
-import Effect.Class (class MonadEffect)
+
 import Control.Monad.Error.Class (throwError, catchError)
-import Data.Enum (class BoundedEnum, toEnum, fromEnum)
-import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple(..))
-import Data.Foldable (foldl, traverse_)
-import Data.Long.Unsigned (toInt)
-import Data.UInt as UInt
-import Data.List (List(..), (:))
-import Data.Array (fromFoldable)
-import Text.Parsing.Parser (ParserT, fail, position, ParseError(..))
-import Text.Parsing.Parser.Pos (Position(..))
-import Data.ArrayBuffer.Types (DataView)
-import Text.Parsing.Parser.DataView (takeN)
+import Data.Array (fromFoldable, snoc)
+import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
-import Record.Builder as RecordB
-import Record.Builder (build)
+import Data.ArrayBuffer.DataView as DV
+import Data.ArrayBuffer.Types (DataView, ArrayBuffer)
+import Data.Enum (class BoundedEnum, toEnum, fromEnum)
+import Data.Foldable (foldl, traverse_)
+import Data.List (List(..), (:))
+import Data.Long.Unsigned (Long, toInt)
+import Data.Maybe (Maybe(..))
+import Data.Symbol (SProxy(..))
+import Data.Tuple (Tuple(..))
+import Data.UInt (UInt)
+import Data.UInt as UInt
+import Effect.Class (class MonadEffect)
 import Protobuf.Common (FieldNumber, WireType(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
-
--- | We don't recognize the field number, so consume the field and throw it away
--- | and then return a no-op Record builder.
-parseFieldUnknown
-  :: forall m r
-   . MonadEffect m
-  => WireType
-  -> ParserT DataView m (RecordB.Builder (Record r) (Record r))
-parseFieldUnknown wireType = pure identity <* case wireType of
-  VarInt -> void Decode.varint64
-  Bits64 -> void $ takeN 8
-  LenDel -> do
-        len <- toInt <$> Decode.varint64
-        case len of
-          Nothing -> fail "Length-delimited value of unknown field was too long."
-          Just l -> void $ takeN l
-  Bits32 -> void $ takeN 4
+import Record.Builder (build, modify)
+import Record.Builder as RecordB
+import Text.Parsing.Parser (ParserT, fail, position, ParseError(..))
+import Text.Parsing.Parser.DataView (takeN)
+import Text.Parsing.Parser.Pos (Position(..))
 
 -- | The parseField argument is a parser which returns a Record builder which,
 -- | when applied to a Record, will modify the Record to add the parsed field.
@@ -120,6 +110,55 @@ manyLength p len = do
         xs <- go posBegin
         pure $ x:xs
 
+
+data UnknownField
+  = UnknownVarInt FieldNumber Long
+  | UnknownBits64 FieldNumber Long
+  | UnknownLenDel FieldNumber ArrayBuffer
+  | UnknownBits32 FieldNumber UInt
+
+-- | Parse and preserve an unknown field.
+parseFieldUnknown
+  :: forall m r
+   . MonadEffect m
+  => Int
+  -> WireType
+  -> ParserT DataView m (RecordB.Builder (Record ("__unknown_fields" :: Array UnknownField | r)) (Record ("__unknown_fields" :: Array UnknownField | r)))
+parseFieldUnknown fieldNumberInt wireType = label ("Unknown " <> show wireType <> " " <> show fieldNumber <> " / ") $
+  case wireType of
+    VarInt -> do
+      x <- Decode.uint64
+      pure $ modify (SProxy :: SProxy "__unknown_fields") $
+        flip snoc $ UnknownVarInt fieldNumber x
+    Bits64 -> do
+      x <- Decode.fixed64
+      pure $ modify (SProxy :: SProxy "__unknown_fields") $
+        flip snoc $ UnknownBits64 fieldNumber x
+    LenDel -> do
+      len <- toInt <$> Decode.varint64
+      case len of
+        Nothing -> fail "Length-delimited value of unknown field was too long."
+        Just l -> do
+          dv <- takeN l
+          pure $ modify (SProxy :: SProxy "__unknown_fields") $
+            flip snoc $ UnknownLenDel fieldNumber $
+              AB.slice (DV.byteOffset dv) (DV.byteLength dv) (DV.buffer dv)
+    Bits32 -> do
+      x <- Decode.fixed32
+      pure $ modify (SProxy :: SProxy "__unknown_fields") $
+        flip snoc $ UnknownBits32 fieldNumber x
+ where
+  fieldNumber = UInt.fromInt fieldNumberInt
+
+putFieldUnknown
+  :: forall m
+   . MonadEffect m
+  => UnknownField
+  -> PutM m Unit
+putFieldUnknown (UnknownBits64 fieldNumber x) = Encode.fixed64 fieldNumber x
+putFieldUnknown (UnknownVarInt fieldNumber x) = Encode.uint64 fieldNumber x
+putFieldUnknown (UnknownLenDel fieldNumber x) = Encode.bytes fieldNumber x
+putFieldUnknown (UnknownBits32 fieldNumber x) = Encode.fixed32 fieldNumber x
 
 -- | Parse a length, then call a parser which takes one length as its argument.
 parseLenDel

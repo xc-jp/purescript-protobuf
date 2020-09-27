@@ -12,6 +12,9 @@ import Data.Enum (class Enum, fromEnum, class BoundedEnum, Cardinality(..))
 import Data.Maybe (Maybe(..))
 import Data.Generic.Rep(class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.ArrayBuffer.Types (ArrayBuffer)
+-- import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.ArrayBuffer.Typed as AT
 
 type FieldNumber = UInt
 
@@ -59,4 +62,3 @@ instance boundedEnumWireType :: BoundedEnum WireType
   fromEnum Bits32 = 5
 
 instance showWireType :: Show WireType where show = genericShow
-
