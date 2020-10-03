@@ -1,7 +1,4 @@
 { pkgs ? import ./nix/pkgs.nix {} }:
-let
-  conformance = import ./conformance/protobuf.nix { inherit pkgs; };
-in
 pkgs.mkShell {
   nativeBuildInputs = [
     pkgs.easy-ps.purs-0_13_8
