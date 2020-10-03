@@ -18,7 +18,7 @@ The `shell.nix` environment provides
 * The Purescript toolchain
 * The [`protoc`](https://github.com/protocolbuffers/protobuf/blob/master/src/README.md) compiler
 * The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
-  [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
+  [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating).
 
 ```
 $ nix-shell
