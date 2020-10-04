@@ -11,6 +11,33 @@ This library operates on
 [in *Node.js*](https://pursuit.purescript.org/packages/purescript-node-buffer/docs/Node.Buffer.Class)
 and in browser environments.
 
+## Features
+
+We aim to support binary-encoded (not JSON-encoded)
+[__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
+Many __proto2__-syntax descriptor files will
+also work, as long as they don't use __proto2__ features, like
+[groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
+
+The generated optional record fields will use `Nothing` instead of the
+[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
+
+We do not support
+[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
+
+We do not support
+[services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
+
+### Conformance and Testing
+
+At the time of this writing, we pass all 194 of the
+[Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
+for binary-wire-format proto3.
+
+See the `conformance/README.md` in this repository for details.
+
+We also have our own unit tests, see `test/README.md` in this repository.
+
 ## Code Generation
 
 The `shell.nix` environment provides
@@ -155,33 +182,6 @@ formula `column - 1`.
 The path to the protobuf definition which failed to parse will be included
 in the `ParseError String` and delimited by `'/'`, something
 like `"Message1 / string_field_1 / Invalid UTF8 encoding."`.
-
-## Features
-
-We aim to support binary-encoded (not JSON-encoded)
-[__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
-Many __proto2__-syntax descriptor files will
-also work, as long as they don't use __proto2__ features, like
-[groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
-
-The generated optional record fields will use `Nothing` instead of the
-[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
-
-We do not support
-[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
-
-We do not support
-[services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
-
-### Conformance and Testing
-
-At the time of this writing, we pass all 194 of the
-[Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-wire-format proto3.
-
-See the `conformance/README.md` in this repository for details.
-
-We also have our own unit tests, see `test/README.md` in this repository.
 
 ### Imports
 

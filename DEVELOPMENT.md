@@ -12,6 +12,7 @@ dhall-to-json –file packages.dhall –output packages.json
 ## Generate docs
 
 ```
+nix-shell
 spago docs
 ```
 
