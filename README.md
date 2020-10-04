@@ -11,6 +11,33 @@ This library operates on
 [in *Node.js*](https://pursuit.purescript.org/packages/purescript-node-buffer/docs/Node.Buffer.Class)
 and in browser environments.
 
+## Features
+
+We aim to support binary-encoded (not JSON-encoded)
+[__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
+Many __proto2__-syntax descriptor files will
+also work, as long as they don't use __proto2__ features, like
+[groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
+
+The generated optional record fields will use `Nothing` instead of the
+[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
+
+We do not support
+[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
+
+We do not support
+[services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
+
+### Conformance and Testing
+
+At the time of this writing, we pass all 194 of the
+[Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
+for binary-wire-format proto3.
+
+See the `conformance/README.md` in this repository for details.
+
+We also have our own unit tests, see `test/README.md` in this repository.
+
 ## Code Generation
 
 The `shell.nix` environment provides
@@ -125,6 +152,8 @@ All of the generated message types have an instance of
 All of the generated message types have an instance of
 [`NewType`](https://pursuit.purescript.org/packages/purescript-newtype/docs/Data.Newtype#t:Newtype).
 
+In future versions, we may generate `Eq` and `Show` instances.
+
 ### Examples
 
 The __purescript-protobuf__ repository contains three executable *Node.js*
@@ -156,33 +185,6 @@ The path to the protobuf definition which failed to parse will be included
 in the `ParseError String` and delimited by `'/'`, something
 like `"Message1 / string_field_1 / Invalid UTF8 encoding."`.
 
-## Features
-
-We aim to support binary-encoded (not JSON-encoded)
-[__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
-Many __proto2__-syntax descriptor files will
-also work, as long as they don't use __proto2__ features, like
-[groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
-
-The generated optional record fields will use `Nothing` instead of the
-[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
-
-We do not support
-[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
-
-We do not support
-[services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
-
-### Conformance and Testing
-
-At the time of this writing, we pass all 194 of the
-[Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-wire-format proto3.
-
-See the `conformance/README.md` in this repository for details.
-
-We also have our own unit tests, see `test/README.md` in this repository.
-
 ### Imports
 
 The code generator will use the `package` statement in the `.proto` file
@@ -203,6 +205,17 @@ For that reason, we can only use top-level
 
 The generated Purescript code will usually have module imports which cause
 the `purs` compiler to emit warnings. Sorry.
+
+## Nix derivation
+
+If we want to run the `.proto` → `.purs` generation step as part of a pure Nix
+derivation, then `import` the top-level `default.nix` from this repository
+as a `nativeBuildInput`.
+
+Then `protoc --purescript_out=path_to_output file.proto` will be runnable
+in our derivation phases.
+
+See the `nix/demo.nix` file for an example.
 
 ## Performance
 

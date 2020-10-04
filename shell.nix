@@ -1,15 +1,16 @@
 { pkgs ? import ./nix/pkgs.nix {} }:
 pkgs.mkShell {
-  nativeBuildInputs = [
-    pkgs.easy-ps.purs-0_13_8
-    pkgs.easy-ps.spago
-    pkgs.nodejs-13_x
-    pkgs.easy-ps.pulp
-    pkgs.protobuf3_9
-    pkgs.nodePackages.bower
-    pkgs.easy-ps.psc-package
-    pkgs.dhall
-    pkgs.dhall-json
+  nativeBuildInputs = with pkgs; [
+    easy-ps.purs-0_13_8
+    easy-ps.spago
+    nodejs-13_x
+    easy-ps.pulp
+    protobuf3_9
+    nodePackages.bower
+    easy-ps.psc-package
+    dhall
+    dhall-json
+    spago2nix
   ];
   shellHook = ''
   export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
