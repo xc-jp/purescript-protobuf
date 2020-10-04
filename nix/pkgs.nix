@@ -16,8 +16,16 @@ let
     }) { inherit pkgs; };
 
   spago2nix = import (builtins.fetchGit {
-    url = "git@github.com:justinwoo/spago2nix.git";
-    rev = "22bd974ec44c98d2831c31f4f4402a9afa8aecea";
+    #url = "git@github.com:justinwoo/spago2nix.git";
+    #rev = "22bd974ec44c98d2831c31f4f4402a9afa8aecea";
+    url = "git@github.com:xc-jp/spago2nix.git";
+    ref = "ls-transitive";
+    rev = "1e65ec78def30b9c10bfc165cfb5f3b1c42bbd80";
   }) { inherit pkgs; };
 
-in pkgs // { inherit easy-ps; inherit spago2nix; }
+  node2nix = import (builtins.fetchGit {
+    url = "git@github.com:svanderburg/node2nix.git";
+    rev = "c6cc7edc7c180ef01f23bc2aff31a1cbb5524b0d";
+  }) { inherit pkgs; };
+
+in pkgs // { inherit easy-ps; inherit spago2nix; inherit node2nix; }
