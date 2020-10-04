@@ -152,6 +152,8 @@ All of the generated message types have an instance of
 All of the generated message types have an instance of
 [`NewType`](https://pursuit.purescript.org/packages/purescript-newtype/docs/Data.Newtype#t:Newtype).
 
+In future versions, we may generate `Eq` and `Show` instances.
+
 ### Examples
 
 The __purescript-protobuf__ repository contains three executable *Node.js*
@@ -203,6 +205,17 @@ For that reason, we can only use top-level
 
 The generated Purescript code will usually have module imports which cause
 the `purs` compiler to emit warnings. Sorry.
+
+## Nix derivation
+
+If we want to run the `.proto` → `.purs` generation step as part of a pure Nix
+derivation, then `import` the top-level `default.nix` from this repository
+as a `nativeBuildInput`.
+
+Then `protoc --purescript_out=path_to_output file.proto` will be runnable
+in our derivation phases.
+
+See the `nix/demo.nix` file for an example.
 
 ## Performance
 
