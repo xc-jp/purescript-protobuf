@@ -1,7 +1,4 @@
-# Derivation which provides
-#
-# * protoc
-# * protoc-gen-purescript
+# Derivation which provides `protoc-gen-purescript` on the PATH
 #
 { pkgs ? import ./nix/pkgs.nix {} }:
 
