@@ -337,8 +337,8 @@ import Protobuf.Runtime as Runtime
       , "  ( " <> String.joinWith "\n  , "
             (  (mapMaybe (genFieldRecord nameSpace) field)
             <> (map (genFieldRecordOneof (nameSpace <> [msgName])) oneof_decl)
+            <> ["__unknown_fields :: Array Runtime.UnknownField"]
             )
-      , "  , __unknown_fields :: Array Runtime.UnknownField"
       , "  )"
       , "type " <> tname <> "R = Record " <> tname <> "Row"
       , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
@@ -368,11 +368,10 @@ import Protobuf.Runtime as Runtime
       , "  { " <> String.joinWith "\n  , "
               (  (mapMaybe genFieldDefault field)
               <> (map genFieldDefaultOneof oneof_decl)
+              <> ["__unknown_fields: []"]
               )
-      , "  , __unknown_fields: []"
       , "  }"
       , ""
-      -- , "mk" <> tname <> " :: forall r1. Prim.Row.Union r1 " <> tname <> "Row " <> tname <> "Row => Record r1 -> " <> tname
       , "mk" <> tname <> " :: forall r1 r3. Prim.Row.Union r1 " <> tname <> "Row r3 => Prim.Row.Nub r3 " <> tname <> "Row => Record r1 -> " <> tname
       , "mk" <> tname <> " r = " <> tname <> " $ Record.merge r default" <> tname
       , String.joinWith "\n" (Array.mapWithIndex (genTypeOneof (nameSpace <> [msgName]) field) oneof_decl)
