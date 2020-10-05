@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package pack5;
+
+import "test/msg5.proto";
+
+message Msg2 {
+  Msg1 f1 = 1;
+}
+
+

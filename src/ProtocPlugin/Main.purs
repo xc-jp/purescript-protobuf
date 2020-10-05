@@ -124,8 +124,12 @@ genFile proto_file (FileDescriptorProto
     Just "" -> "Generated"
     Just n -> basenameWithoutExt n ".proto"
 
+  messages :: Array ScopedMsg
   messages = flattenMessages [] message_type
+
+  enums :: Array ScopedEnum
   enums = (ScopedEnum [] <$> enum_type) <> flattenEnums [] message_type
+
   fileNameOut = baseName <> "." <> (String.joinWith "." ((map capitalize packageName))) <> ".purs"
 
   packageName = case package of
@@ -222,10 +226,11 @@ import Protobuf.Runtime as Runtime
       Just ps -> ps
 
 
+  -- | underscores and primes are not allowed in module names
+  -- | https://github.com/purescript/documentation/blob/master/errors/ErrorParsingModule.md
   mkModuleName :: String -> String
-  mkModuleName n =  capitalize $ underscoreToUpper n
+  mkModuleName n =  capitalize $ illegalDelete $ underscoreToUpper n
    where
-    -- underscores and primes are not allowed in module names
     underscoreToUpper :: String -> String
     underscoreToUpper = case String.Regex.regex "_([a-z])" flag of
       Left _ -> identity
@@ -239,6 +244,10 @@ import Protobuf.Runtime as Runtime
       , sticky: false
       , unicode: true
       }
+    illegalDelete :: String -> String
+    illegalDelete =
+      String.replaceAll (String.Pattern.Pattern "_") (String.Pattern.Replacement "") <<<
+      String.replaceAll (String.Pattern.Pattern "'") (String.Pattern.Replacement "1")
 
 
   -- | Pull all of the enums out of of the nested messages and bring them
@@ -981,7 +990,7 @@ import Protobuf.Runtime as Runtime
   mkFieldType prefix s =
     let (ScopedField names name) = parseFieldName s
     in
-    if names `beginsWith` packageName
+    if names `beginsWith` packageName && (isLocalMessageName name || isLocalEnumName name)
       then
         -- it's a name in this package
         prefix <> (mkTypeName $ Array.drop (Array.length packageName) names <> [name])
@@ -989,6 +998,14 @@ import Protobuf.Runtime as Runtime
         -- it's a name in the top-level of an imported package
         String.joinWith "." $ (map mkModuleName $ names) <> [prefix <> capitalize name]
    where
+    isLocalMessageName :: String -> Boolean
+    isLocalMessageName fname = maybe false (const true) $
+      flip Array.find messages $ \(ScopedMsg _ (DescriptorProto {name})) ->
+        maybe false (fname == _) name
+    isLocalEnumName :: String -> Boolean
+    isLocalEnumName ename = maybe false (const true) $
+      flip Array.find enums $ \(ScopedEnum _(EnumDescriptorProto {name})) ->
+        maybe false (ename == _) name
     parseFieldName :: String -> ScopedField
     parseFieldName fname =
       if String.take 1 fname == "."
