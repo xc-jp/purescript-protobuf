@@ -1,4 +1,4 @@
-# purescript-protobuf
+# purescript-protobuf 💝
 
 [![Test](https://github.com/xc-jp/purescript-protobuf/workflows/Test/badge.svg?branch=master)](https://github.com/xc-jp/purescript-protobuf/actions)
 [![Pursuit](http://pursuit.purescript.org/packages/purescript-protobuf/badge)](http://pursuit.purescript.org/packages/purescript-protobuf/)
