@@ -16,7 +16,7 @@ message msg2 {
   repeated sfixed64 f11 = 11;
   repeated bool f12 = 12;
   repeated string f13 = 13;
-  // repeated bytes f14 = 14;
+  repeated bytes f14 = 14;
   enum e1 {
     one = 0;
     two = 2;

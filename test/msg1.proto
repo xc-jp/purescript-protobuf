@@ -16,7 +16,7 @@ message msg1 {
   sfixed64 F11 = 11;
   bool F12 = 12;
   string F13 = 13;
-  // // bytes f14 = 14;
+  bytes f14 = 14;
   enum e1 {
     one = 0;
     two = 2;

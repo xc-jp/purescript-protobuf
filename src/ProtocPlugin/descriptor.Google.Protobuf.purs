@@ -82,7 +82,7 @@ newtype FileDescriptorSet = FileDescriptorSet FileDescriptorSetR
 derive instance genericFileDescriptorSet :: Generic.Rep.Generic FileDescriptorSet _
 derive instance newtypeFileDescriptorSet :: Newtype.Newtype FileDescriptorSet _
 derive instance eqFileDescriptorSet :: Eq.Eq FileDescriptorSet
-instance showFileDescriptorSet :: Show.Show FileDescriptorSet where show = Generic.Rep.Show.genericShow
+instance showFileDescriptorSet :: Show.Show FileDescriptorSet where show x = Generic.Rep.Show.genericShow x
 
 putFileDescriptorSet :: forall m. Effect.MonadEffect m => FileDescriptorSet -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileDescriptorSet (FileDescriptorSet r) = do
@@ -132,7 +132,7 @@ newtype FileDescriptorProto = FileDescriptorProto FileDescriptorProtoR
 derive instance genericFileDescriptorProto :: Generic.Rep.Generic FileDescriptorProto _
 derive instance newtypeFileDescriptorProto :: Newtype.Newtype FileDescriptorProto _
 derive instance eqFileDescriptorProto :: Eq.Eq FileDescriptorProto
-instance showFileDescriptorProto :: Show.Show FileDescriptorProto where show = Generic.Rep.Show.genericShow
+instance showFileDescriptorProto :: Show.Show FileDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
 putFileDescriptorProto :: forall m. Effect.MonadEffect m => FileDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileDescriptorProto (FileDescriptorProto r) = do
@@ -327,7 +327,7 @@ newtype DescriptorProto_ExtensionRange = DescriptorProto_ExtensionRange Descript
 derive instance genericDescriptorProto_ExtensionRange :: Generic.Rep.Generic DescriptorProto_ExtensionRange _
 derive instance newtypeDescriptorProto_ExtensionRange :: Newtype.Newtype DescriptorProto_ExtensionRange _
 derive instance eqDescriptorProto_ExtensionRange :: Eq.Eq DescriptorProto_ExtensionRange
-instance showDescriptorProto_ExtensionRange :: Show.Show DescriptorProto_ExtensionRange where show = Generic.Rep.Show.genericShow
+instance showDescriptorProto_ExtensionRange :: Show.Show DescriptorProto_ExtensionRange where show x = Generic.Rep.Show.genericShow x
 
 putDescriptorProto_ExtensionRange :: forall m. Effect.MonadEffect m => DescriptorProto_ExtensionRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto_ExtensionRange (DescriptorProto_ExtensionRange r) = do
@@ -377,7 +377,7 @@ newtype DescriptorProto_ReservedRange = DescriptorProto_ReservedRange Descriptor
 derive instance genericDescriptorProto_ReservedRange :: Generic.Rep.Generic DescriptorProto_ReservedRange _
 derive instance newtypeDescriptorProto_ReservedRange :: Newtype.Newtype DescriptorProto_ReservedRange _
 derive instance eqDescriptorProto_ReservedRange :: Eq.Eq DescriptorProto_ReservedRange
-instance showDescriptorProto_ReservedRange :: Show.Show DescriptorProto_ReservedRange where show = Generic.Rep.Show.genericShow
+instance showDescriptorProto_ReservedRange :: Show.Show DescriptorProto_ReservedRange where show x = Generic.Rep.Show.genericShow x
 
 putDescriptorProto_ReservedRange :: forall m. Effect.MonadEffect m => DescriptorProto_ReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto_ReservedRange (DescriptorProto_ReservedRange r) = do
@@ -421,7 +421,7 @@ newtype ExtensionRangeOptions = ExtensionRangeOptions ExtensionRangeOptionsR
 derive instance genericExtensionRangeOptions :: Generic.Rep.Generic ExtensionRangeOptions _
 derive instance newtypeExtensionRangeOptions :: Newtype.Newtype ExtensionRangeOptions _
 derive instance eqExtensionRangeOptions :: Eq.Eq ExtensionRangeOptions
-instance showExtensionRangeOptions :: Show.Show ExtensionRangeOptions where show = Generic.Rep.Show.genericShow
+instance showExtensionRangeOptions :: Show.Show ExtensionRangeOptions where show x = Generic.Rep.Show.genericShow x
 
 putExtensionRangeOptions :: forall m. Effect.MonadEffect m => ExtensionRangeOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putExtensionRangeOptions (ExtensionRangeOptions r) = do
@@ -469,7 +469,7 @@ newtype FieldDescriptorProto = FieldDescriptorProto FieldDescriptorProtoR
 derive instance genericFieldDescriptorProto :: Generic.Rep.Generic FieldDescriptorProto _
 derive instance newtypeFieldDescriptorProto :: Newtype.Newtype FieldDescriptorProto _
 derive instance eqFieldDescriptorProto :: Eq.Eq FieldDescriptorProto
-instance showFieldDescriptorProto :: Show.Show FieldDescriptorProto where show = Generic.Rep.Show.genericShow
+instance showFieldDescriptorProto :: Show.Show FieldDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
 putFieldDescriptorProto :: forall m. Effect.MonadEffect m => FieldDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFieldDescriptorProto (FieldDescriptorProto r) = do
@@ -554,7 +554,7 @@ newtype OneofDescriptorProto = OneofDescriptorProto OneofDescriptorProtoR
 derive instance genericOneofDescriptorProto :: Generic.Rep.Generic OneofDescriptorProto _
 derive instance newtypeOneofDescriptorProto :: Newtype.Newtype OneofDescriptorProto _
 derive instance eqOneofDescriptorProto :: Eq.Eq OneofDescriptorProto
-instance showOneofDescriptorProto :: Show.Show OneofDescriptorProto where show = Generic.Rep.Show.genericShow
+instance showOneofDescriptorProto :: Show.Show OneofDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
 putOneofDescriptorProto :: forall m. Effect.MonadEffect m => OneofDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putOneofDescriptorProto (OneofDescriptorProto r) = do
@@ -602,7 +602,7 @@ newtype EnumDescriptorProto = EnumDescriptorProto EnumDescriptorProtoR
 derive instance genericEnumDescriptorProto :: Generic.Rep.Generic EnumDescriptorProto _
 derive instance newtypeEnumDescriptorProto :: Newtype.Newtype EnumDescriptorProto _
 derive instance eqEnumDescriptorProto :: Eq.Eq EnumDescriptorProto
-instance showEnumDescriptorProto :: Show.Show EnumDescriptorProto where show = Generic.Rep.Show.genericShow
+instance showEnumDescriptorProto :: Show.Show EnumDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
 putEnumDescriptorProto :: forall m. Effect.MonadEffect m => EnumDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumDescriptorProto (EnumDescriptorProto r) = do
@@ -662,7 +662,7 @@ newtype EnumDescriptorProto_EnumReservedRange = EnumDescriptorProto_EnumReserved
 derive instance genericEnumDescriptorProto_EnumReservedRange :: Generic.Rep.Generic EnumDescriptorProto_EnumReservedRange _
 derive instance newtypeEnumDescriptorProto_EnumReservedRange :: Newtype.Newtype EnumDescriptorProto_EnumReservedRange _
 derive instance eqEnumDescriptorProto_EnumReservedRange :: Eq.Eq EnumDescriptorProto_EnumReservedRange
-instance showEnumDescriptorProto_EnumReservedRange :: Show.Show EnumDescriptorProto_EnumReservedRange where show = Generic.Rep.Show.genericShow
+instance showEnumDescriptorProto_EnumReservedRange :: Show.Show EnumDescriptorProto_EnumReservedRange where show x = Generic.Rep.Show.genericShow x
 
 putEnumDescriptorProto_EnumReservedRange :: forall m. Effect.MonadEffect m => EnumDescriptorProto_EnumReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumDescriptorProto_EnumReservedRange (EnumDescriptorProto_EnumReservedRange r) = do
@@ -708,7 +708,7 @@ newtype EnumValueDescriptorProto = EnumValueDescriptorProto EnumValueDescriptorP
 derive instance genericEnumValueDescriptorProto :: Generic.Rep.Generic EnumValueDescriptorProto _
 derive instance newtypeEnumValueDescriptorProto :: Newtype.Newtype EnumValueDescriptorProto _
 derive instance eqEnumValueDescriptorProto :: Eq.Eq EnumValueDescriptorProto
-instance showEnumValueDescriptorProto :: Show.Show EnumValueDescriptorProto where show = Generic.Rep.Show.genericShow
+instance showEnumValueDescriptorProto :: Show.Show EnumValueDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
 putEnumValueDescriptorProto :: forall m. Effect.MonadEffect m => EnumValueDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumValueDescriptorProto (EnumValueDescriptorProto r) = do
@@ -759,7 +759,7 @@ newtype ServiceDescriptorProto = ServiceDescriptorProto ServiceDescriptorProtoR
 derive instance genericServiceDescriptorProto :: Generic.Rep.Generic ServiceDescriptorProto _
 derive instance newtypeServiceDescriptorProto :: Newtype.Newtype ServiceDescriptorProto _
 derive instance eqServiceDescriptorProto :: Eq.Eq ServiceDescriptorProto
-instance showServiceDescriptorProto :: Show.Show ServiceDescriptorProto where show = Generic.Rep.Show.genericShow
+instance showServiceDescriptorProto :: Show.Show ServiceDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
 putServiceDescriptorProto :: forall m. Effect.MonadEffect m => ServiceDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putServiceDescriptorProto (ServiceDescriptorProto r) = do
@@ -813,7 +813,7 @@ newtype MethodDescriptorProto = MethodDescriptorProto MethodDescriptorProtoR
 derive instance genericMethodDescriptorProto :: Generic.Rep.Generic MethodDescriptorProto _
 derive instance newtypeMethodDescriptorProto :: Newtype.Newtype MethodDescriptorProto _
 derive instance eqMethodDescriptorProto :: Eq.Eq MethodDescriptorProto
-instance showMethodDescriptorProto :: Show.Show MethodDescriptorProto where show = Generic.Rep.Show.genericShow
+instance showMethodDescriptorProto :: Show.Show MethodDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
 putMethodDescriptorProto :: forall m. Effect.MonadEffect m => MethodDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMethodDescriptorProto (MethodDescriptorProto r) = do
@@ -897,7 +897,7 @@ newtype FileOptions = FileOptions FileOptionsR
 derive instance genericFileOptions :: Generic.Rep.Generic FileOptions _
 derive instance newtypeFileOptions :: Newtype.Newtype FileOptions _
 derive instance eqFileOptions :: Eq.Eq FileOptions
-instance showFileOptions :: Show.Show FileOptions where show = Generic.Rep.Show.genericShow
+instance showFileOptions :: Show.Show FileOptions where show x = Generic.Rep.Show.genericShow x
 
 putFileOptions :: forall m. Effect.MonadEffect m => FileOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileOptions (FileOptions r) = do
@@ -1040,7 +1040,7 @@ newtype MessageOptions = MessageOptions MessageOptionsR
 derive instance genericMessageOptions :: Generic.Rep.Generic MessageOptions _
 derive instance newtypeMessageOptions :: Newtype.Newtype MessageOptions _
 derive instance eqMessageOptions :: Eq.Eq MessageOptions
-instance showMessageOptions :: Show.Show MessageOptions where show = Generic.Rep.Show.genericShow
+instance showMessageOptions :: Show.Show MessageOptions where show x = Generic.Rep.Show.genericShow x
 
 putMessageOptions :: forall m. Effect.MonadEffect m => MessageOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMessageOptions (MessageOptions r) = do
@@ -1105,7 +1105,7 @@ newtype FieldOptions = FieldOptions FieldOptionsR
 derive instance genericFieldOptions :: Generic.Rep.Generic FieldOptions _
 derive instance newtypeFieldOptions :: Newtype.Newtype FieldOptions _
 derive instance eqFieldOptions :: Eq.Eq FieldOptions
-instance showFieldOptions :: Show.Show FieldOptions where show = Generic.Rep.Show.genericShow
+instance showFieldOptions :: Show.Show FieldOptions where show x = Generic.Rep.Show.genericShow x
 
 putFieldOptions :: forall m. Effect.MonadEffect m => FieldOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFieldOptions (FieldOptions r) = do
@@ -1174,7 +1174,7 @@ newtype OneofOptions = OneofOptions OneofOptionsR
 derive instance genericOneofOptions :: Generic.Rep.Generic OneofOptions _
 derive instance newtypeOneofOptions :: Newtype.Newtype OneofOptions _
 derive instance eqOneofOptions :: Eq.Eq OneofOptions
-instance showOneofOptions :: Show.Show OneofOptions where show = Generic.Rep.Show.genericShow
+instance showOneofOptions :: Show.Show OneofOptions where show x = Generic.Rep.Show.genericShow x
 
 putOneofOptions :: forall m. Effect.MonadEffect m => OneofOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putOneofOptions (OneofOptions r) = do
@@ -1215,7 +1215,7 @@ newtype EnumOptions = EnumOptions EnumOptionsR
 derive instance genericEnumOptions :: Generic.Rep.Generic EnumOptions _
 derive instance newtypeEnumOptions :: Newtype.Newtype EnumOptions _
 derive instance eqEnumOptions :: Eq.Eq EnumOptions
-instance showEnumOptions :: Show.Show EnumOptions where show = Generic.Rep.Show.genericShow
+instance showEnumOptions :: Show.Show EnumOptions where show x = Generic.Rep.Show.genericShow x
 
 putEnumOptions :: forall m. Effect.MonadEffect m => EnumOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumOptions (EnumOptions r) = do
@@ -1265,7 +1265,7 @@ newtype EnumValueOptions = EnumValueOptions EnumValueOptionsR
 derive instance genericEnumValueOptions :: Generic.Rep.Generic EnumValueOptions _
 derive instance newtypeEnumValueOptions :: Newtype.Newtype EnumValueOptions _
 derive instance eqEnumValueOptions :: Eq.Eq EnumValueOptions
-instance showEnumValueOptions :: Show.Show EnumValueOptions where show = Generic.Rep.Show.genericShow
+instance showEnumValueOptions :: Show.Show EnumValueOptions where show x = Generic.Rep.Show.genericShow x
 
 putEnumValueOptions :: forall m. Effect.MonadEffect m => EnumValueOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumValueOptions (EnumValueOptions r) = do
@@ -1310,7 +1310,7 @@ newtype ServiceOptions = ServiceOptions ServiceOptionsR
 derive instance genericServiceOptions :: Generic.Rep.Generic ServiceOptions _
 derive instance newtypeServiceOptions :: Newtype.Newtype ServiceOptions _
 derive instance eqServiceOptions :: Eq.Eq ServiceOptions
-instance showServiceOptions :: Show.Show ServiceOptions where show = Generic.Rep.Show.genericShow
+instance showServiceOptions :: Show.Show ServiceOptions where show x = Generic.Rep.Show.genericShow x
 
 putServiceOptions :: forall m. Effect.MonadEffect m => ServiceOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putServiceOptions (ServiceOptions r) = do
@@ -1356,7 +1356,7 @@ newtype MethodOptions = MethodOptions MethodOptionsR
 derive instance genericMethodOptions :: Generic.Rep.Generic MethodOptions _
 derive instance newtypeMethodOptions :: Newtype.Newtype MethodOptions _
 derive instance eqMethodOptions :: Eq.Eq MethodOptions
-instance showMethodOptions :: Show.Show MethodOptions where show = Generic.Rep.Show.genericShow
+instance showMethodOptions :: Show.Show MethodOptions where show x = Generic.Rep.Show.genericShow x
 
 putMethodOptions :: forall m. Effect.MonadEffect m => MethodOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMethodOptions (MethodOptions r) = do
@@ -1411,7 +1411,7 @@ newtype UninterpretedOption = UninterpretedOption UninterpretedOptionR
 derive instance genericUninterpretedOption :: Generic.Rep.Generic UninterpretedOption _
 derive instance newtypeUninterpretedOption :: Newtype.Newtype UninterpretedOption _
 derive instance eqUninterpretedOption :: Eq.Eq UninterpretedOption
-instance showUninterpretedOption :: Show.Show UninterpretedOption where show = Generic.Rep.Show.genericShow
+instance showUninterpretedOption :: Show.Show UninterpretedOption where show x = Generic.Rep.Show.genericShow x
 
 putUninterpretedOption :: forall m. Effect.MonadEffect m => UninterpretedOption -> ArrayBuffer.Builder.PutM m Unit.Unit
 putUninterpretedOption (UninterpretedOption r) = do
@@ -1481,7 +1481,7 @@ newtype UninterpretedOption_NamePart = UninterpretedOption_NamePart Uninterprete
 derive instance genericUninterpretedOption_NamePart :: Generic.Rep.Generic UninterpretedOption_NamePart _
 derive instance newtypeUninterpretedOption_NamePart :: Newtype.Newtype UninterpretedOption_NamePart _
 derive instance eqUninterpretedOption_NamePart :: Eq.Eq UninterpretedOption_NamePart
-instance showUninterpretedOption_NamePart :: Show.Show UninterpretedOption_NamePart where show = Generic.Rep.Show.genericShow
+instance showUninterpretedOption_NamePart :: Show.Show UninterpretedOption_NamePart where show x = Generic.Rep.Show.genericShow x
 
 putUninterpretedOption_NamePart :: forall m. Effect.MonadEffect m => UninterpretedOption_NamePart -> ArrayBuffer.Builder.PutM m Unit.Unit
 putUninterpretedOption_NamePart (UninterpretedOption_NamePart r) = do
@@ -1525,7 +1525,7 @@ newtype SourceCodeInfo = SourceCodeInfo SourceCodeInfoR
 derive instance genericSourceCodeInfo :: Generic.Rep.Generic SourceCodeInfo _
 derive instance newtypeSourceCodeInfo :: Newtype.Newtype SourceCodeInfo _
 derive instance eqSourceCodeInfo :: Eq.Eq SourceCodeInfo
-instance showSourceCodeInfo :: Show.Show SourceCodeInfo where show = Generic.Rep.Show.genericShow
+instance showSourceCodeInfo :: Show.Show SourceCodeInfo where show x = Generic.Rep.Show.genericShow x
 
 putSourceCodeInfo :: forall m. Effect.MonadEffect m => SourceCodeInfo -> ArrayBuffer.Builder.PutM m Unit.Unit
 putSourceCodeInfo (SourceCodeInfo r) = do
@@ -1568,7 +1568,7 @@ newtype SourceCodeInfo_Location = SourceCodeInfo_Location SourceCodeInfo_Locatio
 derive instance genericSourceCodeInfo_Location :: Generic.Rep.Generic SourceCodeInfo_Location _
 derive instance newtypeSourceCodeInfo_Location :: Newtype.Newtype SourceCodeInfo_Location _
 derive instance eqSourceCodeInfo_Location :: Eq.Eq SourceCodeInfo_Location
-instance showSourceCodeInfo_Location :: Show.Show SourceCodeInfo_Location where show = Generic.Rep.Show.genericShow
+instance showSourceCodeInfo_Location :: Show.Show SourceCodeInfo_Location where show x = Generic.Rep.Show.genericShow x
 
 putSourceCodeInfo_Location :: forall m. Effect.MonadEffect m => SourceCodeInfo_Location -> ArrayBuffer.Builder.PutM m Unit.Unit
 putSourceCodeInfo_Location (SourceCodeInfo_Location r) = do
@@ -1633,7 +1633,7 @@ newtype GeneratedCodeInfo = GeneratedCodeInfo GeneratedCodeInfoR
 derive instance genericGeneratedCodeInfo :: Generic.Rep.Generic GeneratedCodeInfo _
 derive instance newtypeGeneratedCodeInfo :: Newtype.Newtype GeneratedCodeInfo _
 derive instance eqGeneratedCodeInfo :: Eq.Eq GeneratedCodeInfo
-instance showGeneratedCodeInfo :: Show.Show GeneratedCodeInfo where show = Generic.Rep.Show.genericShow
+instance showGeneratedCodeInfo :: Show.Show GeneratedCodeInfo where show x = Generic.Rep.Show.genericShow x
 
 putGeneratedCodeInfo :: forall m. Effect.MonadEffect m => GeneratedCodeInfo -> ArrayBuffer.Builder.PutM m Unit.Unit
 putGeneratedCodeInfo (GeneratedCodeInfo r) = do
@@ -1675,7 +1675,7 @@ newtype GeneratedCodeInfo_Annotation = GeneratedCodeInfo_Annotation GeneratedCod
 derive instance genericGeneratedCodeInfo_Annotation :: Generic.Rep.Generic GeneratedCodeInfo_Annotation _
 derive instance newtypeGeneratedCodeInfo_Annotation :: Newtype.Newtype GeneratedCodeInfo_Annotation _
 derive instance eqGeneratedCodeInfo_Annotation :: Eq.Eq GeneratedCodeInfo_Annotation
-instance showGeneratedCodeInfo_Annotation :: Show.Show GeneratedCodeInfo_Annotation where show = Generic.Rep.Show.genericShow
+instance showGeneratedCodeInfo_Annotation :: Show.Show GeneratedCodeInfo_Annotation where show x = Generic.Rep.Show.genericShow x
 
 putGeneratedCodeInfo_Annotation :: forall m. Effect.MonadEffect m => GeneratedCodeInfo_Annotation -> ArrayBuffer.Builder.PutM m Unit.Unit
 putGeneratedCodeInfo_Annotation (GeneratedCodeInfo_Annotation r) = do

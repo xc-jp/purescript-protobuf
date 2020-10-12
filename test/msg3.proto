@@ -9,8 +9,8 @@ message msg3 {
   repeated pack.msg1 f1 = 1;
   repeated pack.msg2 f2 = 2;
 
-  // message msg4 {
-  //   int32 f1 = 1;
-  // }
-  // repeated msg4 f4 = 4;
+  message msg4 {
+    int32 f1 = 1;
+  }
+  repeated msg4 f4 = 4;
 }

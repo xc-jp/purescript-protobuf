@@ -139,20 +139,11 @@ It also depends on the Javascript package
 
 ### Generated message instances
 
-We cannot derive common instances like `Eq` for the
-generated message types because
-1. The types [might be recursive](https://github.com/purescript/documentation/blob/master/errors/CycleInDeclaration.md).
-2. The types might contain fields of type
-   [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer),
-   which cannot have most useful instances because it can only be read in `Effect`.
-
-All of the generated message types have an instance of
-[`Generic`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep#t:Generic).
-
-All of the generated message types have an instance of
+All of the generated message types have instances of
+[`Eq`](https://pursuit.purescript.org/packages/purescript-prelude/docs/Data.Eq#t:Eq),
+[`Show`](https://pursuit.purescript.org/packages/purescript-prelude/docs/Data.Show#t:Show),
+[`Generic`](https://pursuit.purescript.org/packages/purescript-generics-rep/docs/Data.Generic.Rep#t:Generic),
 [`NewType`](https://pursuit.purescript.org/packages/purescript-newtype/docs/Data.Newtype#t:Newtype).
-
-In future versions, we may generate `Eq` and `Show` instances.
 
 ### Examples
 

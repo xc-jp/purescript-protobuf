@@ -57,7 +57,7 @@ newtype Version = Version VersionR
 derive instance genericVersion :: Generic.Rep.Generic Version _
 derive instance newtypeVersion :: Newtype.Newtype Version _
 derive instance eqVersion :: Eq.Eq Version
-instance showVersion :: Show.Show Version where show = Generic.Rep.Show.genericShow
+instance showVersion :: Show.Show Version where show x = Generic.Rep.Show.genericShow x
 
 putVersion :: forall m. Effect.MonadEffect m => Version -> ArrayBuffer.Builder.PutM m Unit.Unit
 putVersion (Version r) = do
@@ -114,7 +114,7 @@ newtype CodeGeneratorRequest = CodeGeneratorRequest CodeGeneratorRequestR
 derive instance genericCodeGeneratorRequest :: Generic.Rep.Generic CodeGeneratorRequest _
 derive instance newtypeCodeGeneratorRequest :: Newtype.Newtype CodeGeneratorRequest _
 derive instance eqCodeGeneratorRequest :: Eq.Eq CodeGeneratorRequest
-instance showCodeGeneratorRequest :: Show.Show CodeGeneratorRequest where show = Generic.Rep.Show.genericShow
+instance showCodeGeneratorRequest :: Show.Show CodeGeneratorRequest where show x = Generic.Rep.Show.genericShow x
 
 putCodeGeneratorRequest :: forall m. Effect.MonadEffect m => CodeGeneratorRequest -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorRequest (CodeGeneratorRequest r) = do
@@ -169,7 +169,7 @@ newtype CodeGeneratorResponse = CodeGeneratorResponse CodeGeneratorResponseR
 derive instance genericCodeGeneratorResponse :: Generic.Rep.Generic CodeGeneratorResponse _
 derive instance newtypeCodeGeneratorResponse :: Newtype.Newtype CodeGeneratorResponse _
 derive instance eqCodeGeneratorResponse :: Eq.Eq CodeGeneratorResponse
-instance showCodeGeneratorResponse :: Show.Show CodeGeneratorResponse where show = Generic.Rep.Show.genericShow
+instance showCodeGeneratorResponse :: Show.Show CodeGeneratorResponse where show x = Generic.Rep.Show.genericShow x
 
 putCodeGeneratorResponse :: forall m. Effect.MonadEffect m => CodeGeneratorResponse -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorResponse (CodeGeneratorResponse r) = do
@@ -215,7 +215,7 @@ newtype CodeGeneratorResponse_File = CodeGeneratorResponse_File CodeGeneratorRes
 derive instance genericCodeGeneratorResponse_File :: Generic.Rep.Generic CodeGeneratorResponse_File _
 derive instance newtypeCodeGeneratorResponse_File :: Newtype.Newtype CodeGeneratorResponse_File _
 derive instance eqCodeGeneratorResponse_File :: Eq.Eq CodeGeneratorResponse_File
-instance showCodeGeneratorResponse_File :: Show.Show CodeGeneratorResponse_File where show = Generic.Rep.Show.genericShow
+instance showCodeGeneratorResponse_File :: Show.Show CodeGeneratorResponse_File where show x = Generic.Rep.Show.genericShow x
 
 putCodeGeneratorResponse_File :: forall m. Effect.MonadEffect m => CodeGeneratorResponse_File -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorResponse_File (CodeGeneratorResponse_File r) = do
