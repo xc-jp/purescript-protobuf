@@ -30,7 +30,7 @@ import Data.Array (fromFoldable, snoc)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
-import Data.ArrayBuffer.Types (DataView, ArrayBuffer)
+import Data.ArrayBuffer.Types (DataView)
 import Data.Enum (class BoundedEnum, toEnum, fromEnum)
 import Data.Foldable (foldl, traverse_)
 import Data.List (List(..), (:))
@@ -41,7 +41,7 @@ import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
-import Protobuf.Common (FieldNumber, WireType(..))
+import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
 import Record.Builder (build, modify)
@@ -114,7 +114,7 @@ manyLength p len = do
 data UnknownField
   = UnknownVarInt FieldNumber Long
   | UnknownBits64 FieldNumber Long
-  | UnknownLenDel FieldNumber ArrayBuffer
+  | UnknownLenDel FieldNumber Bytes
   | UnknownBits32 FieldNumber UInt
 
 -- | Parse and preserve an unknown field.
@@ -141,7 +141,7 @@ parseFieldUnknown fieldNumberInt wireType = label ("Unknown " <> show wireType <
         Just l -> do
           dv <- takeN l
           pure $ modify (SProxy :: SProxy "__unknown_fields") $
-            flip snoc $ UnknownLenDel fieldNumber $
+            flip snoc $ UnknownLenDel fieldNumber $ Bytes $
               AB.slice (DV.byteOffset dv) (DV.byteLength dv) (DV.buffer dv)
     Bits32 -> do
       x <- Decode.fixed32

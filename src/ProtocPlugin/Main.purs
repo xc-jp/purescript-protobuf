@@ -421,7 +421,7 @@ import Protobuf.Runtime as Runtime
       genFieldType FieldDescriptorProto_Type_TYPE_BOOL _ = "Boolean"
       genFieldType FieldDescriptorProto_Type_TYPE_STRING _ = "String"
       genFieldType FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = mkFieldType "" tname
-      genFieldType FieldDescriptorProto_Type_TYPE_BYTES _ = "ArrayBuffer.Types.ArrayBuffer"
+      genFieldType FieldDescriptorProto_Type_TYPE_BYTES _ = "Common.Bytes"
       genFieldType FieldDescriptorProto_Type_TYPE_UINT32 _ = "UInt.UInt"
       genFieldType FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = mkFieldType "" tname
       genFieldType FieldDescriptorProto_Type_TYPE_SFIXED32 _ = "Int"
@@ -926,7 +926,7 @@ import Protobuf.Runtime as Runtime
     ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ = Just "Array Boolean"
     ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ = Just "Array String"
     ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = Just $ "Array " <> mkFieldType "" tname
-    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ = Just "Array ArrayBuffer.Types.ArrayBuffer"
+    ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ = Just "Array Common.Bytes"
     ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ = Just "Array UInt.UInt"
     ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = Just $"Array " <> mkFieldType "" tname
     ptype Nothing FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ = Just "Array Int"
@@ -943,7 +943,7 @@ import Protobuf.Runtime as Runtime
     ptype Nothing _ FieldDescriptorProto_Type_TYPE_BOOL _ = Just "Maybe.Maybe Boolean"
     ptype Nothing _ FieldDescriptorProto_Type_TYPE_STRING _ = Just "Maybe.Maybe String"
     ptype Nothing _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = Just $ "Maybe.Maybe " <> mkFieldType "" tname
-    ptype Nothing _ FieldDescriptorProto_Type_TYPE_BYTES _ = Just "Maybe.Maybe ArrayBuffer.Types.ArrayBuffer"
+    ptype Nothing _ FieldDescriptorProto_Type_TYPE_BYTES _ = Just "Maybe.Maybe Common.Bytes"
     ptype Nothing _ FieldDescriptorProto_Type_TYPE_UINT32 _ = Just "Maybe.Maybe UInt.UInt"
     ptype Nothing _ FieldDescriptorProto_Type_TYPE_ENUM (Just tname) = Just $ "Maybe.Maybe " <> mkFieldType "" tname
     ptype Nothing _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ = Just "Maybe.Maybe Int"

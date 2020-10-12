@@ -28,7 +28,7 @@ import Control.Monad.Trans.Class (lift)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer.Types (ArrayBuffer, DataView, Uint8Array)
+import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.Either (Either(..))
 import Data.Float32 (Float32)
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, unsignedToSigned, lowBits)
@@ -37,6 +37,7 @@ import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Protobuf.Common (Bytes(..))
 import Protobuf.Decode32 (varint32, zigzag32, tag32)
 import Protobuf.Decode64 (varint64, zigzag64)
 import Text.Parsing.Parser (ParserT, fail)
@@ -145,12 +146,12 @@ string = do
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => ParserT DataView m ArrayBuffer
+bytes :: forall m. MonadEffect m => ParserT DataView m Bytes
 bytes = do
   len <- UInt.toInt <$> varint32
   dv <- Parse.takeN len
   let ab = DV.buffer dv
   let begin = DV.byteOffset dv
-  pure $ AB.slice begin (begin + len) ab
+  pure $ Bytes $ AB.slice begin (begin + len) ab
 
 

@@ -53,8 +53,7 @@ import Data.Long.Internal (Long, Unsigned, Signed, signedLongFromInt, signedToUn
 import Data.TextEncoding (encodeUtf8)
 import Data.ArrayBuffer.Typed as AT
 import Data.ArrayBuffer.ArrayBuffer as AB
-import Data.ArrayBuffer.Types (ArrayBuffer)
-import Protobuf.Common (FieldNumber, WireType(..))
+import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
 
 import Protobuf.Encode32 (zigzag32, tag32, varint32)
 import Protobuf.Encode64 (zigzag64, varint64)
@@ -232,8 +231,8 @@ string fieldNumber s = do
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => FieldNumber -> ArrayBuffer -> Builder.PutM m Unit
-bytes fieldNumber s = do
+bytes :: forall m. MonadEffect m => FieldNumber -> Bytes -> Builder.PutM m Unit
+bytes fieldNumber (Bytes s) = do
   tag32 fieldNumber LenDel
   varint32 $ UInt.fromInt $ AB.byteLength s
   Builder.putArrayBuffer s

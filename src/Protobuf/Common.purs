@@ -3,18 +3,22 @@
 module Protobuf.Common
 ( FieldNumber
 , WireType(..)
+, Bytes(..)
 )
 where
 
 import Prelude
-import Data.UInt (UInt)
+
+import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.ArrayBuffer.Typed as TA
+import Data.ArrayBuffer.Types (ArrayBuffer, Uint8Array)
 import Data.Enum (class Enum, fromEnum, class BoundedEnum, Cardinality(..))
-import Data.Maybe (Maybe(..))
-import Data.Generic.Rep(class Generic)
+import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.ArrayBuffer.Types (ArrayBuffer)
--- import Data.ArrayBuffer.ArrayBuffer as AB
-import Data.ArrayBuffer.Typed as AT
+import Data.Maybe (Maybe(..))
+import Data.UInt (UInt)
+import Effect (Effect)
+import Effect.Unsafe (unsafePerformEffect)
 
 type FieldNumber = UInt
 
@@ -62,3 +66,16 @@ instance boundedEnumWireType :: BoundedEnum WireType
   fromEnum Bits32 = 5
 
 instance showWireType :: Show WireType where show = genericShow
+
+newtype Bytes = Bytes ArrayBuffer
+
+instance showBytes :: Show Bytes
+ where
+  show (Bytes ab) = "<Bytes length " <> show (AB.byteLength ab)
+
+instance eqBytes :: Eq Bytes
+ where
+  eq (Bytes l) (Bytes r) = unsafePerformEffect $ do
+    l' <- TA.whole l :: Effect Uint8Array
+    r' <- TA.whole r :: Effect Uint8Array
+    TA.eq l' r'

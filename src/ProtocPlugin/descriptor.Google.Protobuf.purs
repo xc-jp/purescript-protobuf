@@ -1360,7 +1360,7 @@ type UninterpretedOptionRow =
   , positive_int_value :: Maybe.Maybe (Long.Long Long.Unsigned)
   , negative_int_value :: Maybe.Maybe (Long.Long Long.Signed)
   , double_value :: Maybe.Maybe Number
-  , string_value :: Maybe.Maybe ArrayBuffer.Types.ArrayBuffer
+  , string_value :: Maybe.Maybe Common.Bytes
   , aggregate_value :: Maybe.Maybe String
   , __unknown_fields :: Array Runtime.UnknownField
   )
