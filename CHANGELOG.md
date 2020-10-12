@@ -1,3 +1,8 @@
+# v1.3.0
+
+Newtype `Protobuf.Library.Bytes` wrapper for `ArrayBuffer`, so that all
+messages can have `Eq` and `Show` instances.
+
 # v1.2.0
 
 Preserve unknown fields, so now all Google binary-wire-format proto3

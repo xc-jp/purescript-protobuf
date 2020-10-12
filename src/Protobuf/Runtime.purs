@@ -233,7 +233,6 @@ parseEnum = do
     Nothing -> fail $ "Enum " <> show x <> " out of bounds."
     Just e -> pure e
 
--- | https://github.com/purescript-contrib/purescript-parsing/pull/96
 -- | If parsing fails inside this labelled context, then prepend the `String`
 -- | to the error `String` in the `ParseError`.
 label :: forall m s a. Monad m => String -> ParserT s m a -> ParserT s m a
