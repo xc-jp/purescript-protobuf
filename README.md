@@ -108,7 +108,7 @@ We'll also import modules for reading and writing `ArrayBuffer`s.
 
 
 ```purescript
-import Protobuf.Library
+import Protobuf.Library (Bytes(..))
 import Generated.Module (MyMessage, mkMyMessage, putMyMessage, parseMyMessage)
 import Text.Parsing.Parser (runParserT)
 import Data.ArrayBuffer.Builder (execPutM)
