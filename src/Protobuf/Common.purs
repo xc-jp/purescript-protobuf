@@ -16,6 +16,7 @@ import Data.Enum (class Enum, fromEnum, class BoundedEnum, Cardinality(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
+import Data.Newtype (class Newtype)
 import Data.UInt (UInt)
 import Effect (Effect)
 import Effect.Unsafe (unsafePerformEffect)
@@ -67,6 +68,9 @@ instance boundedEnumWireType :: BoundedEnum WireType
 
 instance showWireType :: Show WireType where show = genericShow
 
+-- | Representation of a __bytes__
+-- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | field.
 newtype Bytes = Bytes ArrayBuffer
 
 instance showBytes :: Show Bytes
@@ -79,3 +83,5 @@ instance eqBytes :: Eq Bytes
     l' <- TA.whole l :: Effect Uint8Array
     r' <- TA.whole r :: Effect Uint8Array
     TA.eq l' r'
+
+derive instance newtypeBytes :: Newtype Bytes _
