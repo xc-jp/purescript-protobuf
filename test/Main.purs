@@ -2,13 +2,12 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (catMaybes, zipWith)
+import Data.Array (catMaybes)
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
 import Data.Either (Either(..))
 import Data.Float32 as Float32
-import Data.Foldable (and)
 import Data.Long.Internal as Long
 import Data.Maybe (Maybe(..))
 import Data.UInt as UInt
