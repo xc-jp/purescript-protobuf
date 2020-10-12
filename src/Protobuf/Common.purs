@@ -71,7 +71,7 @@ newtype Bytes = Bytes ArrayBuffer
 
 instance showBytes :: Show Bytes
  where
-  show (Bytes ab) = "<Bytes length " <> show (AB.byteLength ab)
+  show (Bytes ab) = "<Bytes length " <> show (AB.byteLength ab) <> ">"
 
 instance eqBytes :: Eq Bytes
  where

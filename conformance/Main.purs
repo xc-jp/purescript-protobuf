@@ -26,6 +26,7 @@ import Node.Stream (onReadable, read, write, writeString)
 import ProtobufTestMessages.Proto3.TestMessagesProto3 as T3
 import Text.Parsing.Parser (runParserT)
 import Text.Parsing.Parser.DataView (anyInt32le)
+import Protobuf.Common (Bytes(..))
 
 bailOutMaybe :: forall a. String -> Effect (Maybe a) -> Effect a
 bailOutMaybe err thing =
@@ -69,7 +70,7 @@ reply (ConformanceRequest
   , test_category: _ -- :: Maybe.Maybe TestCategory
   , jspb_encoding_options: _ -- :: Maybe.Maybe JspbEncodingConfig
   , print_unknown_fields: _ -- :: Maybe.Maybe Boolean
-  , payload: Just (C.ConformanceRequest_Payload_Protobuf_payload receipt_payload)
+  , payload: Just (C.ConformanceRequest_Payload_Protobuf_payload (Bytes receipt_payload))
   }) = do
     let dv = DV.whole receipt_payload
     parsed <- runParserT dv $ T3.parseTestAllTypesProto3 $ DV.byteLength dv
@@ -81,7 +82,7 @@ reply (ConformanceRequest
       Right x -> do
         reply_payload <- execPut $ T3.putTestAllTypesProto3 x
         pure $ mkConformanceResponse
-          { result: Just $ ConformanceResponse_Result_Protobuf_payload reply_payload
+          { result: Just $ ConformanceResponse_Result_Protobuf_payload (Bytes reply_payload)
           }
 
 reply (ConformanceRequest
