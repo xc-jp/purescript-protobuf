@@ -1,6 +1,6 @@
 -- | Primitive `Long`-based parsers for decoding Google Protocol Buffers.
 -- |
--- | Do not import this module, or any module from the package __purescript-protobuf__.
+-- | Do not import this module.
 -- | See package README for explanation.
 module Protobuf.Decode64
 ( zigzag64

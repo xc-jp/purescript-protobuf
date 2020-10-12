@@ -65,11 +65,6 @@ To generate Purescript .purs files from .proto files, run:
 
 ## Writing programs with the generated code
 
-*None of the modules in this package should be imported directly in our program.*
-
-Rather, we'll import the message modules from the generated `.purs` files,
-as well as modules for reading and writing `ArrayBuffer`s.
-
 For example, a message in a `.proto` file declared as
 
 ```
@@ -106,9 +101,14 @@ will export these four names in the generated `.purs` modules.
    [“the Protocol Buffer wire format is not self-delimiting.”](https://developers.google.com/protocol-buffers/docs/techniques#streaming)
 
 Then, in our program, our imports will look something like this.
+The only module from this package which we will import into our program
+will be the `Protobuf.Library` module.
+We'll import the message modules from the generated `.purs` files.
+We'll also import modules for reading and writing `ArrayBuffer`s.
 
 
 ```purescript
+import Protobuf.Library
 import Generated.Module (MyMessage, mkMyMessage, putMyMessage, parseMyMessage)
 import Text.Parsing.Parser (runParserT)
 import Data.ArrayBuffer.Builder (execPutM)

@@ -1,6 +1,6 @@
 -- | Primitive builders for encoding Google Protocol Buffers.
 -- |
--- | Do not import this module, or any module from the package __purescript-protobuf__.
+-- | Do not import this module.
 -- | See package README for explanation.
 -- |
 -- | Primed (') encoder functions encode without the tag, for packed

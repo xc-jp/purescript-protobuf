@@ -1,4 +1,4 @@
--- | Do not import this module, or any module from the package __purescript-protobuf__.
+-- | Do not import this module.
 -- | See package README for explanation.
 module Protobuf.Common
 ( FieldNumber
