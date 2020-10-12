@@ -336,7 +336,6 @@ import Protobuf.Runtime as Runtime
 -- | data type so that we can nest records, otherwise we get
 -- | https://github.com/purescript/documentation/blob/master/errors/CycleInTypeSynonym.md
 -- | And so that we can assign instances.
--- | We also get the cycle error if we try to give the messages Show instances.
   genMessage :: ScopedMsg -> String
   genMessage (ScopedMsg nameSpace (DescriptorProto {name: Just msgName, field, oneof_decl})) =
     let tname = mkTypeName $ nameSpace <> [msgName]
@@ -353,6 +352,9 @@ import Protobuf.Runtime as Runtime
       , "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
       , "derive instance generic" <> tname <> " :: Generic.Rep.Generic " <> tname <> " _"
       , "derive instance newtype" <> tname <> " :: Newtype.Newtype " <> tname <> " _"
+      , "derive instance eq" <> tname <> " :: Eq.Eq " <> tname
+      -- https://github.com/purescript/purescript/issues/2975#issuecomment-313650710
+      , "instance show" <> tname <> " :: Show.Show " <> tname <> " where show x = Generic.Rep.Show.genericShow x"
       , ""
       , "put" <> tname <> " :: forall m. Effect.MonadEffect m => " <> tname <> " -> ArrayBuffer.Builder.PutM m Unit.Unit"
       , "put" <> tname <> " (" <> tname <> " r) = do"
@@ -393,10 +395,13 @@ import Protobuf.Runtime as Runtime
     -> Int
     -> OneofDescriptorProto
     -> String
-  genTypeOneof nameSpace field indexOneof (OneofDescriptorProto {name: Just oname}) =
-    "\ndata " <> cname <> "\n  = "
-    <> (String.joinWith "\n  | " (mapMaybe go field))
-    <> "\nderive instance generic" <> cname <> " :: Generic.Rep.Generic " <> cname <> " _"
+  genTypeOneof nameSpace field indexOneof (OneofDescriptorProto {name: Just oname}) = String.joinWith "\n"
+    [ "data " <> cname
+    , "  = " <> (String.joinWith "\n  | " (mapMaybe go field))
+    , "derive instance generic" <> cname <> " :: Generic.Rep.Generic " <> cname <> " _"
+    , "derive instance eq" <> cname <> " :: Eq.Eq " <> cname
+    , "instance show" <> cname <> " :: Show.Show " <> cname <> " where show = Generic.Rep.Show.genericShow"
+    ]
    where
     cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
     go :: FieldDescriptorProto -> Maybe String

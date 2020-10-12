@@ -41,6 +41,8 @@ import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
@@ -116,6 +118,10 @@ data UnknownField
   | UnknownBits64 FieldNumber Long
   | UnknownLenDel FieldNumber Bytes
   | UnknownBits32 FieldNumber UInt
+
+derive instance eqUnknownField :: Eq UnknownField
+derive instance genericUnknownField :: Generic UnknownField _
+instance showUnknownField :: Show UnknownField where show = genericShow
 
 -- | Parse and preserve an unknown field.
 parseFieldUnknown
