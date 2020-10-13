@@ -135,7 +135,10 @@ Serialize a `Rectangle` to an `ArrayBuffer`.
 
 ```purescript
 do
-    arraybuffer <- execPutM $ putRectangle $ mkRectangle {width:3.0,height:4.0}
+    arraybuffer <- execPutM $ putRectangle $ mkRectangle
+        { width: Just 3.0
+        , height: Just 4.0
+        }
 ```
 
 Now we'll deserialize `Rectangle` from the `ArrayBuffer`.
@@ -165,6 +168,8 @@ convenience parsing functions supplied by `Protobuf.Library`, like `parseMaybe`.
       height <- parseMaybe "Missing required height" (unwrap rectangle).height
       pure $ Tuple width height
 ```
+
+The `result` will now be `:: Either ParseError (Tuple Number Number)`.
 
 ### Dependencies
 
