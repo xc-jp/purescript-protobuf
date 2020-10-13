@@ -65,42 +65,54 @@ To generate Purescript .purs files from .proto files, run:
 
 ## Writing programs with the generated code
 
-For example, a message in a `.proto` file declared as
+A message in an `shapes.proto` file declared as
 
 ```
-message MyMessage {
-  sint32 my_field = 1;
+package interproc;
+
+message Rectangle {
+  double width = 1;
+  double height = 2;
 }
 ```
 
-will export these four names in the generated `.purs` modules.
+will export these four names in a generated `shapes.Interproc.purs` module.
 
 1. A message data type
-   * ```purescript
-     newtype MyMessage = MyMessage { my_field :: Maybe Int }
-     ```
+
+   ```purescript
+   newtype Rectangle = Rectangle { width :: Maybe Number, height :: Maybe Number }
+   ```
+
 2. A message maker which constructs a message from a `Record`
    with some message fields
-   * ```purescript
-     mkMyMessage :: forall r. Record r -> MyMessage
-     ```
+
+   ```purescript
+   mkRectangle :: forall r. Record r -> Rectangle
+   ```
+
    All message fields are optional, and can be omitted from the `Record`. If we want the compiler to check that we've explicitly supplied all the fields,
    then we can use the ordinary message data type constructor.
+
 3. A message encoder which works with
    [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
-   * ```purescript
-     putMyMessage :: forall m. MonadEffect m => MyMessage -> PutM m Unit
-     ```
+
+   ```purescript
+   putRectangle :: forall m. MonadEffect m => Rectangle -> PutM m Unit
+   ```
+
 4. A message decoder which works with
    [__purescript-parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
-   * ```purescript
-     parseMyMessage :: forall m. MonadEffect m => Int -> ParserT DataView m MyMessage
-     ```
+
+   ```purescript
+   parseMyMessage :: forall m. MonadEffect m => Int -> ParserT DataView m Rectangle
+   ```
+
    The message decoder needs an argument which tells it the
    length of the message which it’s about to decode, because
    [“the Protocol Buffer wire format is not self-delimiting.”](https://developers.google.com/protocol-buffers/docs/techniques#streaming)
 
-Then, in our program, our imports will look something like this.
+In our program, our imports will look something like this.
 The only module from this package which we will import into our program
 will be the `Protobuf.Library` module.
 We'll import the message modules from the generated `.purs` files.
@@ -108,11 +120,51 @@ We'll also import modules for reading and writing `ArrayBuffer`s.
 
 
 ```purescript
-import Protobuf.Library (Bytes(..))
-import Generated.Module (MyMessage, mkMyMessage, putMyMessage, parseMyMessage)
+import Protobuf.Library (Bytes(..), parseMaybe)
+import Interproc.Shapes (Rectangle, mkRectangle, putRectangle, parseRectangle)
 import Text.Parsing.Parser (runParserT)
 import Data.ArrayBuffer.Builder (execPutM)
+import Data.ArrayBuffer.DataView (whole)
+import Data.ArrayBuffer.ArrayBuffer (byteLength)
+import Data.Newtype (unwrap)
 ```
+
+Serialize a `Rectangle` to an `ArrayBuffer`.
+
+```purescript
+do
+    arraybuffer <- execPutM $ putRectangle $ mkRectangle {width:3.0,height:4.0}
+```
+
+Now we'll deserialize `Rectangle` from the `ArrayBuffer`.
+
+```purescript
+   result <- runParserT (whole arraybuffer) $ do
+      rectangle <- parseRectangle (byteLength arraybuffer)
+```
+
+Now at this point, we've consumed all of the parser input, but
+we're not finished parsing.
+
+In [proto3, all fields are optional](https://github.com/protocolbuffers/protobuf/issues/2497).
+We want to “validate” the `Rectangle` message to make sure it has all of the
+fields that we require. Fortunately, we are already in the `ParserT` monad,
+so we can do better than “validation.”
+[Parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/).
+
+We will construct and return a tuple
+with the width and height of the `Rectangle`. For this step,
+[pattern matching](https://github.com/purescript/documentation/blob/master/language/Pattern-Matching.md)
+on the `Rectangle` message type works well, or we might want to use some of the
+convenience parsing functions supplied by `Protobuf.Library`, like `parseMaybe`.
+
+```purescript
+      width <- parseMaybe "Missing required width" (unwrap rectangle).width
+      height <- parseMaybe "Missing required height" (unwrap rectangle).height
+      pure $ Tuple width height
+```
+
+### Dependencies
 
 The generated code modules will import modules from this
 package.
