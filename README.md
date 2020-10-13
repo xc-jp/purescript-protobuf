@@ -144,8 +144,8 @@ do
 Now we'll deserialize `Rectangle` from the `ArrayBuffer`.
 
 ```purescript
-   result <- runParserT (whole arraybuffer) $ do
-      rectangle <- parseRectangle (byteLength arraybuffer)
+    result <- runParserT (whole arraybuffer) $ do
+        rectangle <- parseRectangle (byteLength arraybuffer)
 ```
 
 Now at this point, we've consumed all of the parser input, but
@@ -164,9 +164,9 @@ on the `Rectangle` message type works well, or we might want to use some of the
 convenience parsing functions supplied by `Protobuf.Library`, like `parseMaybe`.
 
 ```purescript
-      width <- parseMaybe "Missing required width" (unwrap rectangle).width
-      height <- parseMaybe "Missing required height" (unwrap rectangle).height
-      pure $ Tuple width height
+        width <- parseMaybe "Missing required width" (unwrap rectangle).width
+        height <- parseMaybe "Missing required height" (unwrap rectangle).height
+        pure $ Tuple width height
 ```
 
 The `result` will now be `:: Either ParseError (Tuple Number Number)`.
