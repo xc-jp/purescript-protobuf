@@ -1,6 +1,6 @@
 {
   "name": "purescript-protobuf",
-  "version": "0.1.0",
+  "version": "1.3.0",
   "description": "Google Protocol Buffers for Purescript",
   "author": "Cross Compass, LLC., jamesbrock@gmail.com",
   "license": "BSD-3-Clause",
