@@ -65,7 +65,7 @@ To generate Purescript .purs files from .proto files, run:
 
 ## Writing programs with the generated code
 
-A message in an `shapes.proto` file declared as
+A message in a `shapes.proto` file declared as
 
 ```
 package interproc;
@@ -76,7 +76,7 @@ message Rectangle {
 }
 ```
 
-will export these four names in a generated `shapes.Interproc.purs` module.
+will export these four names in a generated `shapes.Interproc.purs` file.
 
 1. A message data type
 
