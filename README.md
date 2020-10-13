@@ -107,7 +107,7 @@ will export these four names in a generated `shapes.Interproc.purs` file.
    [__purescript-parsing-dataview__](http://pursuit.purescript.org/packages/purescript-parsing-dataview/)
 
    ```purescript
-   parseMyMessage :: forall m. MonadEffect m => Int -> ParserT DataView m Rectangle
+   parseRectangle :: forall m. MonadEffect m => Int -> ParserT DataView m Rectangle
    ```
 
    The message decoder needs an argument which tells it the
