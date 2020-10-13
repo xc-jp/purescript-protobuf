@@ -42,7 +42,7 @@ We also have our own unit tests, see `test/README.md` in this repository.
 
 The `shell.nix` environment provides
 
-* The Purescript toolchain
+* The Purescript toolchain: *purs*, *spago*, and *nodejs*.
 * The [`protoc`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating) compiler
 * The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
   [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
@@ -62,6 +62,8 @@ To generate Purescript .purs files from .proto files, run:
 
 [nix-shell]$
 ```
+
+If you don't want to use Nix, then install the Purescript toolchain and *protoc*.
 
 ## Writing programs with the generated code
 
