@@ -8,7 +8,8 @@ module Google.Protobuf.Compiler.Plugin
 where
 
 import Prelude
-import Effect.Class as Effect
+import Effect.Class (class MonadEffect)
+import Control.Monad.Rec.Class (class MonadRec)
 import Record.Builder as Record.Builder
 import Data.Array as Array
 import Data.Bounded as Bounded
@@ -40,7 +41,6 @@ import Protobuf.Common as Common
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
 import Protobuf.Runtime as Runtime
-import Control.Monad.Rec.Class (class MonadRec)
 
 import Google.Protobuf.Descriptor as Google.Protobuf
 
@@ -60,7 +60,7 @@ derive instance newtypeVersion :: Newtype.Newtype Version _
 derive instance eqVersion :: Eq.Eq Version
 instance showVersion :: Show.Show Version where show x = Generic.Rep.Show.genericShow x
 
-putVersion :: forall m. Effect.MonadEffect m => Version -> ArrayBuffer.Builder.PutM m Unit.Unit
+putVersion :: forall m. MonadEffect m => Version -> ArrayBuffer.Builder.PutM m Unit.Unit
 putVersion (Version r) = do
   Runtime.putOptional 1 r.major Encode.int32
   Runtime.putOptional 2 r.minor Encode.int32
@@ -68,7 +68,7 @@ putVersion (Version r) = do
   Runtime.putOptional 4 r.suffix Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseVersion :: forall m. Effect.MonadEffect m => MonadRec m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m Version
+parseVersion :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m Version
 parseVersion length = Runtime.label "Version / " $
   Runtime.parseMessage Version defaultVersion parseField length
  where
@@ -117,7 +117,7 @@ derive instance newtypeCodeGeneratorRequest :: Newtype.Newtype CodeGeneratorRequ
 derive instance eqCodeGeneratorRequest :: Eq.Eq CodeGeneratorRequest
 instance showCodeGeneratorRequest :: Show.Show CodeGeneratorRequest where show x = Generic.Rep.Show.genericShow x
 
-putCodeGeneratorRequest :: forall m. Effect.MonadEffect m => CodeGeneratorRequest -> ArrayBuffer.Builder.PutM m Unit.Unit
+putCodeGeneratorRequest :: forall m. MonadEffect m => CodeGeneratorRequest -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorRequest (CodeGeneratorRequest r) = do
   Runtime.putRepeated 1 r.file_to_generate Encode.string
   Runtime.putOptional 2 r.parameter Encode.string
@@ -125,7 +125,7 @@ putCodeGeneratorRequest (CodeGeneratorRequest r) = do
   Runtime.putOptional 3 r.compiler_version $ Runtime.putLenDel putVersion
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseCodeGeneratorRequest :: forall m. Effect.MonadEffect m => MonadRec m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorRequest
+parseCodeGeneratorRequest :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorRequest
 parseCodeGeneratorRequest length = Runtime.label "CodeGeneratorRequest / " $
   Runtime.parseMessage CodeGeneratorRequest defaultCodeGeneratorRequest parseField length
  where
@@ -172,13 +172,13 @@ derive instance newtypeCodeGeneratorResponse :: Newtype.Newtype CodeGeneratorRes
 derive instance eqCodeGeneratorResponse :: Eq.Eq CodeGeneratorResponse
 instance showCodeGeneratorResponse :: Show.Show CodeGeneratorResponse where show x = Generic.Rep.Show.genericShow x
 
-putCodeGeneratorResponse :: forall m. Effect.MonadEffect m => CodeGeneratorResponse -> ArrayBuffer.Builder.PutM m Unit.Unit
+putCodeGeneratorResponse :: forall m. MonadEffect m => CodeGeneratorResponse -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorResponse (CodeGeneratorResponse r) = do
   Runtime.putOptional 1 r.error Encode.string
   Runtime.putRepeated 15 r.file $ Runtime.putLenDel putCodeGeneratorResponse_File
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseCodeGeneratorResponse :: forall m. Effect.MonadEffect m => MonadRec m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorResponse
+parseCodeGeneratorResponse :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorResponse
 parseCodeGeneratorResponse length = Runtime.label "CodeGeneratorResponse / " $
   Runtime.parseMessage CodeGeneratorResponse defaultCodeGeneratorResponse parseField length
  where
@@ -218,14 +218,14 @@ derive instance newtypeCodeGeneratorResponse_File :: Newtype.Newtype CodeGenerat
 derive instance eqCodeGeneratorResponse_File :: Eq.Eq CodeGeneratorResponse_File
 instance showCodeGeneratorResponse_File :: Show.Show CodeGeneratorResponse_File where show x = Generic.Rep.Show.genericShow x
 
-putCodeGeneratorResponse_File :: forall m. Effect.MonadEffect m => CodeGeneratorResponse_File -> ArrayBuffer.Builder.PutM m Unit.Unit
+putCodeGeneratorResponse_File :: forall m. MonadEffect m => CodeGeneratorResponse_File -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorResponse_File (CodeGeneratorResponse_File r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putOptional 2 r.insertion_point Encode.string
   Runtime.putOptional 15 r.content Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseCodeGeneratorResponse_File :: forall m. Effect.MonadEffect m => MonadRec m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorResponse_File
+parseCodeGeneratorResponse_File :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorResponse_File
 parseCodeGeneratorResponse_File length = Runtime.label "File / " $
   Runtime.parseMessage CodeGeneratorResponse_File defaultCodeGeneratorResponse_File parseField length
  where

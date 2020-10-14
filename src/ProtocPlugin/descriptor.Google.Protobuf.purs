@@ -37,7 +37,8 @@ module Google.Protobuf.Descriptor
 where
 
 import Prelude
-import Effect.Class as Effect
+import Effect.Class (class MonadEffect)
+import Control.Monad.Rec.Class (class MonadRec)
 import Record.Builder as Record.Builder
 import Data.Array as Array
 import Data.Bounded as Bounded
@@ -69,7 +70,6 @@ import Protobuf.Common as Common
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
 import Protobuf.Runtime as Runtime
-import Control.Monad.Rec.Class (class MonadRec)
 
 
 
@@ -85,12 +85,12 @@ derive instance newtypeFileDescriptorSet :: Newtype.Newtype FileDescriptorSet _
 derive instance eqFileDescriptorSet :: Eq.Eq FileDescriptorSet
 instance showFileDescriptorSet :: Show.Show FileDescriptorSet where show x = Generic.Rep.Show.genericShow x
 
-putFileDescriptorSet :: forall m. Effect.MonadEffect m => FileDescriptorSet -> ArrayBuffer.Builder.PutM m Unit.Unit
+putFileDescriptorSet :: forall m. MonadEffect m => FileDescriptorSet -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileDescriptorSet (FileDescriptorSet r) = do
   Runtime.putRepeated 1 r.file $ Runtime.putLenDel putFileDescriptorProto
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseFileDescriptorSet :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FileDescriptorSet
+parseFileDescriptorSet :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FileDescriptorSet
 parseFileDescriptorSet length = Runtime.label "FileDescriptorSet / " $
   Runtime.parseMessage FileDescriptorSet defaultFileDescriptorSet parseField length
  where
@@ -135,7 +135,7 @@ derive instance newtypeFileDescriptorProto :: Newtype.Newtype FileDescriptorProt
 derive instance eqFileDescriptorProto :: Eq.Eq FileDescriptorProto
 instance showFileDescriptorProto :: Show.Show FileDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putFileDescriptorProto :: forall m. Effect.MonadEffect m => FileDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putFileDescriptorProto :: forall m. MonadEffect m => FileDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileDescriptorProto (FileDescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putOptional 2 r.package Encode.string
@@ -151,7 +151,7 @@ putFileDescriptorProto (FileDescriptorProto r) = do
   Runtime.putOptional 12 r.syntax Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseFileDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FileDescriptorProto
+parseFileDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FileDescriptorProto
 parseFileDescriptorProto length = Runtime.label "FileDescriptorProto / " $
   Runtime.parseMessage FileDescriptorProto defaultFileDescriptorProto parseField length
  where
@@ -244,7 +244,7 @@ derive instance newtypeDescriptorProto :: Newtype.Newtype DescriptorProto _
 derive instance eqDescriptorProto :: Eq.Eq DescriptorProto
 instance showDescriptorProto :: Show.Show DescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putDescriptorProto :: forall m. Effect.MonadEffect m => DescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putDescriptorProto :: forall m. MonadEffect m => DescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto (DescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putRepeated 2 r.field $ Runtime.putLenDel putFieldDescriptorProto
@@ -258,7 +258,7 @@ putDescriptorProto (DescriptorProto r) = do
   Runtime.putRepeated 10 r.reserved_name Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto
+parseDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto
 parseDescriptorProto length = Runtime.label "DescriptorProto / " $
   Runtime.parseMessage DescriptorProto defaultDescriptorProto parseField length
  where
@@ -330,14 +330,14 @@ derive instance newtypeDescriptorProto_ExtensionRange :: Newtype.Newtype Descrip
 derive instance eqDescriptorProto_ExtensionRange :: Eq.Eq DescriptorProto_ExtensionRange
 instance showDescriptorProto_ExtensionRange :: Show.Show DescriptorProto_ExtensionRange where show x = Generic.Rep.Show.genericShow x
 
-putDescriptorProto_ExtensionRange :: forall m. Effect.MonadEffect m => DescriptorProto_ExtensionRange -> ArrayBuffer.Builder.PutM m Unit.Unit
+putDescriptorProto_ExtensionRange :: forall m. MonadEffect m => DescriptorProto_ExtensionRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto_ExtensionRange (DescriptorProto_ExtensionRange r) = do
   Runtime.putOptional 1 r.start Encode.int32
   Runtime.putOptional 2 r.end Encode.int32
   Runtime.putOptional 3 r.options $ Runtime.putLenDel putExtensionRangeOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseDescriptorProto_ExtensionRange :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto_ExtensionRange
+parseDescriptorProto_ExtensionRange :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto_ExtensionRange
 parseDescriptorProto_ExtensionRange length = Runtime.label "ExtensionRange / " $
   Runtime.parseMessage DescriptorProto_ExtensionRange defaultDescriptorProto_ExtensionRange parseField length
  where
@@ -380,13 +380,13 @@ derive instance newtypeDescriptorProto_ReservedRange :: Newtype.Newtype Descript
 derive instance eqDescriptorProto_ReservedRange :: Eq.Eq DescriptorProto_ReservedRange
 instance showDescriptorProto_ReservedRange :: Show.Show DescriptorProto_ReservedRange where show x = Generic.Rep.Show.genericShow x
 
-putDescriptorProto_ReservedRange :: forall m. Effect.MonadEffect m => DescriptorProto_ReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
+putDescriptorProto_ReservedRange :: forall m. MonadEffect m => DescriptorProto_ReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto_ReservedRange (DescriptorProto_ReservedRange r) = do
   Runtime.putOptional 1 r.start Encode.int32
   Runtime.putOptional 2 r.end Encode.int32
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseDescriptorProto_ReservedRange :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto_ReservedRange
+parseDescriptorProto_ReservedRange :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto_ReservedRange
 parseDescriptorProto_ReservedRange length = Runtime.label "ReservedRange / " $
   Runtime.parseMessage DescriptorProto_ReservedRange defaultDescriptorProto_ReservedRange parseField length
  where
@@ -424,12 +424,12 @@ derive instance newtypeExtensionRangeOptions :: Newtype.Newtype ExtensionRangeOp
 derive instance eqExtensionRangeOptions :: Eq.Eq ExtensionRangeOptions
 instance showExtensionRangeOptions :: Show.Show ExtensionRangeOptions where show x = Generic.Rep.Show.genericShow x
 
-putExtensionRangeOptions :: forall m. Effect.MonadEffect m => ExtensionRangeOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putExtensionRangeOptions :: forall m. MonadEffect m => ExtensionRangeOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putExtensionRangeOptions (ExtensionRangeOptions r) = do
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseExtensionRangeOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m ExtensionRangeOptions
+parseExtensionRangeOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m ExtensionRangeOptions
 parseExtensionRangeOptions length = Runtime.label "ExtensionRangeOptions / " $
   Runtime.parseMessage ExtensionRangeOptions defaultExtensionRangeOptions parseField length
  where
@@ -472,7 +472,7 @@ derive instance newtypeFieldDescriptorProto :: Newtype.Newtype FieldDescriptorPr
 derive instance eqFieldDescriptorProto :: Eq.Eq FieldDescriptorProto
 instance showFieldDescriptorProto :: Show.Show FieldDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putFieldDescriptorProto :: forall m. Effect.MonadEffect m => FieldDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putFieldDescriptorProto :: forall m. MonadEffect m => FieldDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFieldDescriptorProto (FieldDescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putOptional 3 r.number Encode.int32
@@ -486,7 +486,7 @@ putFieldDescriptorProto (FieldDescriptorProto r) = do
   Runtime.putOptional 8 r.options $ Runtime.putLenDel putFieldOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseFieldDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FieldDescriptorProto
+parseFieldDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FieldDescriptorProto
 parseFieldDescriptorProto length = Runtime.label "FieldDescriptorProto / " $
   Runtime.parseMessage FieldDescriptorProto defaultFieldDescriptorProto parseField length
  where
@@ -557,13 +557,13 @@ derive instance newtypeOneofDescriptorProto :: Newtype.Newtype OneofDescriptorPr
 derive instance eqOneofDescriptorProto :: Eq.Eq OneofDescriptorProto
 instance showOneofDescriptorProto :: Show.Show OneofDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putOneofDescriptorProto :: forall m. Effect.MonadEffect m => OneofDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putOneofDescriptorProto :: forall m. MonadEffect m => OneofDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putOneofDescriptorProto (OneofDescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putOptional 2 r.options $ Runtime.putLenDel putOneofOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseOneofDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m OneofDescriptorProto
+parseOneofDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m OneofDescriptorProto
 parseOneofDescriptorProto length = Runtime.label "OneofDescriptorProto / " $
   Runtime.parseMessage OneofDescriptorProto defaultOneofDescriptorProto parseField length
  where
@@ -605,7 +605,7 @@ derive instance newtypeEnumDescriptorProto :: Newtype.Newtype EnumDescriptorProt
 derive instance eqEnumDescriptorProto :: Eq.Eq EnumDescriptorProto
 instance showEnumDescriptorProto :: Show.Show EnumDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putEnumDescriptorProto :: forall m. Effect.MonadEffect m => EnumDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putEnumDescriptorProto :: forall m. MonadEffect m => EnumDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumDescriptorProto (EnumDescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putRepeated 2 r.value $ Runtime.putLenDel putEnumValueDescriptorProto
@@ -614,7 +614,7 @@ putEnumDescriptorProto (EnumDescriptorProto r) = do
   Runtime.putRepeated 5 r.reserved_name Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseEnumDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumDescriptorProto
+parseEnumDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumDescriptorProto
 parseEnumDescriptorProto length = Runtime.label "EnumDescriptorProto / " $
   Runtime.parseMessage EnumDescriptorProto defaultEnumDescriptorProto parseField length
  where
@@ -665,13 +665,13 @@ derive instance newtypeEnumDescriptorProto_EnumReservedRange :: Newtype.Newtype 
 derive instance eqEnumDescriptorProto_EnumReservedRange :: Eq.Eq EnumDescriptorProto_EnumReservedRange
 instance showEnumDescriptorProto_EnumReservedRange :: Show.Show EnumDescriptorProto_EnumReservedRange where show x = Generic.Rep.Show.genericShow x
 
-putEnumDescriptorProto_EnumReservedRange :: forall m. Effect.MonadEffect m => EnumDescriptorProto_EnumReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
+putEnumDescriptorProto_EnumReservedRange :: forall m. MonadEffect m => EnumDescriptorProto_EnumReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumDescriptorProto_EnumReservedRange (EnumDescriptorProto_EnumReservedRange r) = do
   Runtime.putOptional 1 r.start Encode.int32
   Runtime.putOptional 2 r.end Encode.int32
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseEnumDescriptorProto_EnumReservedRange :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumDescriptorProto_EnumReservedRange
+parseEnumDescriptorProto_EnumReservedRange :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumDescriptorProto_EnumReservedRange
 parseEnumDescriptorProto_EnumReservedRange length = Runtime.label "EnumReservedRange / " $
   Runtime.parseMessage EnumDescriptorProto_EnumReservedRange defaultEnumDescriptorProto_EnumReservedRange parseField length
  where
@@ -711,14 +711,14 @@ derive instance newtypeEnumValueDescriptorProto :: Newtype.Newtype EnumValueDesc
 derive instance eqEnumValueDescriptorProto :: Eq.Eq EnumValueDescriptorProto
 instance showEnumValueDescriptorProto :: Show.Show EnumValueDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putEnumValueDescriptorProto :: forall m. Effect.MonadEffect m => EnumValueDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putEnumValueDescriptorProto :: forall m. MonadEffect m => EnumValueDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumValueDescriptorProto (EnumValueDescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putOptional 2 r.number Encode.int32
   Runtime.putOptional 3 r.options $ Runtime.putLenDel putEnumValueOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseEnumValueDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumValueDescriptorProto
+parseEnumValueDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumValueDescriptorProto
 parseEnumValueDescriptorProto length = Runtime.label "EnumValueDescriptorProto / " $
   Runtime.parseMessage EnumValueDescriptorProto defaultEnumValueDescriptorProto parseField length
  where
@@ -762,14 +762,14 @@ derive instance newtypeServiceDescriptorProto :: Newtype.Newtype ServiceDescript
 derive instance eqServiceDescriptorProto :: Eq.Eq ServiceDescriptorProto
 instance showServiceDescriptorProto :: Show.Show ServiceDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putServiceDescriptorProto :: forall m. Effect.MonadEffect m => ServiceDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putServiceDescriptorProto :: forall m. MonadEffect m => ServiceDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putServiceDescriptorProto (ServiceDescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putRepeated 2 r.method $ Runtime.putLenDel putMethodDescriptorProto
   Runtime.putOptional 3 r.options $ Runtime.putLenDel putServiceOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseServiceDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m ServiceDescriptorProto
+parseServiceDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m ServiceDescriptorProto
 parseServiceDescriptorProto length = Runtime.label "ServiceDescriptorProto / " $
   Runtime.parseMessage ServiceDescriptorProto defaultServiceDescriptorProto parseField length
  where
@@ -816,7 +816,7 @@ derive instance newtypeMethodDescriptorProto :: Newtype.Newtype MethodDescriptor
 derive instance eqMethodDescriptorProto :: Eq.Eq MethodDescriptorProto
 instance showMethodDescriptorProto :: Show.Show MethodDescriptorProto where show x = Generic.Rep.Show.genericShow x
 
-putMethodDescriptorProto :: forall m. Effect.MonadEffect m => MethodDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
+putMethodDescriptorProto :: forall m. MonadEffect m => MethodDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMethodDescriptorProto (MethodDescriptorProto r) = do
   Runtime.putOptional 1 r.name Encode.string
   Runtime.putOptional 2 r.input_type Encode.string
@@ -826,7 +826,7 @@ putMethodDescriptorProto (MethodDescriptorProto r) = do
   Runtime.putOptional 6 r.server_streaming Encode.bool
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseMethodDescriptorProto :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m MethodDescriptorProto
+parseMethodDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m MethodDescriptorProto
 parseMethodDescriptorProto length = Runtime.label "MethodDescriptorProto / " $
   Runtime.parseMessage MethodDescriptorProto defaultMethodDescriptorProto parseField length
  where
@@ -900,7 +900,7 @@ derive instance newtypeFileOptions :: Newtype.Newtype FileOptions _
 derive instance eqFileOptions :: Eq.Eq FileOptions
 instance showFileOptions :: Show.Show FileOptions where show x = Generic.Rep.Show.genericShow x
 
-putFileOptions :: forall m. Effect.MonadEffect m => FileOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putFileOptions :: forall m. MonadEffect m => FileOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileOptions (FileOptions r) = do
   Runtime.putOptional 1 r.java_package Encode.string
   Runtime.putOptional 8 r.java_outer_classname Encode.string
@@ -925,7 +925,7 @@ putFileOptions (FileOptions r) = do
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseFileOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FileOptions
+parseFileOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FileOptions
 parseFileOptions length = Runtime.label "FileOptions / " $
   Runtime.parseMessage FileOptions defaultFileOptions parseField length
  where
@@ -1043,7 +1043,7 @@ derive instance newtypeMessageOptions :: Newtype.Newtype MessageOptions _
 derive instance eqMessageOptions :: Eq.Eq MessageOptions
 instance showMessageOptions :: Show.Show MessageOptions where show x = Generic.Rep.Show.genericShow x
 
-putMessageOptions :: forall m. Effect.MonadEffect m => MessageOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putMessageOptions :: forall m. MonadEffect m => MessageOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMessageOptions (MessageOptions r) = do
   Runtime.putOptional 1 r.message_set_wire_format Encode.bool
   Runtime.putOptional 2 r.no_standard_descriptor_accessor Encode.bool
@@ -1052,7 +1052,7 @@ putMessageOptions (MessageOptions r) = do
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseMessageOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m MessageOptions
+parseMessageOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m MessageOptions
 parseMessageOptions length = Runtime.label "MessageOptions / " $
   Runtime.parseMessage MessageOptions defaultMessageOptions parseField length
  where
@@ -1108,7 +1108,7 @@ derive instance newtypeFieldOptions :: Newtype.Newtype FieldOptions _
 derive instance eqFieldOptions :: Eq.Eq FieldOptions
 instance showFieldOptions :: Show.Show FieldOptions where show x = Generic.Rep.Show.genericShow x
 
-putFieldOptions :: forall m. Effect.MonadEffect m => FieldOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putFieldOptions :: forall m. MonadEffect m => FieldOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFieldOptions (FieldOptions r) = do
   Runtime.putOptional 1 r.ctype Runtime.putEnum
   Runtime.putOptional 2 r.packed Encode.bool
@@ -1119,7 +1119,7 @@ putFieldOptions (FieldOptions r) = do
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseFieldOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FieldOptions
+parseFieldOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FieldOptions
 parseFieldOptions length = Runtime.label "FieldOptions / " $
   Runtime.parseMessage FieldOptions defaultFieldOptions parseField length
  where
@@ -1177,12 +1177,12 @@ derive instance newtypeOneofOptions :: Newtype.Newtype OneofOptions _
 derive instance eqOneofOptions :: Eq.Eq OneofOptions
 instance showOneofOptions :: Show.Show OneofOptions where show x = Generic.Rep.Show.genericShow x
 
-putOneofOptions :: forall m. Effect.MonadEffect m => OneofOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putOneofOptions :: forall m. MonadEffect m => OneofOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putOneofOptions (OneofOptions r) = do
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseOneofOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m OneofOptions
+parseOneofOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m OneofOptions
 parseOneofOptions length = Runtime.label "OneofOptions / " $
   Runtime.parseMessage OneofOptions defaultOneofOptions parseField length
  where
@@ -1218,14 +1218,14 @@ derive instance newtypeEnumOptions :: Newtype.Newtype EnumOptions _
 derive instance eqEnumOptions :: Eq.Eq EnumOptions
 instance showEnumOptions :: Show.Show EnumOptions where show x = Generic.Rep.Show.genericShow x
 
-putEnumOptions :: forall m. Effect.MonadEffect m => EnumOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putEnumOptions :: forall m. MonadEffect m => EnumOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumOptions (EnumOptions r) = do
   Runtime.putOptional 2 r.allow_alias Encode.bool
   Runtime.putOptional 3 r.deprecated Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseEnumOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumOptions
+parseEnumOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumOptions
 parseEnumOptions length = Runtime.label "EnumOptions / " $
   Runtime.parseMessage EnumOptions defaultEnumOptions parseField length
  where
@@ -1268,13 +1268,13 @@ derive instance newtypeEnumValueOptions :: Newtype.Newtype EnumValueOptions _
 derive instance eqEnumValueOptions :: Eq.Eq EnumValueOptions
 instance showEnumValueOptions :: Show.Show EnumValueOptions where show x = Generic.Rep.Show.genericShow x
 
-putEnumValueOptions :: forall m. Effect.MonadEffect m => EnumValueOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putEnumValueOptions :: forall m. MonadEffect m => EnumValueOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumValueOptions (EnumValueOptions r) = do
   Runtime.putOptional 1 r.deprecated Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseEnumValueOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumValueOptions
+parseEnumValueOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumValueOptions
 parseEnumValueOptions length = Runtime.label "EnumValueOptions / " $
   Runtime.parseMessage EnumValueOptions defaultEnumValueOptions parseField length
  where
@@ -1313,13 +1313,13 @@ derive instance newtypeServiceOptions :: Newtype.Newtype ServiceOptions _
 derive instance eqServiceOptions :: Eq.Eq ServiceOptions
 instance showServiceOptions :: Show.Show ServiceOptions where show x = Generic.Rep.Show.genericShow x
 
-putServiceOptions :: forall m. Effect.MonadEffect m => ServiceOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putServiceOptions :: forall m. MonadEffect m => ServiceOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putServiceOptions (ServiceOptions r) = do
   Runtime.putOptional 33 r.deprecated Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseServiceOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m ServiceOptions
+parseServiceOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m ServiceOptions
 parseServiceOptions length = Runtime.label "ServiceOptions / " $
   Runtime.parseMessage ServiceOptions defaultServiceOptions parseField length
  where
@@ -1359,14 +1359,14 @@ derive instance newtypeMethodOptions :: Newtype.Newtype MethodOptions _
 derive instance eqMethodOptions :: Eq.Eq MethodOptions
 instance showMethodOptions :: Show.Show MethodOptions where show x = Generic.Rep.Show.genericShow x
 
-putMethodOptions :: forall m. Effect.MonadEffect m => MethodOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
+putMethodOptions :: forall m. MonadEffect m => MethodOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMethodOptions (MethodOptions r) = do
   Runtime.putOptional 33 r.deprecated Encode.bool
   Runtime.putOptional 34 r.idempotency_level Runtime.putEnum
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseMethodOptions :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m MethodOptions
+parseMethodOptions :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m MethodOptions
 parseMethodOptions length = Runtime.label "MethodOptions / " $
   Runtime.parseMessage MethodOptions defaultMethodOptions parseField length
  where
@@ -1414,7 +1414,7 @@ derive instance newtypeUninterpretedOption :: Newtype.Newtype UninterpretedOptio
 derive instance eqUninterpretedOption :: Eq.Eq UninterpretedOption
 instance showUninterpretedOption :: Show.Show UninterpretedOption where show x = Generic.Rep.Show.genericShow x
 
-putUninterpretedOption :: forall m. Effect.MonadEffect m => UninterpretedOption -> ArrayBuffer.Builder.PutM m Unit.Unit
+putUninterpretedOption :: forall m. MonadEffect m => UninterpretedOption -> ArrayBuffer.Builder.PutM m Unit.Unit
 putUninterpretedOption (UninterpretedOption r) = do
   Runtime.putRepeated 2 r.name $ Runtime.putLenDel putUninterpretedOption_NamePart
   Runtime.putOptional 3 r.identifier_value Encode.string
@@ -1425,7 +1425,7 @@ putUninterpretedOption (UninterpretedOption r) = do
   Runtime.putOptional 8 r.aggregate_value Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseUninterpretedOption :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m UninterpretedOption
+parseUninterpretedOption :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m UninterpretedOption
 parseUninterpretedOption length = Runtime.label "UninterpretedOption / " $
   Runtime.parseMessage UninterpretedOption defaultUninterpretedOption parseField length
  where
@@ -1484,13 +1484,13 @@ derive instance newtypeUninterpretedOption_NamePart :: Newtype.Newtype Uninterpr
 derive instance eqUninterpretedOption_NamePart :: Eq.Eq UninterpretedOption_NamePart
 instance showUninterpretedOption_NamePart :: Show.Show UninterpretedOption_NamePart where show x = Generic.Rep.Show.genericShow x
 
-putUninterpretedOption_NamePart :: forall m. Effect.MonadEffect m => UninterpretedOption_NamePart -> ArrayBuffer.Builder.PutM m Unit.Unit
+putUninterpretedOption_NamePart :: forall m. MonadEffect m => UninterpretedOption_NamePart -> ArrayBuffer.Builder.PutM m Unit.Unit
 putUninterpretedOption_NamePart (UninterpretedOption_NamePart r) = do
   Runtime.putOptional 1 r.name_part Encode.string
   Runtime.putOptional 2 r.is_extension Encode.bool
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseUninterpretedOption_NamePart :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m UninterpretedOption_NamePart
+parseUninterpretedOption_NamePart :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m UninterpretedOption_NamePart
 parseUninterpretedOption_NamePart length = Runtime.label "NamePart / " $
   Runtime.parseMessage UninterpretedOption_NamePart defaultUninterpretedOption_NamePart parseField length
  where
@@ -1528,12 +1528,12 @@ derive instance newtypeSourceCodeInfo :: Newtype.Newtype SourceCodeInfo _
 derive instance eqSourceCodeInfo :: Eq.Eq SourceCodeInfo
 instance showSourceCodeInfo :: Show.Show SourceCodeInfo where show x = Generic.Rep.Show.genericShow x
 
-putSourceCodeInfo :: forall m. Effect.MonadEffect m => SourceCodeInfo -> ArrayBuffer.Builder.PutM m Unit.Unit
+putSourceCodeInfo :: forall m. MonadEffect m => SourceCodeInfo -> ArrayBuffer.Builder.PutM m Unit.Unit
 putSourceCodeInfo (SourceCodeInfo r) = do
   Runtime.putRepeated 1 r.location $ Runtime.putLenDel putSourceCodeInfo_Location
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseSourceCodeInfo :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m SourceCodeInfo
+parseSourceCodeInfo :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m SourceCodeInfo
 parseSourceCodeInfo length = Runtime.label "SourceCodeInfo / " $
   Runtime.parseMessage SourceCodeInfo defaultSourceCodeInfo parseField length
  where
@@ -1571,7 +1571,7 @@ derive instance newtypeSourceCodeInfo_Location :: Newtype.Newtype SourceCodeInfo
 derive instance eqSourceCodeInfo_Location :: Eq.Eq SourceCodeInfo_Location
 instance showSourceCodeInfo_Location :: Show.Show SourceCodeInfo_Location where show x = Generic.Rep.Show.genericShow x
 
-putSourceCodeInfo_Location :: forall m. Effect.MonadEffect m => SourceCodeInfo_Location -> ArrayBuffer.Builder.PutM m Unit.Unit
+putSourceCodeInfo_Location :: forall m. MonadEffect m => SourceCodeInfo_Location -> ArrayBuffer.Builder.PutM m Unit.Unit
 putSourceCodeInfo_Location (SourceCodeInfo_Location r) = do
   Runtime.putPacked 1 r.path Encode.int32'
   Runtime.putPacked 2 r.span Encode.int32'
@@ -1580,7 +1580,7 @@ putSourceCodeInfo_Location (SourceCodeInfo_Location r) = do
   Runtime.putRepeated 6 r.leading_detached_comments Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseSourceCodeInfo_Location :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m SourceCodeInfo_Location
+parseSourceCodeInfo_Location :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m SourceCodeInfo_Location
 parseSourceCodeInfo_Location length = Runtime.label "Location / " $
   Runtime.parseMessage SourceCodeInfo_Location defaultSourceCodeInfo_Location parseField length
  where
@@ -1636,12 +1636,12 @@ derive instance newtypeGeneratedCodeInfo :: Newtype.Newtype GeneratedCodeInfo _
 derive instance eqGeneratedCodeInfo :: Eq.Eq GeneratedCodeInfo
 instance showGeneratedCodeInfo :: Show.Show GeneratedCodeInfo where show x = Generic.Rep.Show.genericShow x
 
-putGeneratedCodeInfo :: forall m. Effect.MonadEffect m => GeneratedCodeInfo -> ArrayBuffer.Builder.PutM m Unit.Unit
+putGeneratedCodeInfo :: forall m. MonadEffect m => GeneratedCodeInfo -> ArrayBuffer.Builder.PutM m Unit.Unit
 putGeneratedCodeInfo (GeneratedCodeInfo r) = do
   Runtime.putRepeated 1 r.annotation $ Runtime.putLenDel putGeneratedCodeInfo_Annotation
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseGeneratedCodeInfo :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m GeneratedCodeInfo
+parseGeneratedCodeInfo :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m GeneratedCodeInfo
 parseGeneratedCodeInfo length = Runtime.label "GeneratedCodeInfo / " $
   Runtime.parseMessage GeneratedCodeInfo defaultGeneratedCodeInfo parseField length
  where
@@ -1678,7 +1678,7 @@ derive instance newtypeGeneratedCodeInfo_Annotation :: Newtype.Newtype Generated
 derive instance eqGeneratedCodeInfo_Annotation :: Eq.Eq GeneratedCodeInfo_Annotation
 instance showGeneratedCodeInfo_Annotation :: Show.Show GeneratedCodeInfo_Annotation where show x = Generic.Rep.Show.genericShow x
 
-putGeneratedCodeInfo_Annotation :: forall m. Effect.MonadEffect m => GeneratedCodeInfo_Annotation -> ArrayBuffer.Builder.PutM m Unit.Unit
+putGeneratedCodeInfo_Annotation :: forall m. MonadEffect m => GeneratedCodeInfo_Annotation -> ArrayBuffer.Builder.PutM m Unit.Unit
 putGeneratedCodeInfo_Annotation (GeneratedCodeInfo_Annotation r) = do
   Runtime.putPacked 1 r.path Encode.int32'
   Runtime.putOptional 2 r.source_file Encode.string
@@ -1686,7 +1686,7 @@ putGeneratedCodeInfo_Annotation (GeneratedCodeInfo_Annotation r) = do
   Runtime.putOptional 4 r.end Encode.int32
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
-parseGeneratedCodeInfo_Annotation :: forall m. Effect.MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m GeneratedCodeInfo_Annotation
+parseGeneratedCodeInfo_Annotation :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m GeneratedCodeInfo_Annotation
 parseGeneratedCodeInfo_Annotation length = Runtime.label "Annotation / " $
   Runtime.parseMessage GeneratedCodeInfo_Annotation defaultGeneratedCodeInfo_Annotation parseField length
  where
