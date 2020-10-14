@@ -26,13 +26,19 @@ where
 import Prelude
 
 import Control.Monad.Error.Class (throwError, catchError)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
+import Control.Monad.ST as ST
 import Data.Array (fromFoldable, snoc)
+import Data.Array.ST as Array.ST
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Types (DataView)
 import Data.Enum (class BoundedEnum, toEnum, fromEnum)
 import Data.Foldable (foldl, traverse_)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Data.List (List(..), (:))
 import Data.Long.Unsigned (Long, toInt)
 import Data.Maybe (Maybe(..))
@@ -40,9 +46,10 @@ import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
-import Effect.Class (class MonadEffect)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (Ref)
+import Effect.Ref as Effect.Ref
+import Effect.Ref as Ref
 import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
@@ -91,6 +98,7 @@ positionZero = do
 manyLength
   :: forall m a
    . MonadEffect m
+  -- => MonadRec m -- ParserT is a MonadRec
   => ParserT DataView m a
   -> Int -- byte length
   -> ParserT DataView m (Array a)
@@ -111,6 +119,26 @@ manyLength p len = do
         x <- p
         xs <- go posBegin
         pure $ x:xs
+
+  begin :: Int -> Ref (Array a) -> ParserT DataView m (Array a)
+  begin posBegin refArray = tailRecM go' unit
+   where
+    go' :: Unit -> ParserT DataView m Unit
+    go' _ = do
+      pos <- positionZero
+      case compare (pos - posBegin) len of
+        GT -> fail "manyLength consumed too many bytes."
+        EQ -> lift $ pure (Done unit)
+        LT -> do
+          x <- p
+          _ <- liftEffect $ Effect.Ref.modify_ (snocMutate x) refArray -- TODO we don't actually need Effect.Ref
+          lift $ pure (Loop unit)
+    snocMutate :: a -> Array a -> Array a
+    snocMutate x xs = ST.run $ do
+      xs' <- Array.ST.unsafeThaw xs
+      _ <- Array.ST.push x xs'
+      Array.ST.unsafeFreeze xs'
+
 
 
 data UnknownField
