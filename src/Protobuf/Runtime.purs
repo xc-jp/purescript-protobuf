@@ -28,9 +28,7 @@ import Prelude
 import Control.Monad.Error.Class (throwError, catchError)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
-import Control.Monad.ST as ST
 import Data.Array (snoc)
-import Data.Array.ST as Array.ST
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
@@ -45,11 +43,7 @@ import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Effect.Ref
-import Effect.Ref as Ref
+import Effect.Class (class MonadEffect)
 import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode

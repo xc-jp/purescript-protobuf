@@ -267,16 +267,6 @@ in our derivation phases.
 
 See the `nix/demo.nix` file for an example.
 
-## Performance
-
-The implementation is simple and straightforward. We haven't done
-any special optimizations. For example, when encoding a protobuf varint, we
-allocate a list of new one-byte `ArrayBuffers`s and then copy them all into
-position in the final `ArrayBuffer`. For another example, when decoding a
-packed field of numbers, we build a list of the numbers, and then copy them
-all into the final `Array`. Also, this whole library is very stack-unsafe.
-This may all be improved in later versions.
-
 ## Contributing
 
 Pull requests welcome.
