@@ -105,13 +105,18 @@ manyLength
   -> ParserT DataView m (Array a)
 manyLength p len = do
   posBegin' <- positionZero
-  ref <- lift $ liftEffect (Ref.new [] :: Effect (Ref (Array a)))
-  begin posBegin' ref
-  lift $ liftEffect $ Ref.read ref
+  -- ref <- lift $ liftEffect (Ref.new [] :: Effect (Ref (Array a)))
+  -- begin posBegin' ref
+  begin posBegin'
+  -- lift $ liftEffect $ Ref.read ref
+  pure mutablearray
  where
+  mutablearray = [] :: Array a
   -- https://github.com/purescript-contrib/purescript-parsing/blob/e801a0ef42f3211b1602a94a269eef7ce551423f/src/Text/Parsing/Parser/Combinators.purs#L188
-  begin :: Int -> Ref (Array a) -> ParserT DataView m Unit
-  begin posBegin refArray = do
+  -- begin :: Int -> Ref (Array a) -> ParserT DataView m Unit
+  begin :: Int -> ParserT DataView m Unit
+  -- begin posBegin refArray = do
+  begin posBegin = do
     tailRecM go unit
    where
     go :: Unit -> ParserT DataView m (Step Unit Unit)
@@ -122,17 +127,28 @@ manyLength p len = do
         EQ -> lift $ pure (Done unit)
         LT -> do
           x <- p
-          lift $ liftEffect $ Effect.Ref.modify_ (unsafeSnoc x) refArray
+          -- lift $ liftEffect $ Effect.Ref.modify_ (unsafeSnoc x) refArray
+          pure $ unsafeSnoc x mutablearray
           lift $ pure (Loop unit)
-    unsafeSnoc :: a -> Array a -> Array a
-    unsafeSnoc x = \xs -> ST.run
+    unsafeSnoc :: a -> Array a -> Unit
+    unsafeSnoc x xs = ST.run
       ( do
         -- We are just going to rely on the high-performance Array push behavior
         -- of V8 here.
         xs' <- Array.ST.unsafeThaw xs
         _ <- Array.ST.push x xs'
-        Array.ST.unsafeFreeze xs'
+        pure unit
       )
+    -- unsafeSnoc :: a -> Array a -> Array a
+    -- unsafeSnoc x = \xs -> ST.run
+    --   ( do
+    --     -- We are just going to rely on the high-performance Array push behavior
+    --     -- of V8 here.
+    --     xs' <- Array.ST.unsafeThaw xs
+    --     _ <- Array.ST.push x xs'
+    --     Array.ST.unsafeFreeze xs'
+    --   )
+
 
 
 data UnknownField
