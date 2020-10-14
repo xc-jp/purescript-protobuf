@@ -152,7 +152,8 @@ genFile proto_file (FileDescriptorProto
 where
 
 import Prelude
-import Effect.Class as Effect
+import Effect.Class (class MonadEffect)
+import Control.Monad.Rec.Class (class MonadRec)
 import Record.Builder as Record.Builder
 import Data.Array as Array
 import Data.Bounded as Bounded
@@ -356,14 +357,14 @@ import Protobuf.Runtime as Runtime
       -- https://github.com/purescript/purescript/issues/2975#issuecomment-313650710
       , "instance show" <> tname <> " :: Show.Show " <> tname <> " where show x = Generic.Rep.Show.genericShow x"
       , ""
-      , "put" <> tname <> " :: forall m. Effect.MonadEffect m => " <> tname <> " -> ArrayBuffer.Builder.PutM m Unit.Unit"
+      , "put" <> tname <> " :: forall m. MonadEffect m => " <> tname <> " -> ArrayBuffer.Builder.PutM m Unit.Unit"
       , "put" <> tname <> " (" <> tname <> " r) = do"
       , String.joinWith "\n" $ Array.catMaybes
           $  (map (genFieldPut nameSpace) field)
           <> (Array.mapWithIndex (genOneofPut (nameSpace <> [msgName]) field) oneof_decl)
       , "  Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields"
       , ""
-      , "parse" <> tname <> " :: forall m. Effect.MonadEffect m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m " <> tname
+      , "parse" <> tname <> " :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m " <> tname
       , "parse" <> tname <> " length = Runtime.label \"" <> msgName <> " / \" $"
       , "  Runtime.parseMessage " <> tname <> " default" <> tname <> " parseField length"
       , " where"

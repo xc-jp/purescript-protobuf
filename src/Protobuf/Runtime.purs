@@ -26,14 +26,17 @@ where
 import Prelude
 
 import Control.Monad.Error.Class (throwError, catchError)
-import Data.Array (fromFoldable, snoc)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
+import Data.Array (snoc)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Types (DataView)
 import Data.Enum (class BoundedEnum, toEnum, fromEnum)
 import Data.Foldable (foldl, traverse_)
-import Data.List (List(..), (:))
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Long.Unsigned (Long, toInt)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
@@ -41,8 +44,6 @@ import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
 import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
@@ -57,6 +58,7 @@ import Text.Parsing.Parser.Pos (Position(..))
 parseMessage
   :: forall m a r
    . MonadEffect m
+  => MonadRec m
   => (Record r -> a)
   -> (Record r)
   -> (FieldNumberInt -> WireType -> ParserT DataView m (RecordB.Builder (Record r) (Record r)))
@@ -91,26 +93,42 @@ positionZero = do
 manyLength
   :: forall m a
    . MonadEffect m
+  => MonadRec m
   => ParserT DataView m a
   -> Int -- byte length
   -> ParserT DataView m (Array a)
 manyLength p len = do
   posBegin' <- positionZero
-  fromFoldable <$> go posBegin'
-  -- TODO It would be faster if we could accumulate the Array with
-  -- https://pursuit.purescript.org/packages/purescript-arrays/5.3.1/docs/Data.Array.ST#v:push
-  -- instead of copying from a List?
+  begin posBegin'
+  pure mutablearray
  where
-  -- https://github.com/purescript-contrib/purescript-parsing/blob/e801a0ef42f3211b1602a94a269eef7ce551423f/src/Text/Parsing/Parser/Combinators.purs#L188
-  go posBegin = do
-    pos <- positionZero
-    case compare (pos - posBegin) len of
-      GT -> fail "manyLength consumed too many bytes."
-      EQ -> pure Nil
-      LT -> do
-        x <- p
-        xs <- go posBegin
-        pure $ x:xs
+  mutablearray = [] :: Array a
+  begin :: Int -> ParserT DataView m Unit
+  begin posBegin = do
+    tailRecM go unit
+   where
+    go :: Unit -> ParserT DataView m (Step Unit Unit)
+    go _ = do
+      pos <- positionZero
+      case compare (pos - posBegin) len of
+        GT -> fail "manyLength consumed too many bytes."
+        EQ -> lift $ pure (Done unit)
+        LT -> do
+          x <- p
+          _ <- pure $ unsafeArrayPush mutablearray [x]
+          lift $ pure (Loop unit)
+
+-- | We are just going to exploit the high-performance Array push behavior
+-- | of V8 here.
+-- |
+-- | Forego all of the guarantees of the type system and mutate
+-- | The first array by concatenating the second array with Javascript
+-- | [`push`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/push).
+-- | Returns the length of the mutated array.
+-- |
+-- | With Purescript's strict semantics, we can probably get away
+-- | with this?
+foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
 
 
 data UnknownField

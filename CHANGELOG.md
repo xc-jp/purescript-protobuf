@@ -1,3 +1,8 @@
+# v1.4.0
+
+Improve `Protobuf.Runtime.manyLength` for stack-safety in the case of
+packed repeated fields.
+
 # v1.3.0
 
 Newtype `Protobuf.Library.Bytes` wrapper for `ArrayBuffer`, so that all
