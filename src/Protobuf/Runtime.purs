@@ -30,6 +30,7 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.ST as ST
 import Data.Array (fromFoldable, snoc)
+import Data.Array as A
 import Data.Array.ST as Array.ST
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
@@ -46,6 +47,7 @@ import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
+import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Effect.Ref
@@ -64,6 +66,7 @@ import Text.Parsing.Parser.Pos (Position(..))
 parseMessage
   :: forall m a r
    . MonadEffect m
+  => MonadRec m
   => (Record r -> a)
   -> (Record r)
   -> (FieldNumberInt -> WireType -> ParserT DataView m (RecordB.Builder (Record r) (Record r)))
@@ -98,46 +101,53 @@ positionZero = do
 manyLength
   :: forall m a
    . MonadEffect m
-  -- => MonadRec m -- ParserT is a MonadRec
+  => MonadRec m
   => ParserT DataView m a
   -> Int -- byte length
   -> ParserT DataView m (Array a)
 manyLength p len = do
   posBegin' <- positionZero
-  fromFoldable <$> go posBegin'
+  -- fromFoldable <$> go posBegin'
   -- TODO It would be faster if we could accumulate the Array with
   -- https://pursuit.purescript.org/packages/purescript-arrays/5.3.1/docs/Data.Array.ST#v:push
   -- instead of copying from a List?
+  ref <- lift $ liftEffect (Ref.new [] :: Effect (Ref (Array a)))
+  begin posBegin' ref
+  lift $ liftEffect $ Ref.read ref
  where
   -- https://github.com/purescript-contrib/purescript-parsing/blob/e801a0ef42f3211b1602a94a269eef7ce551423f/src/Text/Parsing/Parser/Combinators.purs#L188
-  go posBegin = do
-    pos <- positionZero
-    case compare (pos - posBegin) len of
-      GT -> fail "manyLength consumed too many bytes."
-      EQ -> pure Nil
-      LT -> do
-        x <- p
-        xs <- go posBegin
-        pure $ x:xs
 
-  begin :: Int -> Ref (Array a) -> ParserT DataView m (Array a)
-  begin posBegin refArray = tailRecM go' unit
+  -- go posBegin = do
+  --   pos <- positionZero
+  --   case compare (pos - posBegin) len of
+  --     GT -> fail "manyLength consumed too many bytes."
+  --     EQ -> pure Nil
+  --     LT -> do
+  --       x <- p
+  --       xs <- go posBegin
+  --       pure $ x:xs
+
+  begin :: Int -> Ref (Array a) -> ParserT DataView m Unit
+  begin posBegin refArray = do
+    tailRecM go unit
    where
-    go' :: Unit -> ParserT DataView m Unit
-    go' _ = do
+    go :: Unit -> ParserT DataView m (Step Unit Unit)
+    go _ = do
       pos <- positionZero
       case compare (pos - posBegin) len of
         GT -> fail "manyLength consumed too many bytes."
         EQ -> lift $ pure (Done unit)
         LT -> do
           x <- p
-          _ <- liftEffect $ Effect.Ref.modify_ (snocMutate x) refArray -- TODO we don't actually need Effect.Ref
+          lift $ liftEffect $ Effect.Ref.modify_ (unsafeSnoc x) refArray -- TODO we don't actually need Effect.Ref
           lift $ pure (Loop unit)
-    snocMutate :: a -> Array a -> Array a
-    snocMutate x xs = ST.run $ do
-      xs' <- Array.ST.unsafeThaw xs
-      _ <- Array.ST.push x xs'
-      Array.ST.unsafeFreeze xs'
+    unsafeSnoc :: a -> Array a -> Array a
+    unsafeSnoc x = \xs -> ST.run
+      ( do
+        xs' <- Array.ST.unsafeThaw xs
+        _ <- Array.ST.push x xs'
+        Array.ST.unsafeFreeze xs'
+      )
 
 
 
