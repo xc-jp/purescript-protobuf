@@ -63,9 +63,15 @@ To generate Purescript .purs files from .proto files, run:
 [nix-shell]$
 ```
 
-If you don't want to use Nix, then install the Purescript toolchain and *protoc*.
+If you don't want to use Nix, then install the Purescript toolchain and `protoc`,
+and add the executable script
+[`bin/protoc-gen-purescript`](bin/protoc-gen-purescript)
+to your `PATH`.
 
 ## Writing programs with the generated code
+
+The code generator will use the `package` import statement in the `.proto` file
+and the base `.proto` file name as the Purescript module name for that file.
 
 A message in a `shapes.proto` file declared as
 
@@ -78,13 +84,17 @@ message Rectangle {
 }
 ```
 
-will export these four names in a generated `shapes.Interproc.purs` file.
+will export these four names from module `Interproc.Shapes` in a
+generated `shapes.Interproc.purs` file.
 
 1. A message data type
 
    ```purescript
    newtype Rectangle = Rectangle { width :: Maybe Number, height :: Maybe Number }
    ```
+
+   The message data type will also include an `__unknown_fields` field which
+   is required for conformance.
 
 2. A message maker which constructs a message from a `Record`
    with some message fields
@@ -93,7 +103,11 @@ will export these four names in a generated `shapes.Interproc.purs` file.
    mkRectangle :: forall r. Record r -> Rectangle
    ```
 
-   All message fields are optional, and can be omitted from the `Record`. If we want the compiler to check that we've explicitly supplied all the fields,
+   All message fields are optional, and can be elided when making a message.
+   There are some extra type constraints, not shown here, which will cause a
+   compiler error if we try to add a field which is not in the message data type.
+
+   If we want the compiler to check that we've explicitly supplied all the fields,
    then we can use the ordinary message data type constructor.
 
 3. A message encoder which works with
@@ -235,10 +249,7 @@ The path to the protobuf definition which failed to parse will be included
 in the `ParseError String` and delimited by `'/'`, something
 like `"Message1 / string_field_1 / Invalid UTF8 encoding."`.
 
-### Imports
-
-The code generator will use the `package` statement in the `.proto` file
-and the base file name as the Purescript module name for that file.
+### Protobuf Imports
 
 The Protobuf
 [`import`](https://developers.google.com/protocol-buffers/docs/proto3#importing_definitions)
@@ -251,10 +262,12 @@ statement in the imported file.
 
 For that reason, we can only use top-level
 (not [nested](https://developers.google.com/protocol-buffers/docs/proto3#nested))
-`message` and `enum` types from an `import`.
+`message` and `enum` types from a Protobuf `import`.
+
+### PureScript Imports
 
 The generated Purescript code will usually have module imports which cause
-the `purs` compiler to emit warnings. Sorry.
+the `purs` compiler to emit warnings. We beg your pardon.
 
 ## Nix derivation
 

@@ -44,7 +44,6 @@ pkgs.stdenv.mkDerivation {
     install-spago-style
     '';
   buildPhase = ''
-    ls -la .spago/unsafe-coerce
     build-spago-style "./src/**/*.purs"
     '';
   installPhase = ''

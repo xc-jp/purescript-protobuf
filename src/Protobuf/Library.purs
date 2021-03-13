@@ -9,7 +9,7 @@ module Protobuf.Library
 where
 
 import Protobuf.Common (Bytes(..))
-import Protobuf.Runtime (label)
+import Protobuf.Runtime (label, UnknownField(..))
 import Text.Parsing.Parser (ParserT, fail)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad (class Monad, (>>=), pure)

@@ -4,7 +4,7 @@
 -- | See package README for explanation.
 module Protobuf.Runtime
 ( parseMessage
-, UnknownField
+, UnknownField(..)
 , parseFieldUnknown
 , putFieldUnknown
 , parseLenDel
