@@ -12,3 +12,4 @@ output
 .psc-package
 generated-docs
 result
+package-lock.json
