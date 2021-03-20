@@ -1,3 +1,10 @@
+# v1.5.0
+
+In the code generator, when `protoc` hands us nonsense descriptors, then
+report the error instead of generating uncompilable code.
+
+Export `Library.manyLength`, it’s generally useful.
+
 # v1.4.0
 
 Improve `Protobuf.Runtime.manyLength` for stack-safety in the case of

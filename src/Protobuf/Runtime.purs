@@ -26,13 +26,13 @@ where
 import Prelude
 
 import Control.Monad.Error.Class (throwError, catchError)
-import Control.Monad.Trans.Class (lift)
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
+import Control.Monad.Trans.Class (lift)
 import Data.Array (snoc)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
-import Data.ArrayBuffer.Types (DataView)
+import Data.ArrayBuffer.Types (DataView, ByteLength)
 import Data.Enum (class BoundedEnum, toEnum, fromEnum)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
@@ -95,7 +95,7 @@ manyLength
    . MonadEffect m
   => MonadRec m
   => ParserT DataView m a
-  -> Int -- byte length
+  -> ByteLength
   -> ParserT DataView m (Array a)
 manyLength p len = do
   posBegin' <- positionZero
@@ -252,7 +252,8 @@ parseEnum = do
     Just e -> pure e
 
 -- | If parsing fails inside this labelled context, then prepend the `String`
--- | to the error `String` in the `ParseError`.
+-- | to the error `String` in the `ParseError`. Use this to establish
+-- | context for parsing failure error messages.
 label :: forall m s a. Monad m => String -> ParserT s m a -> ParserT s m a
 label messagePrefix p = catchError p $ \ (ParseError message pos) ->
   throwError $ ParseError (messagePrefix <> message) pos
