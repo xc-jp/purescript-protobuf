@@ -19,7 +19,7 @@ module ProtocPlugin.Main (main) where
 
 import Prelude
 
-import Data.Array (catMaybes, concatMap, mapMaybe)
+import Data.Array (catMaybes, concatMap)
 import Data.Array as Array
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
@@ -317,75 +317,75 @@ genFile proto_file (FileDescriptorProto
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ =
           Right $ Just $ "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.double'"
         go _ FieldDescriptorProto_Type_TYPE_DOUBLE _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.double"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.double"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.float'"
         go _ FieldDescriptorProto_Type_TYPE_FLOAT _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.float"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.float"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.int64'"
         go _ FieldDescriptorProto_Type_TYPE_INT64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.int64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.int64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.uint64'"
         go _ FieldDescriptorProto_Type_TYPE_UINT64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.uint64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.uint64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.int32'"
         go _ FieldDescriptorProto_Type_TYPE_INT32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.int32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.int32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.fixed64'"
         go _ FieldDescriptorProto_Type_TYPE_FIXED64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.fixed64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.fixed64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.fixed32'"
         go _ FieldDescriptorProto_Type_TYPE_FIXED32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.fixed32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.fixed32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.bool'"
         go _ FieldDescriptorProto_Type_TYPE_BOOL _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.bool"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " not Encode.bool"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.string"
         go _ FieldDescriptorProto_Type_TYPE_STRING _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.string"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " String.null Encode.string"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" tname
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE _ =
           Left "Failed genFieldPut missing FieldDescriptorProto type_name"
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" tname
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (const false) $ Runtime.putLenDel " <> mkFieldType "put" tname
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE _ =
           Left "Failed genFieldPut missing FieldDescriptorProto type_name"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Encode.bytes"
         go _ FieldDescriptorProto_Type_TYPE_BYTES _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.bytes"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (Newtype.unwrap >>> ArrayBuffer.byteLength >>> (_==0)) Encode.bytes"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.uint32'"
         go _ FieldDescriptorProto_Type_TYPE_UINT32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.uint32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.uint32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Runtime.putEnum'"
         go _ FieldDescriptorProto_Type_TYPE_ENUM _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Runtime.putEnum"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (Enum.fromEnum >>> (_==0)) Runtime.putEnum"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sfixed32'"
         go _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.sfixed32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sfixed32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sfixed64'"
         go _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.sfixed64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sfixed64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sint32'"
         go _ FieldDescriptorProto_Type_TYPE_SINT32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.sint32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sint32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sint64'"
         go _ FieldDescriptorProto_Type_TYPE_SINT64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Encode.sint64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sint64"
         go _ FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genFieldPut GROUP not supported"
       genFieldPut _ (FieldDescriptorProto { oneof_index: Just _ }) = Right Nothing -- It's a Oneof, this case is handled separately
       genFieldPut _ arg = Left $ "Failed genFieldPut missing FieldDescriptorProto name or number or label or type\n" <> show arg
@@ -862,6 +862,8 @@ import Data.Generic.Rep.Bounded as Generic.Rep.Bounded
 import Data.Generic.Rep.Enum as Generic.Rep.Enum
 import Data.Generic.Rep.Ord as Generic.Rep.Ord
 import Data.Semigroup as Semigroup
+import Data.Semiring as Semiring
+import Data.String as String
 import Data.Symbol as Symbol
 import Record as Record
 import Data.Traversable as Traversable
@@ -872,6 +874,7 @@ import Data.Long.Internal as Long
 import Text.Parsing.Parser as Parser
 import Data.ArrayBuffer.Builder as ArrayBuffer.Builder
 import Data.ArrayBuffer.Types as ArrayBuffer.Types
+import Data.ArrayBuffer.ArrayBuffer as ArrayBuffer
 import Protobuf.Common as Common
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode

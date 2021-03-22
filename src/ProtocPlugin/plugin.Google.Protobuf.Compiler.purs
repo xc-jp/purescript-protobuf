@@ -27,6 +27,8 @@ import Data.Generic.Rep.Bounded as Generic.Rep.Bounded
 import Data.Generic.Rep.Enum as Generic.Rep.Enum
 import Data.Generic.Rep.Ord as Generic.Rep.Ord
 import Data.Semigroup as Semigroup
+import Data.Semiring as Semiring
+import Data.String as String
 import Data.Symbol as Symbol
 import Record as Record
 import Data.Traversable as Traversable
@@ -37,6 +39,7 @@ import Data.Long.Internal as Long
 import Text.Parsing.Parser as Parser
 import Data.ArrayBuffer.Builder as ArrayBuffer.Builder
 import Data.ArrayBuffer.Types as ArrayBuffer.Types
+import Data.ArrayBuffer.ArrayBuffer as ArrayBuffer
 import Protobuf.Common as Common
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
@@ -62,10 +65,10 @@ instance showVersion :: Show.Show Version where show x = Generic.Rep.Show.generi
 
 putVersion :: forall m. MonadEffect m => Version -> ArrayBuffer.Builder.PutM m Unit.Unit
 putVersion (Version r) = do
-  Runtime.putOptional 1 r.major Encode.int32
-  Runtime.putOptional 2 r.minor Encode.int32
-  Runtime.putOptional 3 r.patch Encode.int32
-  Runtime.putOptional 4 r.suffix Encode.string
+  Runtime.putOptional 1 r.major (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 2 r.minor (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 3 r.patch (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 4 r.suffix String.null Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseVersion :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m Version
@@ -120,9 +123,9 @@ instance showCodeGeneratorRequest :: Show.Show CodeGeneratorRequest where show x
 putCodeGeneratorRequest :: forall m. MonadEffect m => CodeGeneratorRequest -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorRequest (CodeGeneratorRequest r) = do
   Runtime.putRepeated 1 r.file_to_generate Encode.string
-  Runtime.putOptional 2 r.parameter Encode.string
+  Runtime.putOptional 2 r.parameter String.null Encode.string
   Runtime.putRepeated 15 r.proto_file $ Runtime.putLenDel Google.Protobuf.putFileDescriptorProto
-  Runtime.putOptional 3 r.compiler_version $ Runtime.putLenDel putVersion
+  Runtime.putOptional 3 r.compiler_version (const false) $ Runtime.putLenDel putVersion
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseCodeGeneratorRequest :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorRequest
@@ -174,7 +177,7 @@ instance showCodeGeneratorResponse :: Show.Show CodeGeneratorResponse where show
 
 putCodeGeneratorResponse :: forall m. MonadEffect m => CodeGeneratorResponse -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorResponse (CodeGeneratorResponse r) = do
-  Runtime.putOptional 1 r.error Encode.string
+  Runtime.putOptional 1 r.error String.null Encode.string
   Runtime.putRepeated 15 r.file $ Runtime.putLenDel putCodeGeneratorResponse_File
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -220,9 +223,9 @@ instance showCodeGeneratorResponse_File :: Show.Show CodeGeneratorResponse_File 
 
 putCodeGeneratorResponse_File :: forall m. MonadEffect m => CodeGeneratorResponse_File -> ArrayBuffer.Builder.PutM m Unit.Unit
 putCodeGeneratorResponse_File (CodeGeneratorResponse_File r) = do
-  Runtime.putOptional 1 r.name Encode.string
-  Runtime.putOptional 2 r.insertion_point Encode.string
-  Runtime.putOptional 15 r.content Encode.string
+  Runtime.putOptional 1 r.name String.null Encode.string
+  Runtime.putOptional 2 r.insertion_point String.null Encode.string
+  Runtime.putOptional 15 r.content String.null Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseCodeGeneratorResponse_File :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m CodeGeneratorResponse_File

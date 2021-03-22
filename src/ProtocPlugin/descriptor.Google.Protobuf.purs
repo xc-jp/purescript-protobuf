@@ -56,6 +56,8 @@ import Data.Generic.Rep.Bounded as Generic.Rep.Bounded
 import Data.Generic.Rep.Enum as Generic.Rep.Enum
 import Data.Generic.Rep.Ord as Generic.Rep.Ord
 import Data.Semigroup as Semigroup
+import Data.Semiring as Semiring
+import Data.String as String
 import Data.Symbol as Symbol
 import Record as Record
 import Data.Traversable as Traversable
@@ -66,6 +68,7 @@ import Data.Long.Internal as Long
 import Text.Parsing.Parser as Parser
 import Data.ArrayBuffer.Builder as ArrayBuffer.Builder
 import Data.ArrayBuffer.Types as ArrayBuffer.Types
+import Data.ArrayBuffer.ArrayBuffer as ArrayBuffer
 import Protobuf.Common as Common
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
@@ -137,8 +140,8 @@ instance showFileDescriptorProto :: Show.Show FileDescriptorProto where show x =
 
 putFileDescriptorProto :: forall m. MonadEffect m => FileDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileDescriptorProto (FileDescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
-  Runtime.putOptional 2 r.package Encode.string
+  Runtime.putOptional 1 r.name String.null Encode.string
+  Runtime.putOptional 2 r.package String.null Encode.string
   Runtime.putRepeated 3 r.dependency Encode.string
   Runtime.putPacked 10 r.public_dependency Encode.int32'
   Runtime.putPacked 11 r.weak_dependency Encode.int32'
@@ -146,9 +149,9 @@ putFileDescriptorProto (FileDescriptorProto r) = do
   Runtime.putRepeated 5 r.enum_type $ Runtime.putLenDel putEnumDescriptorProto
   Runtime.putRepeated 6 r.service $ Runtime.putLenDel putServiceDescriptorProto
   Runtime.putRepeated 7 r.extension $ Runtime.putLenDel putFieldDescriptorProto
-  Runtime.putOptional 8 r.options $ Runtime.putLenDel putFileOptions
-  Runtime.putOptional 9 r.source_code_info $ Runtime.putLenDel putSourceCodeInfo
-  Runtime.putOptional 12 r.syntax Encode.string
+  Runtime.putOptional 8 r.options (const false) $ Runtime.putLenDel putFileOptions
+  Runtime.putOptional 9 r.source_code_info (const false) $ Runtime.putLenDel putSourceCodeInfo
+  Runtime.putOptional 12 r.syntax String.null Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseFileDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FileDescriptorProto
@@ -246,14 +249,14 @@ instance showDescriptorProto :: Show.Show DescriptorProto where show x = Generic
 
 putDescriptorProto :: forall m. MonadEffect m => DescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto (DescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
+  Runtime.putOptional 1 r.name String.null Encode.string
   Runtime.putRepeated 2 r.field $ Runtime.putLenDel putFieldDescriptorProto
   Runtime.putRepeated 6 r.extension $ Runtime.putLenDel putFieldDescriptorProto
   Runtime.putRepeated 3 r.nested_type $ Runtime.putLenDel putDescriptorProto
   Runtime.putRepeated 4 r.enum_type $ Runtime.putLenDel putEnumDescriptorProto
   Runtime.putRepeated 5 r.extension_range $ Runtime.putLenDel putDescriptorProto_ExtensionRange
   Runtime.putRepeated 8 r.oneof_decl $ Runtime.putLenDel putOneofDescriptorProto
-  Runtime.putOptional 7 r.options $ Runtime.putLenDel putMessageOptions
+  Runtime.putOptional 7 r.options (const false) $ Runtime.putLenDel putMessageOptions
   Runtime.putRepeated 9 r.reserved_range $ Runtime.putLenDel putDescriptorProto_ReservedRange
   Runtime.putRepeated 10 r.reserved_name Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
@@ -332,9 +335,9 @@ instance showDescriptorProto_ExtensionRange :: Show.Show DescriptorProto_Extensi
 
 putDescriptorProto_ExtensionRange :: forall m. MonadEffect m => DescriptorProto_ExtensionRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto_ExtensionRange (DescriptorProto_ExtensionRange r) = do
-  Runtime.putOptional 1 r.start Encode.int32
-  Runtime.putOptional 2 r.end Encode.int32
-  Runtime.putOptional 3 r.options $ Runtime.putLenDel putExtensionRangeOptions
+  Runtime.putOptional 1 r.start (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 2 r.end (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 3 r.options (const false) $ Runtime.putLenDel putExtensionRangeOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseDescriptorProto_ExtensionRange :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto_ExtensionRange
@@ -382,8 +385,8 @@ instance showDescriptorProto_ReservedRange :: Show.Show DescriptorProto_Reserved
 
 putDescriptorProto_ReservedRange :: forall m. MonadEffect m => DescriptorProto_ReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putDescriptorProto_ReservedRange (DescriptorProto_ReservedRange r) = do
-  Runtime.putOptional 1 r.start Encode.int32
-  Runtime.putOptional 2 r.end Encode.int32
+  Runtime.putOptional 1 r.start (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 2 r.end (_==Semiring.zero) Encode.int32
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseDescriptorProto_ReservedRange :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m DescriptorProto_ReservedRange
@@ -474,16 +477,16 @@ instance showFieldDescriptorProto :: Show.Show FieldDescriptorProto where show x
 
 putFieldDescriptorProto :: forall m. MonadEffect m => FieldDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFieldDescriptorProto (FieldDescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
-  Runtime.putOptional 3 r.number Encode.int32
-  Runtime.putOptional 4 r.label Runtime.putEnum
-  Runtime.putOptional 5 r.type Runtime.putEnum
-  Runtime.putOptional 6 r.type_name Encode.string
-  Runtime.putOptional 2 r.extendee Encode.string
-  Runtime.putOptional 7 r.default_value Encode.string
-  Runtime.putOptional 9 r.oneof_index Encode.int32
-  Runtime.putOptional 10 r.json_name Encode.string
-  Runtime.putOptional 8 r.options $ Runtime.putLenDel putFieldOptions
+  Runtime.putOptional 1 r.name String.null Encode.string
+  Runtime.putOptional 3 r.number (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 4 r.label (Enum.fromEnum >>> (_==0)) Runtime.putEnum
+  Runtime.putOptional 5 r.type (Enum.fromEnum >>> (_==0)) Runtime.putEnum
+  Runtime.putOptional 6 r.type_name String.null Encode.string
+  Runtime.putOptional 2 r.extendee String.null Encode.string
+  Runtime.putOptional 7 r.default_value String.null Encode.string
+  Runtime.putOptional 9 r.oneof_index (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 10 r.json_name String.null Encode.string
+  Runtime.putOptional 8 r.options (const false) $ Runtime.putLenDel putFieldOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseFieldDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m FieldDescriptorProto
@@ -559,8 +562,8 @@ instance showOneofDescriptorProto :: Show.Show OneofDescriptorProto where show x
 
 putOneofDescriptorProto :: forall m. MonadEffect m => OneofDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putOneofDescriptorProto (OneofDescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
-  Runtime.putOptional 2 r.options $ Runtime.putLenDel putOneofOptions
+  Runtime.putOptional 1 r.name String.null Encode.string
+  Runtime.putOptional 2 r.options (const false) $ Runtime.putLenDel putOneofOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseOneofDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m OneofDescriptorProto
@@ -607,9 +610,9 @@ instance showEnumDescriptorProto :: Show.Show EnumDescriptorProto where show x =
 
 putEnumDescriptorProto :: forall m. MonadEffect m => EnumDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumDescriptorProto (EnumDescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
+  Runtime.putOptional 1 r.name String.null Encode.string
   Runtime.putRepeated 2 r.value $ Runtime.putLenDel putEnumValueDescriptorProto
-  Runtime.putOptional 3 r.options $ Runtime.putLenDel putEnumOptions
+  Runtime.putOptional 3 r.options (const false) $ Runtime.putLenDel putEnumOptions
   Runtime.putRepeated 4 r.reserved_range $ Runtime.putLenDel putEnumDescriptorProto_EnumReservedRange
   Runtime.putRepeated 5 r.reserved_name Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
@@ -667,8 +670,8 @@ instance showEnumDescriptorProto_EnumReservedRange :: Show.Show EnumDescriptorPr
 
 putEnumDescriptorProto_EnumReservedRange :: forall m. MonadEffect m => EnumDescriptorProto_EnumReservedRange -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumDescriptorProto_EnumReservedRange (EnumDescriptorProto_EnumReservedRange r) = do
-  Runtime.putOptional 1 r.start Encode.int32
-  Runtime.putOptional 2 r.end Encode.int32
+  Runtime.putOptional 1 r.start (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 2 r.end (_==Semiring.zero) Encode.int32
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseEnumDescriptorProto_EnumReservedRange :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumDescriptorProto_EnumReservedRange
@@ -713,9 +716,9 @@ instance showEnumValueDescriptorProto :: Show.Show EnumValueDescriptorProto wher
 
 putEnumValueDescriptorProto :: forall m. MonadEffect m => EnumValueDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumValueDescriptorProto (EnumValueDescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
-  Runtime.putOptional 2 r.number Encode.int32
-  Runtime.putOptional 3 r.options $ Runtime.putLenDel putEnumValueOptions
+  Runtime.putOptional 1 r.name String.null Encode.string
+  Runtime.putOptional 2 r.number (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 3 r.options (const false) $ Runtime.putLenDel putEnumValueOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseEnumValueDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m EnumValueDescriptorProto
@@ -764,9 +767,9 @@ instance showServiceDescriptorProto :: Show.Show ServiceDescriptorProto where sh
 
 putServiceDescriptorProto :: forall m. MonadEffect m => ServiceDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putServiceDescriptorProto (ServiceDescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
+  Runtime.putOptional 1 r.name String.null Encode.string
   Runtime.putRepeated 2 r.method $ Runtime.putLenDel putMethodDescriptorProto
-  Runtime.putOptional 3 r.options $ Runtime.putLenDel putServiceOptions
+  Runtime.putOptional 3 r.options (const false) $ Runtime.putLenDel putServiceOptions
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseServiceDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m ServiceDescriptorProto
@@ -818,12 +821,12 @@ instance showMethodDescriptorProto :: Show.Show MethodDescriptorProto where show
 
 putMethodDescriptorProto :: forall m. MonadEffect m => MethodDescriptorProto -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMethodDescriptorProto (MethodDescriptorProto r) = do
-  Runtime.putOptional 1 r.name Encode.string
-  Runtime.putOptional 2 r.input_type Encode.string
-  Runtime.putOptional 3 r.output_type Encode.string
-  Runtime.putOptional 4 r.options $ Runtime.putLenDel putMethodOptions
-  Runtime.putOptional 5 r.client_streaming Encode.bool
-  Runtime.putOptional 6 r.server_streaming Encode.bool
+  Runtime.putOptional 1 r.name String.null Encode.string
+  Runtime.putOptional 2 r.input_type String.null Encode.string
+  Runtime.putOptional 3 r.output_type String.null Encode.string
+  Runtime.putOptional 4 r.options (const false) $ Runtime.putLenDel putMethodOptions
+  Runtime.putOptional 5 r.client_streaming not Encode.bool
+  Runtime.putOptional 6 r.server_streaming not Encode.bool
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseMethodDescriptorProto :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m MethodDescriptorProto
@@ -902,26 +905,26 @@ instance showFileOptions :: Show.Show FileOptions where show x = Generic.Rep.Sho
 
 putFileOptions :: forall m. MonadEffect m => FileOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFileOptions (FileOptions r) = do
-  Runtime.putOptional 1 r.java_package Encode.string
-  Runtime.putOptional 8 r.java_outer_classname Encode.string
-  Runtime.putOptional 10 r.java_multiple_files Encode.bool
-  Runtime.putOptional 20 r.java_generate_equals_and_hash Encode.bool
-  Runtime.putOptional 27 r.java_string_check_utf8 Encode.bool
-  Runtime.putOptional 9 r.optimize_for Runtime.putEnum
-  Runtime.putOptional 11 r.go_package Encode.string
-  Runtime.putOptional 16 r.cc_generic_services Encode.bool
-  Runtime.putOptional 17 r.java_generic_services Encode.bool
-  Runtime.putOptional 18 r.py_generic_services Encode.bool
-  Runtime.putOptional 42 r.php_generic_services Encode.bool
-  Runtime.putOptional 23 r.deprecated Encode.bool
-  Runtime.putOptional 31 r.cc_enable_arenas Encode.bool
-  Runtime.putOptional 36 r.objc_class_prefix Encode.string
-  Runtime.putOptional 37 r.csharp_namespace Encode.string
-  Runtime.putOptional 39 r.swift_prefix Encode.string
-  Runtime.putOptional 40 r.php_class_prefix Encode.string
-  Runtime.putOptional 41 r.php_namespace Encode.string
-  Runtime.putOptional 44 r.php_metadata_namespace Encode.string
-  Runtime.putOptional 45 r.ruby_package Encode.string
+  Runtime.putOptional 1 r.java_package String.null Encode.string
+  Runtime.putOptional 8 r.java_outer_classname String.null Encode.string
+  Runtime.putOptional 10 r.java_multiple_files not Encode.bool
+  Runtime.putOptional 20 r.java_generate_equals_and_hash not Encode.bool
+  Runtime.putOptional 27 r.java_string_check_utf8 not Encode.bool
+  Runtime.putOptional 9 r.optimize_for (Enum.fromEnum >>> (_==0)) Runtime.putEnum
+  Runtime.putOptional 11 r.go_package String.null Encode.string
+  Runtime.putOptional 16 r.cc_generic_services not Encode.bool
+  Runtime.putOptional 17 r.java_generic_services not Encode.bool
+  Runtime.putOptional 18 r.py_generic_services not Encode.bool
+  Runtime.putOptional 42 r.php_generic_services not Encode.bool
+  Runtime.putOptional 23 r.deprecated not Encode.bool
+  Runtime.putOptional 31 r.cc_enable_arenas not Encode.bool
+  Runtime.putOptional 36 r.objc_class_prefix String.null Encode.string
+  Runtime.putOptional 37 r.csharp_namespace String.null Encode.string
+  Runtime.putOptional 39 r.swift_prefix String.null Encode.string
+  Runtime.putOptional 40 r.php_class_prefix String.null Encode.string
+  Runtime.putOptional 41 r.php_namespace String.null Encode.string
+  Runtime.putOptional 44 r.php_metadata_namespace String.null Encode.string
+  Runtime.putOptional 45 r.ruby_package String.null Encode.string
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1045,10 +1048,10 @@ instance showMessageOptions :: Show.Show MessageOptions where show x = Generic.R
 
 putMessageOptions :: forall m. MonadEffect m => MessageOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMessageOptions (MessageOptions r) = do
-  Runtime.putOptional 1 r.message_set_wire_format Encode.bool
-  Runtime.putOptional 2 r.no_standard_descriptor_accessor Encode.bool
-  Runtime.putOptional 3 r.deprecated Encode.bool
-  Runtime.putOptional 7 r.map_entry Encode.bool
+  Runtime.putOptional 1 r.message_set_wire_format not Encode.bool
+  Runtime.putOptional 2 r.no_standard_descriptor_accessor not Encode.bool
+  Runtime.putOptional 3 r.deprecated not Encode.bool
+  Runtime.putOptional 7 r.map_entry not Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1110,12 +1113,12 @@ instance showFieldOptions :: Show.Show FieldOptions where show x = Generic.Rep.S
 
 putFieldOptions :: forall m. MonadEffect m => FieldOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putFieldOptions (FieldOptions r) = do
-  Runtime.putOptional 1 r.ctype Runtime.putEnum
-  Runtime.putOptional 2 r.packed Encode.bool
-  Runtime.putOptional 6 r.jstype Runtime.putEnum
-  Runtime.putOptional 5 r.lazy Encode.bool
-  Runtime.putOptional 3 r.deprecated Encode.bool
-  Runtime.putOptional 10 r.weak Encode.bool
+  Runtime.putOptional 1 r.ctype (Enum.fromEnum >>> (_==0)) Runtime.putEnum
+  Runtime.putOptional 2 r.packed not Encode.bool
+  Runtime.putOptional 6 r.jstype (Enum.fromEnum >>> (_==0)) Runtime.putEnum
+  Runtime.putOptional 5 r.lazy not Encode.bool
+  Runtime.putOptional 3 r.deprecated not Encode.bool
+  Runtime.putOptional 10 r.weak not Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1220,8 +1223,8 @@ instance showEnumOptions :: Show.Show EnumOptions where show x = Generic.Rep.Sho
 
 putEnumOptions :: forall m. MonadEffect m => EnumOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumOptions (EnumOptions r) = do
-  Runtime.putOptional 2 r.allow_alias Encode.bool
-  Runtime.putOptional 3 r.deprecated Encode.bool
+  Runtime.putOptional 2 r.allow_alias not Encode.bool
+  Runtime.putOptional 3 r.deprecated not Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1270,7 +1273,7 @@ instance showEnumValueOptions :: Show.Show EnumValueOptions where show x = Gener
 
 putEnumValueOptions :: forall m. MonadEffect m => EnumValueOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putEnumValueOptions (EnumValueOptions r) = do
-  Runtime.putOptional 1 r.deprecated Encode.bool
+  Runtime.putOptional 1 r.deprecated not Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1315,7 +1318,7 @@ instance showServiceOptions :: Show.Show ServiceOptions where show x = Generic.R
 
 putServiceOptions :: forall m. MonadEffect m => ServiceOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putServiceOptions (ServiceOptions r) = do
-  Runtime.putOptional 33 r.deprecated Encode.bool
+  Runtime.putOptional 33 r.deprecated not Encode.bool
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1361,8 +1364,8 @@ instance showMethodOptions :: Show.Show MethodOptions where show x = Generic.Rep
 
 putMethodOptions :: forall m. MonadEffect m => MethodOptions -> ArrayBuffer.Builder.PutM m Unit.Unit
 putMethodOptions (MethodOptions r) = do
-  Runtime.putOptional 33 r.deprecated Encode.bool
-  Runtime.putOptional 34 r.idempotency_level Runtime.putEnum
+  Runtime.putOptional 33 r.deprecated not Encode.bool
+  Runtime.putOptional 34 r.idempotency_level (Enum.fromEnum >>> (_==0)) Runtime.putEnum
   Runtime.putRepeated 999 r.uninterpreted_option $ Runtime.putLenDel putUninterpretedOption
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1417,12 +1420,12 @@ instance showUninterpretedOption :: Show.Show UninterpretedOption where show x =
 putUninterpretedOption :: forall m. MonadEffect m => UninterpretedOption -> ArrayBuffer.Builder.PutM m Unit.Unit
 putUninterpretedOption (UninterpretedOption r) = do
   Runtime.putRepeated 2 r.name $ Runtime.putLenDel putUninterpretedOption_NamePart
-  Runtime.putOptional 3 r.identifier_value Encode.string
-  Runtime.putOptional 4 r.positive_int_value Encode.uint64
-  Runtime.putOptional 5 r.negative_int_value Encode.int64
-  Runtime.putOptional 6 r.double_value Encode.double
-  Runtime.putOptional 7 r.string_value Encode.bytes
-  Runtime.putOptional 8 r.aggregate_value Encode.string
+  Runtime.putOptional 3 r.identifier_value String.null Encode.string
+  Runtime.putOptional 4 r.positive_int_value (_==Semiring.zero) Encode.uint64
+  Runtime.putOptional 5 r.negative_int_value (_==Semiring.zero) Encode.int64
+  Runtime.putOptional 6 r.double_value (_==Semiring.zero) Encode.double
+  Runtime.putOptional 7 r.string_value (Newtype.unwrap >>> ArrayBuffer.byteLength >>> (_==0)) Encode.bytes
+  Runtime.putOptional 8 r.aggregate_value String.null Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseUninterpretedOption :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m UninterpretedOption
@@ -1486,8 +1489,8 @@ instance showUninterpretedOption_NamePart :: Show.Show UninterpretedOption_NameP
 
 putUninterpretedOption_NamePart :: forall m. MonadEffect m => UninterpretedOption_NamePart -> ArrayBuffer.Builder.PutM m Unit.Unit
 putUninterpretedOption_NamePart (UninterpretedOption_NamePart r) = do
-  Runtime.putOptional 1 r.name_part Encode.string
-  Runtime.putOptional 2 r.is_extension Encode.bool
+  Runtime.putOptional 1 r.name_part String.null Encode.string
+  Runtime.putOptional 2 r.is_extension not Encode.bool
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseUninterpretedOption_NamePart :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m UninterpretedOption_NamePart
@@ -1575,8 +1578,8 @@ putSourceCodeInfo_Location :: forall m. MonadEffect m => SourceCodeInfo_Location
 putSourceCodeInfo_Location (SourceCodeInfo_Location r) = do
   Runtime.putPacked 1 r.path Encode.int32'
   Runtime.putPacked 2 r.span Encode.int32'
-  Runtime.putOptional 3 r.leading_comments Encode.string
-  Runtime.putOptional 4 r.trailing_comments Encode.string
+  Runtime.putOptional 3 r.leading_comments String.null Encode.string
+  Runtime.putOptional 4 r.trailing_comments String.null Encode.string
   Runtime.putRepeated 6 r.leading_detached_comments Encode.string
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
@@ -1681,9 +1684,9 @@ instance showGeneratedCodeInfo_Annotation :: Show.Show GeneratedCodeInfo_Annotat
 putGeneratedCodeInfo_Annotation :: forall m. MonadEffect m => GeneratedCodeInfo_Annotation -> ArrayBuffer.Builder.PutM m Unit.Unit
 putGeneratedCodeInfo_Annotation (GeneratedCodeInfo_Annotation r) = do
   Runtime.putPacked 1 r.path Encode.int32'
-  Runtime.putOptional 2 r.source_file Encode.string
-  Runtime.putOptional 3 r.begin Encode.int32
-  Runtime.putOptional 4 r.end Encode.int32
+  Runtime.putOptional 2 r.source_file String.null Encode.string
+  Runtime.putOptional 3 r.begin (_==Semiring.zero) Encode.int32
+  Runtime.putOptional 4 r.end (_==Semiring.zero) Encode.int32
   Traversable.traverse_ Runtime.putFieldUnknown r.__unknown_fields
 
 parseGeneratedCodeInfo_Annotation :: forall m. MonadEffect m => MonadRec m => Int -> Parser.ParserT ArrayBuffer.Types.DataView m GeneratedCodeInfo_Annotation

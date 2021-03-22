@@ -38,6 +38,7 @@ import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Long.Unsigned (Long, toInt)
+import Data.Long.Unsigned as Long
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
@@ -201,15 +202,26 @@ putLenDel p fieldNumber x = do
   b <- subBuilder $ p x
   Encode.builder fieldNumber b
 
+-- putOptional
+--   :: forall m a
+--    . MonadEffect m
+--   => FieldNumberInt
+--   -> Maybe a
+--   -> (FieldNumber -> a -> PutM m Unit)
+--   -> PutM m Unit
+-- putOptional _ Nothing _ = pure unit
+-- putOptional fieldNumber (Just x) encoder = encoder (UInt.fromInt fieldNumber) x
 putOptional
   :: forall m a
    . MonadEffect m
   => FieldNumberInt
   -> Maybe a
+  -> (a -> Boolean) -- isDefault predicate
   -> (FieldNumber -> a -> PutM m Unit)
   -> PutM m Unit
-putOptional _ Nothing _ = pure unit
-putOptional fieldNumber (Just x) encoder = encoder (UInt.fromInt fieldNumber) x
+putOptional _ Nothing _ _ = pure unit
+putOptional fieldNumber (Just x) isDefault encoder = do
+  when (not $ isDefault x) $ encoder (UInt.fromInt fieldNumber) x
 
 putRepeated
   :: forall m a
@@ -246,8 +258,8 @@ putEnum' x = Encode.varint32 $ UInt.fromInt $ fromEnum x
 
 parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
 parseEnum = do
-  x <- Decode.varint32
-  case toEnum $ UInt.toInt x of
+  x <- Decode.varint64
+  case toEnum =<< Long.toInt x of
     Nothing -> fail $ "Enum " <> show x <> " out of bounds."
     Just e -> pure e
 
