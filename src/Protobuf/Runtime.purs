@@ -33,12 +33,12 @@ import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Types (DataView, ByteLength)
-import Data.Enum (class BoundedEnum, toEnum, fromEnum)
+import Data.Enum (class BoundedEnum, fromEnum, toEnum)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Long.Unsigned (Long, toInt)
-import Data.Long.Unsigned as Long
+import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, highBits, lowBits, signedLongFromInt)
+import Data.Long.Unsigned as Long.Unsigned
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
@@ -133,8 +133,8 @@ foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
 
 
 data UnknownField
-  = UnknownVarInt FieldNumber Long
-  | UnknownBits64 FieldNumber Long
+  = UnknownVarInt FieldNumber (Long Unsigned)
+  | UnknownBits64 FieldNumber (Long Unsigned)
   | UnknownLenDel FieldNumber Bytes
   | UnknownBits32 FieldNumber UInt
 
@@ -160,9 +160,9 @@ parseFieldUnknown fieldNumberInt wireType = label ("Unknown " <> show wireType <
       pure $ modify (SProxy :: SProxy "__unknown_fields") $
         flip snoc $ UnknownBits64 fieldNumber x
     LenDel -> do
-      len <- toInt <$> Decode.varint64
+      len <- Long.Unsigned.toInt <$> Decode.varint64
       case len of
-        Nothing -> fail "Length-delimited value of unknown field was too long."
+        Nothing -> fail $ "Length-delimited value of unknown field " <> show fieldNumber <> " was too long."
         Just l -> do
           dv <- takeN l
           pure $ modify (SProxy :: SProxy "__unknown_fields") $
@@ -202,21 +202,12 @@ putLenDel p fieldNumber x = do
   b <- subBuilder $ p x
   Encode.builder fieldNumber b
 
--- putOptional
---   :: forall m a
---    . MonadEffect m
---   => FieldNumberInt
---   -> Maybe a
---   -> (FieldNumber -> a -> PutM m Unit)
---   -> PutM m Unit
--- putOptional _ Nothing _ = pure unit
--- putOptional fieldNumber (Just x) encoder = encoder (UInt.fromInt fieldNumber) x
 putOptional
   :: forall m a
    . MonadEffect m
   => FieldNumberInt
   -> Maybe a
-  -> (a -> Boolean) -- isDefault predicate
+  -> (a -> Boolean) -- isDefault predicate. Put nothing if this is true.
   -> (FieldNumber -> a -> PutM m Unit)
   -> PutM m Unit
 putOptional _ Nothing _ _ = pure unit
@@ -254,12 +245,21 @@ putEnum fieldNumber x = do
   putEnum' x
 
 putEnum' :: forall m a. MonadEffect m => BoundedEnum a => a -> PutM m Unit
-putEnum' x = Encode.varint32 $ UInt.fromInt $ fromEnum x
+putEnum' x = Encode.varint64 (fromLowHighBits x_low x_high :: Long Unsigned)
+ where
+  x_int = fromEnum x
+  x_slong = signedLongFromInt x_int :: Long Signed
+  x_high = highBits x_slong
+  x_low = lowBits x_slong
+
 
 parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
 parseEnum = do
+  -- “Enumerator constants must be in the range of a 32-bit integer.”
+  -- Protobuf Enums can be negative.
+  -- https://developers.google.com/protocol-buffers/docs/proto3#enum
   x <- Decode.varint64
-  case toEnum =<< Long.toInt x of
+  case toEnum (Long.Unsigned.lowBits x) of
     Nothing -> fail $ "Enum " <> show x <> " out of bounds."
     Just e -> pure e
 

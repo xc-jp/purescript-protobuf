@@ -14,6 +14,4 @@ nix-shell nix/conformance.nix
 [Conformance README](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
 
 The `nix/protobuf.nix` derivation will build protobuf along with its
-conformance test runners. There are way too many fnords in the conformance
-test build system. Whoever wrote the conformance test code must have
-immanentized the eschaton.
+conformance test runners.

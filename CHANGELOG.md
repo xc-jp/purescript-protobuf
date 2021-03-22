@@ -1,3 +1,6 @@
+Elide default values when encoding optional fields.
+
+
 # v1.5.0
 
 In the code generator, when `protoc` hands us nonsense descriptors, then

@@ -159,15 +159,16 @@ Now we'll deserialize `Rectangle` from the `ArrayBuffer`.
 
 ```purescript
     result <- runParserT (whole arraybuffer) $ do
-        rectangle <- parseRectangle (byteLength arraybuffer)
+        rectangle :: Rectangle <- parseRectangle (byteLength arraybuffer)
 ```
 
-Now at this point, we've consumed all of the parser input, but
+Now, at this point we've consumed all of the parser input, but
 we're not finished parsing.
-
-In [proto3, all fields are optional](https://github.com/protocolbuffers/protobuf/issues/2497).
 We want to “validate” the `Rectangle` message to make sure it has all of the
-fields that we require. Fortunately, we are already in the `ParserT` monad,
+fields that we require, because in
+[proto3, all fields are optional](https://github.com/protocolbuffers/protobuf/issues/2497).
+
+Fortunately, we are already in the `ParserT` monad,
 so we can do better than “validation.”
 [Parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/).
 
@@ -175,7 +176,7 @@ We will construct and return a tuple
 with the width and height of the `Rectangle`. For this step,
 [pattern matching](https://github.com/purescript/documentation/blob/master/language/Pattern-Matching.md)
 on the `Rectangle` message type works well, or we might want to use some of the
-convenience parsing functions supplied by `Protobuf.Library`, like `parseMaybe`.
+convenience parsing functions exported by `Protobuf.Library`, like `parseMaybe`.
 
 ```purescript
         width <- parseMaybe "Missing required width" (unwrap rectangle).width

@@ -260,40 +260,40 @@ genFile proto_file (FileDescriptorProto
          where
           fname = decapitalize name'
           go FieldDescriptorProto_Type_TYPE_DOUBLE _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.double"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.double"
           go FieldDescriptorProto_Type_TYPE_FLOAT _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.float"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.float"
           go FieldDescriptorProto_Type_TYPE_INT64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.int64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.int64"
           go FieldDescriptorProto_Type_TYPE_UINT64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.uint64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.uint64"
           go FieldDescriptorProto_Type_TYPE_INT32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.int32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.int32"
           go FieldDescriptorProto_Type_TYPE_FIXED64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.fixed64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.fixed64"
           go FieldDescriptorProto_Type_TYPE_FIXED32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.fixed32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.fixed32"
           go FieldDescriptorProto_Type_TYPE_BOOL _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.bool"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.bool"
           go FieldDescriptorProto_Type_TYPE_STRING _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.string"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.string"
           go FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) $ Runtime.putLenDel " <> mkFieldType "put" tname
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) $ Runtime.putLenDel " <> mkFieldType "put" tname
           go FieldDescriptorProto_Type_TYPE_MESSAGE _ = Left "Failed genOneofPut missing FieldDescriptorProto type_name"
           go FieldDescriptorProto_Type_TYPE_BYTES _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.bytes"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.bytes"
           go FieldDescriptorProto_Type_TYPE_UINT32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.uint32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.uint32"
           go FieldDescriptorProto_Type_TYPE_ENUM _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Runtime.putEnum"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Runtime.putEnum"
           go FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.sfixed32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sfixed32"
           go FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.sfixed64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sfixed64"
           go FieldDescriptorProto_Type_TYPE_SINT32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.sint32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sint32"
           go FieldDescriptorProto_Type_TYPE_SINT64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name'])<> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) Encode.sint64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sint64"
           go FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genOneofPut GROUP not supported."
         genOneofFieldPut _ = Left "Failed genOneofPut missing FieldDescriptorProto name or number or type"
       genOneofPut _ _ _ _ = Left "Failed genOneofPut missing OneofDescriptoroProto name"

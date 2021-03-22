@@ -4,10 +4,14 @@
 # https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/libraries/protobuf/generic-v3.nix
 
 let
+  # version = "v3.9.2";
+  # sha256 = "080zxa9w1pxp5y05aiwc0c8mlqkkh98wmid4l7m99cliphsd4qnn";
+  version = "v3.11.4";
+  sha256 = "00g61f1yd8z5l0z0svmr3hms38ph35lcx2y7hivw6fahslw0l8yw";
   # version = "v3.13.0";
   # sha256 = "1nqsvi2yfr93kiwlinz8z7c68ilg1j75b2vcpzxzvripxx5h6xhd";
-  version = "v3.9.2";
-  sha256 = "080zxa9w1pxp5y05aiwc0c8mlqkkh98wmid4l7m99cliphsd4qnn";
+  # version = "v3.15.6";
+  # sha256 = "15mba1hxv2gmlljiwh4kvjw2s1s4cf470kvx9lvfhaklskjig1l5";
 
   protobufRepo = pkgs.fetchFromGitHub {
     owner = "protocolbuffers";
