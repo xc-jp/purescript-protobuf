@@ -354,6 +354,10 @@ genFile proto_file (FileDescriptorProto
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" tname
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE _ =
           Left "Failed genFieldPut missing FieldDescriptorProto type_name"
+        -- Do we want to do message default checking? A message would be “default,” and would not be encoded on the wire,
+        -- iff “all singular fields are unset and all repeated fields are empty.”
+        -- https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#message
+        -- For now we just say `(const false)`, the message is never default.
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (const false) $ Runtime.putLenDel " <> mkFieldType "put" tname
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE _ =
