@@ -359,7 +359,8 @@ genFile proto_file (FileDescriptorProto
         -- https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#message
         -- For now we just say `(const false)`, the message is never default.
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (const false) $ Runtime.putLenDel " <> mkFieldType "put" tname
+          -- Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (const false) $ Runtime.putLenDel " <> mkFieldType "put" tname
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==(Newtype.wrap " <> mkFieldType "default" tname <> ")) $ Runtime.putLenDel " <> mkFieldType "put" tname
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE _ =
           Left "Failed genFieldPut missing FieldDescriptorProto type_name"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ =

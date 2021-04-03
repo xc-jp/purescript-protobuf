@@ -1,3 +1,29 @@
+# v2.0.0
+
+For __purescript-protobuf__ version 2, we’re trying to strictly conform
+to Protocol Buffers version 3.11.4?
+To that end, we're no longer using `Maybe` for field values, and instead we’re
+using the Protobuf
+[default values](https://developers.google.com/protocol-buffers/docs/proto3#default).
+
+There is a new type class `Default`. In version 1, all message fields were
+`Maybe`s. In version 2, no message fields are `Maybe`s, and all message fields
+have a `Default` instance.
+
+So this is a pretty big breaking change, but it brings our implementation into
+closer agreement with what Google has designed Protobuf to be (optimized for C++
+structs), rather than what we wish it were (optimized for a language with sum types.)
+
+In version 1, we had to be mindful that sometimes when we received a field
+value of `Nothing` it actually meant *0*. In version 2, we have to be mindful
+that sometimes when we receive a field value of *0* it actually means `Nothing`.
+We have introduced a `fromDefault` function to help us remember.
+
+We’re still ignoring the `REQUIRED`/`OPTIONAL` distinction, even though it
+appears that Jeff Dean has caved and
+[allowed it back in](https://chromium.googlesource.com/external/github.com/protocolbuffers/protobuf/+/refs/heads/master/docs/implementing_proto3_presence.md) in the form of
+“synthetic oneofs.”
+
 Elide default values when encoding optional fields.
 
 
