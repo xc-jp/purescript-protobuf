@@ -31,7 +31,9 @@ import Data.ArrayBuffer.Typed as AT
 import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.Either (Either(..))
 import Data.Float32 (Float32)
-import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, unsignedToSigned, lowBits)
+import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, highBits, lowBits, unsignedToSigned)
+import Data.Long.Internal as Long
+import Data.Maybe (Maybe(..))
 import Data.TextDecoding (decodeUtf8)
 import Data.UInt (UInt)
 import Data.UInt as UInt
@@ -70,6 +72,11 @@ int32 = do
     -- for positive or all 1 for negative.
     -- The conformance tests seem to like it if we just throw away
     -- the hight bits. So that's what we'll do.
+    --
+    -- conformance checker hates this:
+    --   case Long.toInt n of
+    --     Nothing -> fail "int32 value out of range."
+    --     Just x -> pure x
 
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -91,7 +98,12 @@ uint64 = varint64
 -- | __sint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 sint32 :: forall m. MonadEffect m => ParserT DataView m Int
-sint32 = zigzag32 <$> varint32
+sint32 = do
+  n <- zigzag64 <$> varint64
+  -- pure $ lowBits n
+  case Long.toInt n of
+    Nothing -> fail "sint32 value out of range."
+    Just x -> pure x
 
 -- | __sint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -122,8 +134,8 @@ sfixed64 = fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 bool :: forall m. MonadEffect m => ParserT DataView m Boolean
 bool = do
-  x <- varint32
-  if x == UInt.fromInt 0
+  x <- varint64
+  if lowBits x == 0 && highBits x == 0
     then pure false
     else pure true
 
