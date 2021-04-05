@@ -23,8 +23,9 @@ import Data.Array (catMaybes, concatMap)
 import Data.Array as Array
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
+import Data.ArrayBuffer.Types (DataView)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing, maybe)
 import Data.String as String
 import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
@@ -184,6 +185,43 @@ genFile proto_file (FileDescriptorProto
         beginsWith :: Array String -> Array String -> Boolean
         beginsWith xs x = x == Array.take (Array.length x) xs
 
+  -- We have an r and we're merging an l.
+  let genFieldMerge :: FieldDescriptorProto -> Resp (Maybe String)
+      genFieldMerge (FieldDescriptorProto
+        { oneof_index: Just _
+        }) = Right $ Nothing -- Oneof case handled separately
+      genFieldMerge (FieldDescriptorProto
+        { name: Just name'
+        , label: Just FieldDescriptorProto_Label_LABEL_REPEATED
+        }) = Right $ Just $ fname <> ": r." <> fname <> " <> l." <> fname
+       where fname = decapitalize name'
+      genFieldMerge (FieldDescriptorProto
+        { name: Just name'
+        , label: Just _
+        , type: Just FieldDescriptorProto_Type_TYPE_MESSAGE
+        , type_name: Just tname
+        }) = Right $ Just $ fname <> ": Runtime.mergeWith " <> mkFieldType "merge" tname <> " l." <> fname <> " r." <> fname
+       where fname = decapitalize name'
+      -- genFieldMerge (FieldDescriptorProto
+      --   { name: Just name'
+      --   , label: Just _
+      --   , type: Just FieldDescriptorProto_Type_TYPE_STRING
+      --   }) = Right $ Just $ fname <> ": Runtime.mergeWith Semigroup.append r." <> fname <> " l." <> fname
+      --  where fname = decapitalize name'
+      -- genFieldMerge (FieldDescriptorProto
+      --   { name: Just name'
+      --   , label: Just _
+      --   , type: Just FieldDescriptorProto_Type_TYPE_BYTES
+      --   }) = Right $ Just $ fname <> ": Runtime.mergeWith Semigroup.append r." <> fname <> " l." <> fname
+      --  where fname = decapitalize name'
+      genFieldMerge (FieldDescriptorProto
+        { name: Just name'
+        , label: Just _
+        , type: Just _
+        }) = Right $ Just $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
+       where fname = decapitalize name'
+      genFieldMerge _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
+
 
   let genTypeOneof
         :: NameSpace
@@ -196,15 +234,15 @@ genFile proto_file (FileDescriptorProto
         Right $ String.joinWith "\n"
           [ "data " <> cname
           , "  = " <> String.joinWith "\n  | " fields
+          , ""
           , "derive instance generic" <> cname <> " :: Generic.Rep.Generic " <> cname <> " _"
           , "derive instance eq" <> cname <> " :: Eq.Eq " <> cname
           , "instance show" <> cname <> " :: Show.Show " <> cname <> " where show = Generic.Rep.Show.genericShow"
+          , ""
           ]
        where
         cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
         go :: FieldDescriptorProto -> Resp (Maybe String)
-        -- go = case _ of
-          -- FieldDescriptorProto {oneof_index: Just index} | index /= indexOneof -> Right Nothing -- skip this Oneof
         go (FieldDescriptorProto {name: Just fname, oneof_index: Just index, type: Just ftype, type_name}) = do
             if index == indexOneof
               then do
@@ -259,41 +297,43 @@ genFile proto_file (FileDescriptorProto
           }) = go ftype type_name
          where
           fname = decapitalize name'
+          -- If you set a oneof field to the default value (such as setting an int32 oneof field to 0), the "case" of that oneof field will be set, and the value will be serialized on the wire.
+          -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
           go FieldDescriptorProto_Type_TYPE_DOUBLE _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.double"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.double"
           go FieldDescriptorProto_Type_TYPE_FLOAT _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.float"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.float"
           go FieldDescriptorProto_Type_TYPE_INT64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.int64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.int64"
           go FieldDescriptorProto_Type_TYPE_UINT64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.uint64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.uint64"
           go FieldDescriptorProto_Type_TYPE_INT32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.int32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.int32"
           go FieldDescriptorProto_Type_TYPE_FIXED64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.fixed64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.fixed64"
           go FieldDescriptorProto_Type_TYPE_FIXED32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.fixed32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.fixed32"
           go FieldDescriptorProto_Type_TYPE_BOOL _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.bool"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.bool"
           go FieldDescriptorProto_Type_TYPE_STRING _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.string"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.string"
           go FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) $ Runtime.putLenDel " <> mkFieldType "put" tname
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) $ Runtime.putLenDel " <> mkFieldType "put" tname
           go FieldDescriptorProto_Type_TYPE_MESSAGE _ = Left "Failed genOneofPut missing FieldDescriptorProto type_name"
           go FieldDescriptorProto_Type_TYPE_BYTES _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.bytes"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.bytes"
           go FieldDescriptorProto_Type_TYPE_UINT32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.uint32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.uint32"
           go FieldDescriptorProto_Type_TYPE_ENUM _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Runtime.putEnum"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Runtime.putEnum"
           go FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sfixed32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.sfixed32"
           go FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sfixed64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.sfixed64"
           go FieldDescriptorProto_Type_TYPE_SINT32 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sint32"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.sint32"
           go FieldDescriptorProto_Type_TYPE_SINT64 _ =
-            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (const false) Encode.sint64"
+            Right $ "    Maybe.Just (" <> mkTypeName (nameSpace <> [oname,name']) <> " x) -> Runtime.putOptional " <> show fnumber <> " (Maybe.Just x) (\\_ -> false) Encode.sint64"
           go FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genOneofPut GROUP not supported."
         genOneofFieldPut _ = Left "Failed genOneofPut missing FieldDescriptorProto name or number or type"
       genOneofPut _ _ _ _ = Left "Failed genOneofPut missing OneofDescriptoroProto name"
@@ -317,39 +357,39 @@ genFile proto_file (FileDescriptorProto
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ =
           Right $ Just $ "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.double'"
         go _ FieldDescriptorProto_Type_TYPE_DOUBLE _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.double"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.double"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.float'"
         go _ FieldDescriptorProto_Type_TYPE_FLOAT _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.float"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.float"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.int64'"
         go _ FieldDescriptorProto_Type_TYPE_INT64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.int64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.int64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.uint64'"
         go _ FieldDescriptorProto_Type_TYPE_UINT64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.uint64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.uint64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.int32'"
         go _ FieldDescriptorProto_Type_TYPE_INT32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.int32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.int32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.fixed64'"
         go _ FieldDescriptorProto_Type_TYPE_FIXED64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.fixed64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.fixed64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.fixed32'"
         go _ FieldDescriptorProto_Type_TYPE_FIXED32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.fixed32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.fixed32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.bool'"
         go _ FieldDescriptorProto_Type_TYPE_BOOL _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " not Encode.bool"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.bool"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.string"
         go _ FieldDescriptorProto_Type_TYPE_STRING _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " String.null Encode.string"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.string"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" tname
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE _ =
@@ -359,38 +399,38 @@ genFile proto_file (FileDescriptorProto
         -- https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#message
         -- For now we just say `(const false)`, the message is never default.
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
-          -- Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (const false) $ Runtime.putLenDel " <> mkFieldType "put" tname
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==(Newtype.wrap " <> mkFieldType "default" tname <> ")) $ Runtime.putLenDel " <> mkFieldType "put" tname
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (\\_ -> false) $ Runtime.putLenDel " <> mkFieldType "put" tname
+          -- Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==(Newtype.wrap " <> mkFieldType "default" tname <> ")) $ Runtime.putLenDel " <> mkFieldType "put" tname
         go _ FieldDescriptorProto_Type_TYPE_MESSAGE _ =
           Left "Failed genFieldPut missing FieldDescriptorProto type_name"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Encode.bytes"
         go _ FieldDescriptorProto_Type_TYPE_BYTES _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (Newtype.unwrap >>> ArrayBuffer.byteLength >>> (_==0)) Encode.bytes"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.bytes"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.uint32'"
         go _ FieldDescriptorProto_Type_TYPE_UINT32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.uint32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.uint32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Runtime.putEnum'"
         go _ FieldDescriptorProto_Type_TYPE_ENUM _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (Enum.fromEnum >>> (_==0)) Runtime.putEnum"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Runtime.putEnum"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sfixed32'"
         go _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sfixed32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sfixed32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sfixed64'"
         go _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sfixed64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sfixed64"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sint32'"
         go _ FieldDescriptorProto_Type_TYPE_SINT32 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sint32"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sint32"
         go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sint64'"
         go _ FieldDescriptorProto_Type_TYPE_SINT64 _ =
-          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==Semiring.zero) Encode.sint64"
+          Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sint64"
         go _ FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genFieldPut GROUP not supported"
       genFieldPut _ (FieldDescriptorProto { oneof_index: Just _ }) = Right Nothing -- It's a Oneof, this case is handled separately
       genFieldPut _ arg = Left $ "Failed genFieldPut missing FieldDescriptorProto name or number or label or type\n" <> show arg
@@ -680,7 +720,13 @@ genFile proto_file (FileDescriptorProto
         go _ _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = Right $ String.joinWith "\n"
           [ "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
           , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
-          , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
+          -- , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
+          , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Maybe.Just <<< Maybe.maybe x (" <> mkFieldType "merge" tname <> " x)"
+            -- TODO “merge all input elements if it's a message type field”
+            -- https://developers.google.com/protocol-buffers/docs/proto3#updating
+            -- https://developers.google.com/protocol-buffers/docs/encoding#optional
+            -- Recommended.Proto3.ProtobufInput.ValidDataOneofBinary.MESSAGE.Merge.ProtobufOutput
+            -- Required.Proto3.ProtobufInput.RepeatedScalarMessageMerge.ProtobufOutput
           ]
         go _ _ FieldDescriptorProto_Type_TYPE_MESSAGE _ = Left "Failed genFieldParser missing FieldDescriptorProto type_name"
         go _ _ FieldDescriptorProto_Type_TYPE_BYTES _ = Right $ String.joinWith "\n"
@@ -824,17 +870,30 @@ genFile proto_file (FileDescriptorProto
           , Right $ "default" <> tname <> " ="
           , Right "  { "
             <>
-            ( map (String.joinWith "\n  , ") $
-                  (  (map catMaybes $ traverse genFieldDefault field)
-                  <> (traverse genFieldDefaultOneof oneof_decl)
-                  <> Right ["__unknown_fields: []"]
-                  )
+            ( map (String.joinWith "\n  , ")
+              (  (map catMaybes $ traverse genFieldDefault field)
+              <> (traverse genFieldDefaultOneof oneof_decl)
+              <> Right ["__unknown_fields: []"]
+              )
             )
           , Right "  }"
           , Right ""
           , Right $ "mk" <> tname <> " :: forall r1 r3. Prim.Row.Union r1 " <> tname <> "Row r3 => Prim.Row.Nub r3 " <> tname <> "Row => Record r1 -> " <> tname
           , Right $ "mk" <> tname <> " r = " <> tname <> " $ Record.merge r default" <> tname
+          , Right ""
           , map (String.joinWith "\n") $ sequence $ (Array.mapWithIndex (genTypeOneof (nameSpace <> [msgName]) field) oneof_decl)
+          , Right $ "merge" <> tname <> " :: " <> tname <> " -> " <> tname <> " -> " <> tname
+          , Right $ "merge" <> tname <> " (" <> tname <> " l) (" <> tname <> " r) = " <> tname
+          , Right "  { "
+            <>
+            (map (String.joinWith "\n  , ")
+              (  (map catMaybes $ traverse genFieldMerge field)
+              <> (traverse genFieldMergeOneof oneof_decl)
+              <> Right ["__unknown_fields: r.__unknown_fields <> l.__unknown_fields"]
+              )
+            )
+          , Right "  }"
+          , Right ""
           ]
       genMessage _ = Left "Failed genMessage no DescriptorProto name"
 
@@ -850,6 +909,7 @@ where
 import Prelude
 import Effect.Class (class MonadEffect)
 import Control.Monad.Rec.Class (class MonadRec)
+import Control.Alt as Alt
 import Record.Builder as Record.Builder
 import Data.Array as Array
 import Data.Bounded as Bounded
@@ -1013,7 +1073,7 @@ import Protobuf.Runtime as Runtime
 
   genMessageExport :: ScopedMsg -> Resp String
   genMessageExport (ScopedMsg namespace (DescriptorProto {name: Just msgName, oneof_decl})) = (Right $
-    tname <> "(..), " <> tname <> "Row, " <> tname <> "R, parse" <> tname <> ", put" <> tname <> ", default" <> tname <> ", mk" <> tname
+    tname <> "(..), " <> tname <> "Row, " <> tname <> "R, parse" <> tname <> ", put" <> tname <> ", default" <> tname <> ", mk" <> tname <> ", merge" <> tname
     )
     <>
     (map (String.joinWith "") (traverse genOneofExport oneof_decl))
@@ -1026,8 +1086,7 @@ import Protobuf.Runtime as Runtime
   -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
   -- “A oneof cannot be repeated.”
   genFieldDefaultOneof :: OneofDescriptorProto -> Resp String
-  genFieldDefaultOneof (OneofDescriptorProto {name: Just fname}) = Right $
-    decapitalize fname <> ": Maybe.Nothing"
+  genFieldDefaultOneof (OneofDescriptorProto {name: Just fname}) = Right $ decapitalize fname <> ": Maybe.Nothing"
   genFieldDefaultOneof _ = Left "Failed genFieldDefaultOneof missing name"
 
   -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
@@ -1050,3 +1109,8 @@ import Protobuf.Runtime as Runtime
     dtype (Just _) _ = Nothing -- It's a Oneof so skip it, this case it handled separately.
   genFieldDefault _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
 
+  genFieldMergeOneof :: OneofDescriptorProto -> Resp String
+  genFieldMergeOneof (OneofDescriptorProto {name: Just name'}) = Right $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
+   where
+    fname = decapitalize name'
+  genFieldMergeOneof _ = Left "Failed genFieldMergeOneof missing fields"
