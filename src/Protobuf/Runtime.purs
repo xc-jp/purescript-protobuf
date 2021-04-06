@@ -21,6 +21,8 @@ module Protobuf.Runtime
 , parseEnum
 , label
 , mergeWith
+, class Mergeable
+, mergeScalar
 )
 where
 
@@ -276,3 +278,19 @@ mergeWith f (Just l) (Just r) = Just (f l r)
 mergeWith _ l Nothing = l
 mergeWith _ Nothing r = r
 mergeWith _ _ _ = Nothing
+
+-- | This is not quite the `Alt` class, because we need to flip the list append for `alt`.
+class Mergeable a
+ where
+  -- | Merge the new left with the old right.
+  mergeScalar :: a -> a -> a
+
+instance mergableMaybe :: Mergeable (Maybe a)
+ where
+  mergeScalar (Just l) _ = Just l
+  mergeScalar _ (Just r) = Just r
+  mergeScalar _ _ = Nothing
+
+instance mergableArray :: Mergeable (Array a)
+ where
+  mergeScalar ls rs = rs <> ls

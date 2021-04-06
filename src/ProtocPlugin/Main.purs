@@ -19,7 +19,7 @@ module ProtocPlugin.Main (main) where
 
 import Prelude
 
-import Data.Array (catMaybes, concatMap)
+import Data.Array (catMaybes, concatMap, filter)
 import Data.Array as Array
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
@@ -31,6 +31,7 @@ import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
 import Data.String.Regex.Flags as String.Regex.Flags
 import Data.Traversable (sequence, traverse)
+import Data.TraversableWithIndex (traverseWithIndex)
 import Effect (Effect)
 import Google.Protobuf.Compiler.Plugin (CodeGeneratorRequest(..), CodeGeneratorResponse(..), CodeGeneratorResponse_File(..), parseCodeGeneratorRequest, putCodeGeneratorResponse)
 import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FileDescriptorProto(..), OneofDescriptorProto(..))
@@ -186,6 +187,7 @@ genFile proto_file (FileDescriptorProto
         beginsWith xs x = x == Array.take (Array.length x) xs
 
   -- We have an r and we're merging an l.
+  -- About merging: https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md
   let genFieldMerge :: FieldDescriptorProto -> Resp (Maybe String)
       genFieldMerge (FieldDescriptorProto
         { oneof_index: Just _
@@ -193,7 +195,8 @@ genFile proto_file (FileDescriptorProto
       genFieldMerge (FieldDescriptorProto
         { name: Just name'
         , label: Just FieldDescriptorProto_Label_LABEL_REPEATED
-        }) = Right $ Just $ fname <> ": r." <> fname <> " <> l." <> fname
+        -- }) = Right $ Just $ fname <> ": r." <> fname <> " <> l." <> fname
+        }) = Right $ Just $ fname <> ": Runtime.mergeScalar l." <> fname <> " r." <> fname
        where fname = decapitalize name'
       genFieldMerge (FieldDescriptorProto
         { name: Just name'
@@ -218,10 +221,41 @@ genFile proto_file (FileDescriptorProto
         { name: Just name'
         , label: Just _
         , type: Just _
-        }) = Right $ Just $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
+        -- }) = Right $ Just $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
+        }) = Right $ Just $ fname <> ": Runtime.mergeScalar l." <> fname <> " r." <> fname
        where fname = decapitalize name'
       genFieldMerge _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
 
+  let genFieldMergeOneof :: Array String -> Array FieldDescriptorProto -> Int -> OneofDescriptorProto -> Resp String
+      genFieldMergeOneof nameSpace allfields oneof_index (OneofDescriptorProto {name: Just oname}) =
+        -- Right $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
+      -- | FieldDescriptorProto_Type_TYPE_MESSAGE
+        Right $ fname <> ": case Tuple.Tuple l." <> fname <> " r." <> fname <> " of\n"
+          <> (String.joinWith "\n" (catMaybes $ map genField fields))
+          -- <> "      _ -> Alt.alt l." <> fname <> " r." <> fname
+          <> "      _ -> Runtime.mergeScalar l." <> fname <> " r." <> fname
+       where
+        fields = filter ownfield allfields
+        ownfield (FieldDescriptorProto {oneof_index: Just i}) = i == oneof_index
+        ownfield _ = false
+        fname = decapitalize oname
+        cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
+        genField :: FieldDescriptorProto -> Maybe String
+        -- genField (FieldDescriptorProto
+        --   { type_name: Just tname}) = Just $ tname <> "\n"
+          -- { type: Just FieldDescriptorProto_Type_TYPE_MESSAGE}) = Just "message"
+        genField (FieldDescriptorProto
+          { type: Just FieldDescriptorProto_Type_TYPE_MESSAGE
+          , name: Just name_inner
+          , type_name: Just tname
+          -- }) = Just $ "      (Just (" <> fname_inner <> " x)) (Just (" <> fname_inner <> " y)) -> Just $ mergeWith " <> mkFieldType "merge" tname <> " l." <> fname <> " r." <> fname <> "\n"
+          }) = Just $ "      Tuple.Tuple (Maybe.Just (" <> fname_inner <> " l')) (Maybe.Just (" <> fname_inner <> " r')) -> map " <> fname_inner <> " $ Runtime.mergeWith " <> mkFieldType "merge" tname <> " (Maybe.Just l') (Maybe.Just r')\n"
+             -- Just $ tname <> " " <> show t <> "\n"
+         where
+          -- fname_inner = decapitalize name_inner
+          fname_inner = String.joinWith "_" $ map capitalize [cname,name_inner]
+        genField _ = Nothing
+      genFieldMergeOneof _ _ _ _ = Left "Failed genFieldMergeOneof missing name"
 
   let genTypeOneof
         :: NameSpace
@@ -888,7 +922,8 @@ genFile proto_file (FileDescriptorProto
             <>
             (map (String.joinWith "\n  , ")
               (  (map catMaybes $ traverse genFieldMerge field)
-              <> (traverse genFieldMergeOneof oneof_decl)
+              -- <> (traverse genFieldMergeOneof oneof_decl)
+              <> (traverseWithIndex (genFieldMergeOneof (nameSpace <> [msgName]) field) oneof_decl)
               <> Right ["__unknown_fields: r.__unknown_fields <> l.__unknown_fields"]
               )
             )
@@ -932,6 +967,7 @@ import Data.String as String
 import Data.Symbol as Symbol
 import Record as Record
 import Data.Traversable as Traversable
+import Data.Tuple as Tuple
 import Data.UInt as UInt
 import Data.Unit as Unit
 import Prim.Row as Prim.Row
@@ -1109,8 +1145,8 @@ import Protobuf.Runtime as Runtime
     dtype (Just _) _ = Nothing -- It's a Oneof so skip it, this case it handled separately.
   genFieldDefault _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
 
-  genFieldMergeOneof :: OneofDescriptorProto -> Resp String
-  genFieldMergeOneof (OneofDescriptorProto {name: Just name'}) = Right $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
-   where
-    fname = decapitalize name'
-  genFieldMergeOneof _ = Left "Failed genFieldMergeOneof missing fields"
+  -- genFieldMergeOneof :: OneofDescriptorProto -> Resp String
+  -- genFieldMergeOneof (OneofDescriptorProto {name: Just name'}) = Right $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
+  --  where
+  --   fname = decapitalize name'
+  -- genFieldMergeOneof _ = Left "Failed genFieldMergeOneof missing fields"
