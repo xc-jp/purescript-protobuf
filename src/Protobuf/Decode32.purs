@@ -69,7 +69,8 @@ varint32 = do
                 else do
                   let acc_3 = ((n_3 .&. u0x7F) `shl` u21) .|. acc_2
                   n_4 <- Parse.anyUint8
-                  if n_4 < u0x10
+                  -- if n_4 < u0x10 -- This is the correct logic, but doesn't pass conformance?
+                  if n_4 < u0x80
                     then pure $ acc_3 .|. (n_4 `shl` u28)
                     else fail "varint32 overflow. This varint was expected to fit in 32 bits."
  where

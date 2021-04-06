@@ -31,14 +31,16 @@ import Data.ArrayBuffer.Typed as AT
 import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.Either (Either(..))
 import Data.Float32 (Float32)
+import Data.Int (Radix, radix, toStringAs)
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, highBits, lowBits, unsignedToSigned)
 import Data.Long.Internal as Long
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromJust)
 import Data.TextDecoding (decodeUtf8)
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Partial.Unsafe (unsafePartial)
 import Protobuf.Common (Bytes(..))
 import Protobuf.Decode32 (varint32, zigzag32, tag32)
 import Protobuf.Decode64 (varint64, zigzag64)
@@ -99,11 +101,14 @@ uint64 = varint64
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 sint32 :: forall m. MonadEffect m => ParserT DataView m Int
 sint32 = do
-  n <- zigzag64 <$> varint64
-  -- pure $ lowBits n
-  case Long.toInt n of
-    Nothing -> fail "sint32 value out of range."
-    Just x -> pure x
+  n <- zigzag32 <$> varint32
+  pure n
+  -- n <- zigzag64 <$> varint64
+  -- -- pure $ lowBits n
+  -- case Long.toInt n of
+  --   -- Nothing -> fail "sint32 value out of range."
+  --   Nothing -> fail $ "\nsint32 value out of range.\n lowBits " <> toStringAs (unsafePartial $ fromJust $ radix 16) (lowBits n) <> "\n highBits " <> toStringAs (unsafePartial $ fromJust $ radix 16) (highBits n)
+  --   Just x -> pure x
 
 -- | __sint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
