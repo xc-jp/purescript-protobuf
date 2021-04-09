@@ -23,9 +23,8 @@ import Data.Array (catMaybes, concatMap, filter)
 import Data.Array as Array
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
-import Data.ArrayBuffer.Types (DataView)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe, isNothing, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String as String
 import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
@@ -34,7 +33,7 @@ import Data.Traversable (sequence, traverse)
 import Data.TraversableWithIndex (traverseWithIndex)
 import Effect (Effect)
 import Google.Protobuf.Compiler.Plugin (CodeGeneratorRequest(..), CodeGeneratorResponse(..), CodeGeneratorResponse_File(..), parseCodeGeneratorRequest, putCodeGeneratorResponse)
-import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FileDescriptorProto(..), OneofDescriptorProto(..))
+import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FieldOptions(..), FileDescriptorProto(..), OneofDescriptorProto(..))
 import Node.Buffer (toArrayBuffer, fromArrayBuffer)
 import Node.Encoding (Encoding(..))
 import Node.Path (basenameWithoutExt)
@@ -382,90 +381,119 @@ genFile proto_file (FileDescriptorProto
         , type: Just ftype
         , type_name
         , oneof_index: Nothing -- must not be a member of a oneof, that case handled seperately
-        }) = go flabel ftype type_name
+        , options
+        }) = go flabel ftype type_name options
        where
         fname = decapitalize name'
         -- For repeated fields of primitive numeric types, always put the packed
         -- encoding.
         -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $ "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.double"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ _ =
           Right $ Just $ "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.double'"
-        go _ FieldDescriptorProto_Type_TYPE_DOUBLE _ =
+        go _ FieldDescriptorProto_Type_TYPE_DOUBLE _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.double"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.float"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.float'"
-        go _ FieldDescriptorProto_Type_TYPE_FLOAT _ =
+        go _ FieldDescriptorProto_Type_TYPE_FLOAT _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.float"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.int64"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.int64'"
-        go _ FieldDescriptorProto_Type_TYPE_INT64 _ =
+        go _ FieldDescriptorProto_Type_TYPE_INT64 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.int64"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.uint64"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.uint64'"
-        go _ FieldDescriptorProto_Type_TYPE_UINT64 _ =
+        go _ FieldDescriptorProto_Type_TYPE_UINT64 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.uint64"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.int32"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.int32'"
-        go _ FieldDescriptorProto_Type_TYPE_INT32 _ =
+        go _ FieldDescriptorProto_Type_TYPE_INT32 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.int32"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.fixed64"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.fixed64'"
-        go _ FieldDescriptorProto_Type_TYPE_FIXED64 _ =
+        go _ FieldDescriptorProto_Type_TYPE_FIXED64 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.fixed64"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.fixed32"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.fixed32'"
-        go _ FieldDescriptorProto_Type_TYPE_FIXED32 _ =
+        go _ FieldDescriptorProto_Type_TYPE_FIXED32 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.fixed32"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.bool"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.bool'"
-        go _ FieldDescriptorProto_Type_TYPE_BOOL _ =
+        go _ FieldDescriptorProto_Type_TYPE_BOOL _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.bool"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ _ =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.string"
-        go _ FieldDescriptorProto_Type_TYPE_STRING _ =
+        go _ FieldDescriptorProto_Type_TYPE_STRING _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.string"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) _ =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Runtime.putLenDel " <> mkFieldType "put" tname
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE _ _ =
           Left "Failed genFieldPut missing FieldDescriptorProto type_name"
         -- Do we want to do message default checking? A message would be “default,” and would not be encoded on the wire,
         -- iff “all singular fields are unset and all repeated fields are empty.”
         -- https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#message
         -- For now we just say `(const false)`, the message is never default.
-        go _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
+        go _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (\\_ -> false) $ Runtime.putLenDel " <> mkFieldType "put" tname
           -- Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (_==(Newtype.wrap " <> mkFieldType "default" tname <> ")) $ Runtime.putLenDel " <> mkFieldType "put" tname
-        go _ FieldDescriptorProto_Type_TYPE_MESSAGE _ =
+        go _ FieldDescriptorProto_Type_TYPE_MESSAGE _ _ =
           Left "Failed genFieldPut missing FieldDescriptorProto type_name"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ _ =
           Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " $ Encode.bytes"
-        go _ FieldDescriptorProto_Type_TYPE_BYTES _ =
+        go _ FieldDescriptorProto_Type_TYPE_BYTES _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.bytes"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.uint32"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.uint32'"
-        go _ FieldDescriptorProto_Type_TYPE_UINT32 _ =
+        go _ FieldDescriptorProto_Type_TYPE_UINT32 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.uint32"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Runtime.putEnum"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Runtime.putEnum'"
-        go _ FieldDescriptorProto_Type_TYPE_ENUM _ =
+        go _ FieldDescriptorProto_Type_TYPE_ENUM _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Runtime.putEnum"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.sfixed32"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sfixed32'"
-        go _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
+        go _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sfixed32"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.sfixed64"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sfixed64'"
-        go _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
+        go _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sfixed64"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.sint32"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sint32'"
-        go _ FieldDescriptorProto_Type_TYPE_SINT32 _ =
+        go _ FieldDescriptorProto_Type_TYPE_SINT32 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sint32"
-        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ =
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ (Just (FieldOptions {packed:Just false})) =
+          Right $ Just $  "  Runtime.putRepeated " <> show fnumber <> " r." <> fname <> " Encode.sint64"
+        go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ _ =
           Right $ Just $  "  Runtime.putPacked " <> show fnumber <> " r." <> fname <> " Encode.sint64'"
-        go _ FieldDescriptorProto_Type_TYPE_SINT64 _ =
+        go _ FieldDescriptorProto_Type_TYPE_SINT64 _ _ =
           Right $ Just $  "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sint64"
-        go _ FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genFieldPut GROUP not supported"
+        go _ FieldDescriptorProto_Type_TYPE_GROUP _ _ = Left "Failed genFieldPut GROUP not supported"
       genFieldPut _ (FieldDescriptorProto { oneof_index: Just _ }) = Right Nothing -- It's a Oneof, this case is handled separately
       genFieldPut _ arg = Left $ "Failed genFieldPut missing FieldDescriptorProto name or number or label or type\n" <> show arg
 
