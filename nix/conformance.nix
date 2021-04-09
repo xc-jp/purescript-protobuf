@@ -10,6 +10,9 @@ pkgs.mkShell {
     protobuf
   ];
   shellHook = ''
+    protoc --version
+    echo -n "purs "
+    purs --version
     export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
     set -e
     spago build

@@ -273,13 +273,14 @@ label :: forall m s a. Monad m => String -> ParserT s m a -> ParserT s m a
 label messagePrefix p = catchError p $ \ (ParseError message pos) ->
   throwError $ ParseError (messagePrefix <> message) pos
 
+-- | Merge the new left with the old right.
 mergeWith :: forall a. (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 mergeWith f (Just l) (Just r) = Just (f l r)
 mergeWith _ l Nothing = l
 mergeWith _ Nothing r = r
-mergeWith _ _ _ = Nothing
 
 -- | This is not quite the `Alt` class, because we need to flip the list append for `alt`.
+-- | TODO this class should not exist.
 class Mergeable a
  where
   -- | Merge the new left with the old right.
