@@ -1,34 +1,42 @@
 { pkgs ? import <nixpkgs> { } }:
 
-# https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats
-# https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/libraries/protobuf/generic-v3.nix
-
+# References
+#
+# https://github.com/protocolbuffers/protobuf/tags
+#
 # https://github.com/protocolbuffers/protobuf/blob/master/CHANGES.txt
+#
+# https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/libraries/protobuf/generic-v3.nix
+#
+# https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats
+
+
 let
-  # version = "v3.9.2";
-  # sha256 = "080zxa9w1pxp5y05aiwc0c8mlqkkh98wmid4l7m99cliphsd4qnn";
-  # version = "v3.11.4";
-  # sha256 = "00g61f1yd8z5l0z0svmr3hms38ph35lcx2y7hivw6fahslw0l8yw";
-  # version = "v3.13.0";
-  # sha256 = "1nqsvi2yfr93kiwlinz8z7c68ilg1j75b2vcpzxzvripxx5h6xhd";
-  version = "v3.14.0";
-  sha256 = "1k4kkb78kdbz732wsph07v3zy3cz7l1msk2byrfvp0nb02sfl3a4";
-  # version = "v3.15.6";
-  # sha256 = "15mba1hxv2gmlljiwh4kvjw2s1s4cf470kvx9lvfhaklskjig1l5";
 
-  protobufRepo = pkgs.fetchFromGitHub {
-    owner = "protocolbuffers";
-    repo = "protobuf";
-    rev = version;
-    inherit sha256;
+  protobuf_repo_v3_9_2 = rec {
+    ref = "v3.9.2";
+    src = builtins.fetchGit {
+      url = "https://github.com/protocolbuffers/protobuf";
+      rev = "52b2447247f535663ac1c292e088b4b27d2910ef";
+      inherit ref;
+    };
   };
-
-  # # This is pretty much what's in nixpkgs as "protobuf", just `protoc`.
-  # protoc = pkgs.stdenv.mkDerivation {
-  #   name = "protoc-${version}";
-  #   buildInputs = [ pkgs.autoreconfHook ];
-  #   src = protobufRepo;
-  # };
+  protobuf_repo_v3_14_0 = rec {
+    ref = "v3.14.0";
+    src = builtins.fetchGit {
+      url = "https://github.com/protocolbuffers/protobuf";
+      rev = "2514f0bd7da7e2af1bed4c5d1b84f031c4d12c10";
+      inherit ref;
+    };
+  };
+  protobuf_repo_v3_15_8 = rec {
+    ref = "v3.15.8";
+    src = builtins.fetchGit {
+      url = "https://github.com/protocolbuffers/protobuf";
+      rev = "436bd7880e458532901c58f4d9d1ea23fa7edd52";
+      inherit ref;
+    };
+  };
 
   # Builds `protoc`, plus the conformance test runners, and also copies
   # in the .proto files for the conformance test protocol,
@@ -40,10 +48,10 @@ let
   # https://github.com/protocolbuffers/protobuf/blob/master/tests.sh
   #
   # https://laptrinhx.com/an-elixir-library-for-protocol-buffers-2920413944/#conformance
-  protobuf = pkgs.stdenv.mkDerivation {
-    name = "conformance-${version}";
+  mkProtobuf = repo: pkgs.stdenv.mkDerivation {
+    name = "protobuf-${repo.ref}";
     nativeBuildInputs = with pkgs; [ autogen automake autoconf libtool rsync ];
-    src = protobufRepo;
+    src = repo.src;
     configurePhase = ''
       ./autogen.sh
       ./configure --prefix=$out
@@ -68,4 +76,19 @@ let
     LC_ALL = "C.UTF-8";
   };
 
-in protobuf
+in {
+inherit protobuf_repo_v3_9_2;
+inherit protobuf_repo_v3_14_0;
+inherit protobuf_repo_v3_15_8;
+protobuf_v3_9_2 = mkProtobuf protobuf_repo_v3_9_2;
+protobuf_v3_14_0 = mkProtobuf protobuf_repo_v3_14_0;
+protobuf_v3_15_8 = mkProtobuf protobuf_repo_v3_15_8;
+}
+
+
+# # This derivation is pretty much what's in nixpkgs as "protobuf", just `protoc`.
+# protoc = pkgs.stdenv.mkDerivation {
+#   name = "protoc-${version}";
+#   buildInputs = [ pkgs.autoreconfHook ];
+#   src = protobufRepo;
+# };

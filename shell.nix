@@ -5,7 +5,7 @@ pkgs.mkShell {
     easy-ps.spago
     nodejs-13_x
     easy-ps.pulp
-    protobuf3_9
+    protobuf
     nodePackages.bower
     easy-ps.psc-package
     dhall
@@ -15,6 +15,10 @@ pkgs.mkShell {
   shellHook = ''
   export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
   echo "Purescript Protobuf development environment."
+  protoc --version
+  echo -n "purs "
+  purs --version
+  echo ""
   echo "To build purescript-protobuf, run:"
   echo ""
   echo "    npm install"
