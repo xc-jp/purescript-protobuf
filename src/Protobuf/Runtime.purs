@@ -288,9 +288,8 @@ class Mergeable a
 
 instance mergableMaybe :: Mergeable (Maybe a)
  where
-  mergeScalar (Just l) _ = Just l
-  mergeScalar _ (Just r) = Just r
-  mergeScalar _ _ = Nothing
+  mergeScalar l@(Just _) _ = l
+  mergeScalar _ r = r
 
 instance mergableArray :: Mergeable (Array a)
  where
