@@ -11,6 +11,11 @@
 # https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats
 
 
+# Path to the repo source code in the nix store
+#
+#     nix eval --raw -f nix/protobuf.nix protobuf_repo_v3_14_0.src.outPath
+#
+
 let
 
   protobuf_repo_v3_9_2 = rec {

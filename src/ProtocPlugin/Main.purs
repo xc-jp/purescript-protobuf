@@ -195,7 +195,7 @@ genFile proto_file (FileDescriptorProto
         { name: Just name'
         , label: Just FieldDescriptorProto_Label_LABEL_REPEATED
         -- }) = Right $ Just $ fname <> ": r." <> fname <> " <> l." <> fname
-        }) = Right $ Just $ fname <> ": Runtime.mergeScalar l." <> fname <> " r." <> fname
+        }) = Right $ Just $ fname <> ": Runtime.mergeArray l." <> fname <> " r." <> fname
        where fname = decapitalize name'
       genFieldMerge (FieldDescriptorProto
         { name: Just name'
@@ -221,7 +221,7 @@ genFile proto_file (FileDescriptorProto
         , label: Just _
         , type: Just _
         -- }) = Right $ Just $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
-        }) = Right $ Just $ fname <> ": Runtime.mergeScalar l." <> fname <> " r." <> fname
+        }) = Right $ Just $ fname <> ": Runtime.mergeMaybe l." <> fname <> " r." <> fname
        where fname = decapitalize name'
       genFieldMerge _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
 
@@ -231,8 +231,14 @@ genFile proto_file (FileDescriptorProto
       -- | FieldDescriptorProto_Type_TYPE_MESSAGE
         Right $ fname <> ": case Tuple.Tuple l." <> fname <> " r." <> fname <> " of\n"
           <> (String.joinWith "\n" (catMaybes $ map genField fields))
+          -- <> (catMaybes $ map genField fields)
           -- <> "      _ -> Alt.alt l." <> fname <> " r." <> fname
-          <> "      _ -> Runtime.mergeScalar l." <> fname <> " r." <> fname
+          -- <> "      _ -> Runtime.mergeMaybe l." <> fname <> " r." <> fname
+          -- <> "\n      _ -> r." <> fname
+          -- <> "\n      _ -> Runtime.mergeMaybe l." <> fname <> " r." <> fname
+          <> "\n      Tuple.Tuple l_outer@(Maybe.Just l_inner) r_outer -> if isDefault" <> cname <> " l_inner then r_outer else l_outer"
+          <> "\n      Tuple.Tuple _ r_outer -> r_outer"
+
        where
         fields = filter ownfield allfields
         ownfield (FieldDescriptorProto {oneof_index: Just i}) = i == oneof_index
@@ -248,11 +254,18 @@ genFile proto_file (FileDescriptorProto
           , name: Just name_inner
           , type_name: Just tname
           -- }) = Just $ "      (Just (" <> fname_inner <> " x)) (Just (" <> fname_inner <> " y)) -> Just $ mergeWith " <> mkFieldType "merge" tname <> " l." <> fname <> " r." <> fname <> "\n"
-          }) = Just $ "      Tuple.Tuple (Maybe.Just (" <> fname_inner <> " l')) (Maybe.Just (" <> fname_inner <> " r')) -> map " <> fname_inner <> " $ Runtime.mergeWith " <> mkFieldType "merge" tname <> " (Maybe.Just l') (Maybe.Just r')\n"
+          }) = Just $ "      Tuple.Tuple (Maybe.Just (" <> fname_inner <> " l')) (Maybe.Just (" <> fname_inner <> " r')) -> map " <> fname_inner <> " $ Runtime.mergeWith " <> mkFieldType "merge" tname <> " (Maybe.Just l') (Maybe.Just r')"
              -- Just $ tname <> " " <> show t <> "\n"
          where
           -- fname_inner = decapitalize name_inner
           fname_inner = String.joinWith "_" $ map capitalize [cname,name_inner]
+        -- genField (FieldDescriptorProto
+        --   { type: _
+        --   , name: Just name_inner
+        --   -- , type_name: Just tname
+        --   }) = Just $ "      Tuple.Tuple l_outer@(Maybe.Just (" <> fname_inner <> " l_inner)) r -> if Common.isDefault l_inner then r else l_outer"
+        --  where
+        --   fname_inner = String.joinWith "_" $ map capitalize [cname,name_inner]
         genField _ = Nothing
       genFieldMergeOneof _ _ _ _ = Left "Failed genFieldMergeOneof missing name"
 
@@ -307,6 +320,29 @@ genFile proto_file (FileDescriptorProto
         -- go arg = Left $ "Failed genTypeOneof missing FieldDescriptorProto fields\n" <> show arg
         go _ = Right Nothing
       genTypeOneof _ _ _ arg = Left $ "Failed genTypeOneof missing OneofDescriptorProto name\n" <> show arg
+
+  let genIsDefaultOneof
+        :: NameSpace
+        -> Array FieldDescriptorProto
+        -> Int
+        -> OneofDescriptorProto
+        -> Resp String
+      genIsDefaultOneof nameSpace pfields indexOneof (OneofDescriptorProto {name: Just oname}) = do
+        fields <- catMaybes <$> traverse go pfields
+        Right $ String.joinWith "\n"
+          [ "isDefault" <> cname <> " :: " <> cname <> " -> Boolean"
+          , String.joinWith "\n" fields
+          , ""
+          ]
+       where
+        cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
+        go :: FieldDescriptorProto -> Resp (Maybe String)
+        go (FieldDescriptorProto {name: Just fname, oneof_index: Just index, type: Just FieldDescriptorProto_Type_TYPE_MESSAGE, type_name}) =
+          Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [cname,fname]) <> " _) = false"
+        go (FieldDescriptorProto {name: Just fname, oneof_index: Just index, type: _, type_name}) =
+          Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [cname,fname]) <> " x) = Common.isDefault x"
+        go _ = Right Nothing
+      genIsDefaultOneof _ _ _ arg = Left $ "Failed genIsDefaultOneof missing OneofDescriptorProto name\n" <> show arg
 
 
   let genOneofPut :: NameSpace -> Array FieldDescriptorProto -> Int -> OneofDescriptorProto -> Resp String
@@ -944,6 +980,7 @@ genFile proto_file (FileDescriptorProto
           , Right $ "mk" <> tname <> " r = " <> tname <> " $ Record.merge r default" <> tname
           , Right ""
           , map (String.joinWith "\n") $ sequence $ (Array.mapWithIndex (genTypeOneof (nameSpace <> [msgName]) field) oneof_decl)
+          , map (String.joinWith "\n") $ sequence $ (Array.mapWithIndex (genIsDefaultOneof (nameSpace <> [msgName]) field) oneof_decl)
           , Right $ "merge" <> tname <> " :: " <> tname <> " -> " <> tname <> " -> " <> tname
           , Right $ "merge" <> tname <> " (" <> tname <> " l) (" <> tname <> " r) = " <> tname
           , Right "  { "
