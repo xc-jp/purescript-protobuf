@@ -13,5 +13,5 @@ nix-shell nix/conformance.nix
 
 [Conformance README](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
 
-The `nix/protobuf.nix` derivation will build protobuf along with its
-conformance test runners.
+The derivations in `nix/protobuf.nix` will build `protobuf` and the
+`conformance-test-runner`.

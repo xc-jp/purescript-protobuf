@@ -172,10 +172,19 @@ Fortunately, we are already in the `ParserT` monad,
 so we can do better than “validation.”
 [Parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/).
 
-We will construct and return a tuple
+We will construct and return a `Tuple`
 with the width and height of the `Rectangle`. For this step,
 [pattern matching](https://github.com/purescript/documentation/blob/master/language/Pattern-Matching.md)
-on the `Rectangle` message type works well, or we might want to use some of the
+on the `Rectangle` message type works well.
+
+```purescript
+        case rectangle of
+            Rectangle { width: Just width, height: Just height } ->
+                pure $ Tuple width height
+            _ -> fail "Missing required width or height"
+```
+
+Or we might want to use some of the
 convenience parsing functions exported by `Protobuf.Library`, like `parseMaybe`.
 
 ```purescript
