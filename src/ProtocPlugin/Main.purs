@@ -19,7 +19,7 @@ module ProtocPlugin.Main (main) where
 
 import Prelude
 
-import Data.Array (catMaybes, concatMap, filter)
+import Data.Array (catMaybes, concatMap, filter, fold)
 import Data.Array as Array
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
@@ -230,14 +230,14 @@ genFile proto_file (FileDescriptorProto
         -- Right $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
       -- | FieldDescriptorProto_Type_TYPE_MESSAGE
         Right $ fname <> ": case Tuple.Tuple l." <> fname <> " r." <> fname <> " of\n"
-          <> (String.joinWith "\n" (catMaybes $ map genField fields))
+          <> (fold $ catMaybes $ map genField fields)
           -- <> (catMaybes $ map genField fields)
           -- <> "      _ -> Alt.alt l." <> fname <> " r." <> fname
           -- <> "      _ -> Runtime.mergeMaybe l." <> fname <> " r." <> fname
           -- <> "\n      _ -> r." <> fname
-          -- <> "\n      _ -> Runtime.mergeMaybe l." <> fname <> " r." <> fname
-          <> "\n      Tuple.Tuple l_outer@(Maybe.Just l_inner) r_outer -> if isDefault" <> cname <> " l_inner then r_outer else l_outer"
-          <> "\n      Tuple.Tuple _ r_outer -> r_outer"
+          <> "      _ -> Runtime.mergeMaybe l." <> fname <> " r." <> fname
+          -- <> "\n      Tuple.Tuple l_outer@(Maybe.Just l_inner) r_outer -> if isDefault" <> cname <> " l_inner then r_outer else l_outer"
+          -- <> "\n      Tuple.Tuple _ r_outer -> r_outer"
 
        where
         fields = filter ownfield allfields
@@ -254,7 +254,7 @@ genFile proto_file (FileDescriptorProto
           , name: Just name_inner
           , type_name: Just tname
           -- }) = Just $ "      (Just (" <> fname_inner <> " x)) (Just (" <> fname_inner <> " y)) -> Just $ mergeWith " <> mkFieldType "merge" tname <> " l." <> fname <> " r." <> fname <> "\n"
-          }) = Just $ "      Tuple.Tuple (Maybe.Just (" <> fname_inner <> " l')) (Maybe.Just (" <> fname_inner <> " r')) -> map " <> fname_inner <> " $ Runtime.mergeWith " <> mkFieldType "merge" tname <> " (Maybe.Just l') (Maybe.Just r')"
+          }) = Just $ "      Tuple.Tuple (Maybe.Just (" <> fname_inner <> " l')) (Maybe.Just (" <> fname_inner <> " r')) -> map " <> fname_inner <> " $ Runtime.mergeWith " <> mkFieldType "merge" tname <> " (Maybe.Just l') (Maybe.Just r')\n"
              -- Just $ tname <> " " <> show t <> "\n"
          where
           -- fname_inner = decapitalize name_inner
