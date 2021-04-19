@@ -225,7 +225,7 @@ genFile proto_file (FileDescriptorProto
        where fname = decapitalize name'
       genFieldMerge _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
 
-  let genFieldMergeOneof :: Array String -> Array FieldDescriptorProto -> Int -> OneofDescriptorProto -> Resp String
+  let genFieldMergeOneof :: NameSpace -> Array FieldDescriptorProto -> Int -> OneofDescriptorProto -> Resp String
       genFieldMergeOneof nameSpace allfields oneof_index (OneofDescriptorProto {name: Just oname}) =
         -- Right $ fname <> ": Alt.alt l." <> fname <> " r." <> fname
       -- | FieldDescriptorProto_Type_TYPE_MESSAGE
@@ -268,6 +268,35 @@ genFile proto_file (FileDescriptorProto
         --   fname_inner = String.joinWith "_" $ map capitalize [cname,name_inner]
         genField _ = Nothing
       genFieldMergeOneof _ _ _ _ = Left "Failed genFieldMergeOneof missing name"
+
+  let genOneofMerge
+        :: NameSpace
+        -> Array FieldDescriptorProto
+        -> Int
+        -> OneofDescriptorProto
+        -> Resp String
+      genOneofMerge nameSpace allfields oneof_index (OneofDescriptorProto {name: Just oname}) = do
+        Right $ "merge" <> cname <> " :: Maybe.Maybe " <> cname <> " -> Maybe.Maybe " <> cname <> " -> Maybe.Maybe " <> cname <> "\n"
+          <> "merge" <> cname <> " l r = case Tuple.Tuple l r of\n"
+          <> (fold $ catMaybes $ map genField fields)
+          <> "      _ -> Runtime.mergeMaybe l r"
+       where
+        fields = filter ownfield allfields
+        ownfield (FieldDescriptorProto {oneof_index: Just i}) = i == oneof_index
+        ownfield _ = false
+        -- fname = decapitalize oname
+        cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
+        genField :: FieldDescriptorProto -> Maybe String
+        genField (FieldDescriptorProto
+          { type: Just FieldDescriptorProto_Type_TYPE_MESSAGE
+          , name: Just name_inner
+          , type_name: Just tname
+          }) = Just $ "      Tuple.Tuple (Maybe.Just (" <> fname_inner <> " l')) (Maybe.Just (" <> fname_inner <> " r')) -> map " <> fname_inner <> " $ Runtime.mergeWith " <> mkFieldType "merge" tname <> " (Maybe.Just l') (Maybe.Just r')\n"
+         where
+          fname_inner = String.joinWith "_" $ map capitalize [cname,name_inner]
+        genField _ = Nothing
+      genOneofMerge _ _ _ _ = Left "Failed genOneofMerge missing name"
+
 
   let genTypeOneof
         :: NameSpace
@@ -732,8 +761,13 @@ genFile proto_file (FileDescriptorProto
         go (Just oname) _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) = Right $ String.joinWith "\n"
           [ "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
           , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
-          , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+          -- , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Function.const $ Maybe.Just (" <> mkConstructor oname <> " x)"
+          -- , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Maybe.Just <<< Maybe.maybe x (" <> mkFieldType "merge" tname <> " x)"
+          -- , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Maybe.Just <<< Maybe.maybe x (" <> mkFieldType "merge" cname <> " x)"
+          -- , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ Runtime.mergeWith " <> mkFieldType "merge" cname <> " (Maybe.Just (" <> mkConstructor oname <> " x))"
+          , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> decapitalize oname <> "\") $ " <> mkFieldType "merge" cname <> " (Maybe.Just (" <> mkConstructor oname <> " x))"
           ]
+            where cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
         go (Just oname) _ FieldDescriptorProto_Type_TYPE_BYTES _ = Right $ String.joinWith "\n"
           [ "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
           , "    x <- Decode.bytes"
@@ -820,7 +854,7 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Runtime.parseLenDel " <> mkFieldType "parse" tname
           -- , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.const $ Maybe.Just x"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Maybe.Just <<< Maybe.maybe x (" <> mkFieldType "merge" tname <> " x)"
-            -- TODO “merge all input elements if it's a message type field”
+            -- “merge all input elements if it's a message type field”
             -- https://developers.google.com/protocol-buffers/docs/proto3#updating
             -- https://developers.google.com/protocol-buffers/docs/encoding#optional
             -- Recommended.Proto3.ProtobufInput.ValidDataOneofBinary.MESSAGE.Merge.ProtobufOutput
@@ -981,6 +1015,7 @@ genFile proto_file (FileDescriptorProto
           , Right ""
           , map (String.joinWith "\n") $ sequence $ (Array.mapWithIndex (genTypeOneof (nameSpace <> [msgName]) field) oneof_decl)
           , map (String.joinWith "\n") $ sequence $ (Array.mapWithIndex (genIsDefaultOneof (nameSpace <> [msgName]) field) oneof_decl)
+          , map (String.joinWith "\n") $ sequence $ (Array.mapWithIndex (genOneofMerge (nameSpace <> [msgName]) field) oneof_decl)
           , Right $ "merge" <> tname <> " :: " <> tname <> " -> " <> tname <> " -> " <> tname
           , Right $ "merge" <> tname <> " (" <> tname <> " l) (" <> tname <> " r) = " <> tname
           , Right "  { "
