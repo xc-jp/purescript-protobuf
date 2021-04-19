@@ -1,6 +1,6 @@
 -- | Primitive `UInt`-based builders for encoding Google Protocol Buffers.
 -- |
--- | Do not import this module.
+-- | You almost never need to import this module.
 -- | See package README for explanation.
 -- |
 -- | There is no `varint32` in the Protbuf spec, this is

@@ -1,6 +1,6 @@
 -- | This module is for import by the generated .purs message modules.
 -- |
--- | Do not import this module.
+-- | You almost never need to import this module.
 -- | See package README for explanation.
 module Protobuf.Runtime
 ( parseMessage
@@ -79,8 +79,8 @@ parseMessage construct default parseField length = do
 -- | Parse position, zero-based, unlike Text.Parsing.Parser.Position which is one-based.
 type Pos = Int
 
--- | We want Int FieldNumber to pass to parseField so that we can pattern
--- | match on Int literals. UInt doesn't export any constructors, so can't
+-- | We want an Int FieldNumber to pass to parseField so that we can pattern
+-- | match on Int literals. UInt doesn't export any constructors, so we can’t
 -- | pattern match on it.
 type FieldNumberInt = Int
 
@@ -252,7 +252,6 @@ putEnum' x = Encode.varint64 (fromLowHighBits x_low x_high :: Long Unsigned)
   x_slong = signedLongFromInt x_int :: Long Signed
   x_high = highBits x_slong
   x_low = lowBits x_slong
-
 
 parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
 parseEnum = do

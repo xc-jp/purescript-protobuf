@@ -1,4 +1,4 @@
--- | Do not import this module.
+-- | You almost never need to `import` this module.
 -- | See package README for explanation.
 module Protobuf.Common
 ( FieldNumber

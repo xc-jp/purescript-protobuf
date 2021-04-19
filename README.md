@@ -44,7 +44,7 @@ We also have our own unit tests, see `test/README.md` in this repository.
 
 The `shell.nix` environment provides
 
-* The Purescript toolchain: *purs*, *spago*, and *npm*.
+* The Purescript toolchain: `purs`, `spago`, and `npm`.
 * The [`protoc`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating) compiler
 * The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
   [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
@@ -72,10 +72,10 @@ to your `PATH`.
 
 ## Writing programs with the generated code
 
-The code generator will use the `package` import statement in the schema `.proto` file
+The code generator will use the `package` import statement in the `.proto` file
 and the base `.proto` file name as the Purescript module name for that file.
 
-A message in a `shapes.proto` file declared as
+A message in a `shapes.proto` descriptor file declared as
 
 ```
 package interproc;
@@ -96,8 +96,8 @@ generated `shapes.Interproc.purs` file.
    ```
 
    The message data type will also include an `__unknown_fields` array field for
-   holding received fields which were not in the schema `.proto` file. We can
-   completely ignore this field if we want to.
+   holding received fields which were not in the descriptor `.proto` file. We can
+   completely ignore `__unknown_fields` if we want to.
 
 2. A message maker which constructs a message from a `Record`
    with some message fields

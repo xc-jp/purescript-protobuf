@@ -15,7 +15,7 @@ import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Protobuf.Common (Bytes(..), class Default, default, isDefault, fromDefault, toDefault)
-import Protobuf.Runtime (label, UnknownField(..), manyLength)
+import Protobuf.Runtime (label, manyLength)
 import Text.Parsing.Parser (ParserT, fail)
 
 -- | Lift an `ExceptT String m` computation into a `ParserT`.
