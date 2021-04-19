@@ -24,7 +24,7 @@ import Data.Float32 as Float32
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits)
-import Data.Maybe (Maybe(..), fromJust, fromMaybe)
+import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype)
 import Data.String as String
 import Data.UInt (UInt)
@@ -98,9 +98,8 @@ instance eqBytes :: Eq Bytes
 
 derive instance newtypeBytes :: Newtype Bytes _
 
--- | Default values
--- |
--- | https://developers.google.com/protocol-buffers/docs/proto3#default
+-- | In Protobuf, [zero values are “default values”](https://developers.google.com/protocol-buffers/docs/proto3#default)
+-- | and have special semantics.
 class Default a
  where
   default :: a
@@ -151,8 +150,6 @@ else instance defaultUInt :: Default UInt
   default = UInt.fromInt 0
   isDefault x = x == default
 
--- instance defaultArray :: Default a => Default (Array a) where default = []
-
 else instance defaultBytes :: Default Bytes
  where
   default = Bytes $ unsafePerformEffect $ AB.empty 0
@@ -180,6 +177,5 @@ fromDefault x = if x==default then Nothing else Just x
 -- | to manually choose whether we want
 -- | a missing field to mean that it’s missing, or to mean that it’s zero.
 toDefault :: forall a. Default a => Maybe a -> a
--- toDefault Nothing = default
--- toDefault (Just x) = x
-toDefault = fromMaybe default
+toDefault Nothing = default
+toDefault (Just x) = x

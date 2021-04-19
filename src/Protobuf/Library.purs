@@ -13,8 +13,8 @@ import Prelude
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe)
-import Protobuf.Common (Bytes(..))
+import Data.Maybe (Maybe(..))
+import Protobuf.Common (Bytes(..), class Default, default, isDefault, fromDefault, toDefault)
 import Protobuf.Runtime (label, UnknownField(..), manyLength)
 import Text.Parsing.Parser (ParserT, fail)
 
@@ -48,9 +48,3 @@ parseMaybe :: forall s m a. (Monad m) => String -> Maybe a -> ParserT s m a
 parseMaybe message f = case f of
   Nothing -> fail message
   Just x -> pure x
-
--- | In Protobuf, [zeros are “default values”](https://developers.google.com/protocol-buffers/docs/proto3#default)
--- | and if a field value is missing on the wire then we’re supposed
--- | to pretend that it’s zero.
-defaultScalar :: forall a. Semiring a => Maybe a -> a
-defaultScalar = fromMaybe zero

@@ -14,8 +14,9 @@ and in browser environments.
 ## Features
 
 We aim to support binary-encoded (not JSON-encoded)
-[__proto3__](https://developers.google.com/protocol-buffers/docs/proto3).
-Many __proto2__-syntax descriptor files will
+[`syntax = "proto3";`](https://developers.google.com/protocol-buffers/docs/proto3).
+
+Many `syntax = "proto2";`  descriptor files will
 also work, as long as they don't use __proto2__ features, like
 [groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
 
@@ -30,9 +31,10 @@ We do not support
 
 ### Conformance and Testing
 
-At the time of this writing, we pass all 194 of the
+At the time of this writing, we pass all 651 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-wire-format proto3.
+for binary-wire-format proto3 v3.14.0.
+(https://github.com/protocolbuffers/protobuf/blob/f763a2a86084371fd0da95f3eeb879c2ff26b06d/CHANGES.txt#L223)
 
 See the `conformance/README.md` in this repository for details.
 
@@ -42,7 +44,7 @@ We also have our own unit tests, see `test/README.md` in this repository.
 
 The `shell.nix` environment provides
 
-* The Purescript toolchain: *purs*, *spago*, and *nodejs*.
+* The Purescript toolchain: *purs*, *spago*, and *npm*.
 * The [`protoc`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating) compiler
 * The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
   [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
@@ -70,7 +72,7 @@ to your `PATH`.
 
 ## Writing programs with the generated code
 
-The code generator will use the `package` import statement in the `.proto` file
+The code generator will use the `package` import statement in the schema `.proto` file
 and the base `.proto` file name as the Purescript module name for that file.
 
 A message in a `shapes.proto` file declared as
@@ -93,8 +95,9 @@ generated `shapes.Interproc.purs` file.
    newtype Rectangle = Rectangle { width :: Maybe Number, height :: Maybe Number }
    ```
 
-   The message data type will also include an `__unknown_fields` field which
-   is required for conformance.
+   The message data type will also include an `__unknown_fields` array field for
+   holding received fields which were not in the schema `.proto` file. We can
+   completely ignore this field if we want to.
 
 2. A message maker which constructs a message from a `Record`
    with some message fields
@@ -108,7 +111,7 @@ generated `shapes.Interproc.purs` file.
    compiler error if we try to add a field which is not in the message data type.
 
    If we want the compiler to check that we've explicitly supplied all the fields,
-   then we can use the ordinary message data type constructor.
+   then we can use the ordinary message data type constructor `Rectangle`.
 
 3. A message encoder which works with
    [__purescript-arraybuffer-builder__](http://pursuit.purescript.org/packages/purescript-arraybuffer-builder/)
@@ -138,14 +141,16 @@ We'll also import modules for reading and writing `ArrayBuffer`s.
 ```purescript
 import Protobuf.Library (Bytes(..), parseMaybe)
 import Interproc.Shapes (Rectangle, mkRectangle, putRectangle, parseRectangle)
-import Text.Parsing.Parser (runParserT)
+import Text.Parsing.Parser (runParserT, ParseError)
 import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView (whole)
 import Data.ArrayBuffer.ArrayBuffer (byteLength)
+import Data.Tuple (Tuple)
 import Data.Newtype (unwrap)
 ```
 
-Serialize a `Rectangle` to an `ArrayBuffer`.
+This is how we serialize a `Rectangle` to an `ArrayBuffer`.
+We must be in a `MonadEffect`.
 
 ```purescript
 do
@@ -155,27 +160,33 @@ do
         }
 ```
 
-Now we'll deserialize `Rectangle` from the `ArrayBuffer`.
+Next we'll deserialize `Rectangle` from the `ArrayBuffer` that we just made.
 
 ```purescript
-    result <- runParserT (whole arraybuffer) $ do
+    result :: Either ParseError (Tuple Number Number)
+      <- runParserT (whole arraybuffer) $ do
+
         rectangle :: Rectangle <- parseRectangle (byteLength arraybuffer)
 ```
 
-Now, at this point we've consumed all of the parser input, but
-we're not finished parsing.
+At this point we've consumed all of the parser input and constructed our
+`Rectangle` message, but we're not finished parsing.
 We want to “validate” the `Rectangle` message to make sure it has all of the
 fields that we require, because in
 [proto3, all fields are optional](https://github.com/protocolbuffers/protobuf/issues/2497).
 
-Fortunately, we are already in the `ParserT` monad,
-so we can do better than “validation.”
+Fortunately we are already in the `ParserT` monad,
+so we can do better than to “validate”:
 [Parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/).
 
-We will construct and return a `Tuple`
-with the width and height of the `Rectangle`. For this step,
+We will construct a `Tuple Number Number`
+with the width and height of the `Rectangle`. If the width or height
+are missing from the `Rectangle` message, then we will fail in the `ParserT`
+monad.
+
+For this validation step,
 [pattern matching](https://github.com/purescript/documentation/blob/master/language/Pattern-Matching.md)
-on the `Rectangle` message type works well.
+on the `Rectangle` message type works well, so we could validate this way:
 
 ```purescript
         case rectangle of
@@ -184,8 +195,9 @@ on the `Rectangle` message type works well.
             _ -> fail "Missing required width or height"
 ```
 
-Or we might want to use some of the
-convenience parsing functions exported by `Protobuf.Library`, like `parseMaybe`.
+Or we might want to use `parseMaybe`, one of the
+convenience parsing functions exported by `Protobuf.Library`,
+for more fine-grained validation:
 
 ```purescript
         width <- parseMaybe "Missing required width" (unwrap rectangle).width
@@ -193,7 +205,7 @@ convenience parsing functions exported by `Protobuf.Library`, like `parseMaybe`.
         pure $ Tuple width height
 ```
 
-The `result` will now be `:: Either ParseError (Tuple Number Number)`.
+And now the `result` is either a parsing error or a fully validated rectangle.
 
 ### Dependencies
 
