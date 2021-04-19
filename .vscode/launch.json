@@ -15,7 +15,9 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${file}"
+      "program": "${file}",
+      "runtimeArgs": ["-e", "require('./output/Conformance.Main/index.js').main()"],
+      "smartStep": true
     }
   ]
 }
