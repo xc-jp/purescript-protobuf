@@ -21,9 +21,6 @@ module Protobuf.Runtime
 , parseEnum
 , label
 , mergeWith
--- , class Mergeable
-, mergeMaybe
-, mergeArray
 )
 where
 
@@ -49,7 +46,7 @@ import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
-import Protobuf.Common (class Default, Bytes(..), FieldNumber, WireType(..), fromDefault, isDefault)
+import Protobuf.Common (Bytes(..), FieldNumber, WireType(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
 import Record.Builder (build, modify)
@@ -279,49 +276,3 @@ mergeWith :: forall a. (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 mergeWith f (Just l) (Just r) = Just (f l r)
 mergeWith _ l Nothing = l
 mergeWith _ Nothing r = r
-
--- -- | This is not quite the `Alt` class, because we need to flip the list append for `alt`.
--- -- | TODO this class should not exist.
--- class Mergeable a
---  where
---   -- | Merge the new left with the old right.
---   mergeScalar :: a -> a -> a
-
--- instance mergableMaybe :: Mergeable (Maybe a)
--- instance mergableMaybe :: (Default a, Eq a) => Mergeable (Maybe a)
---  where
-  -- mergeScalar l@(Just _) _ = l
-  -- mergeScalar _ r = r
-
-mergeMaybe :: forall a. Maybe a -> Maybe a -> Maybe a
-mergeMaybe l@(Just _) _ = l
-mergeMaybe _ r = r
-
-  -- check that MergeFrom copies if nonzero/nondefault only.
-  -- https://github.com/protocolbuffers/protobuf/blob/ee04809540c098718121e092107fbc0abc231725/src/google/protobuf/no_field_presence_test.cc#L463
-  -- If you set a oneof field to the default value (such as setting an int32 oneof
-  -- field to 0), the "case" of that oneof field will be set, and the value will
-  -- be serialized on the wire.
-  -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
-
-
-
--- mergeMaybe :: forall a. Default a => Maybe a -> Maybe a -> Maybe a
--- mergeMaybe ml@(Just l) r@(Just _) = if isDefault l then r else ml
--- mergeMaybe _ r = r
-
-  -- mergeScalar (Just l) r@(Just _) = case fromDefault l of
-  --   l'@(Just _) -> l'
-  --   _ -> r
-
--- instance mergableArray :: Mergeable (Array a)
---  where
---   mergeScalar ls rs = rs <> ls
-
--- -- | Merge the new left with the old right.
--- mergeScalar :: Default a => Maybe a -> Maybe a -> Maybe a
--- mergeScalar l r
-
--- | Merge the new left with the old right.
-mergeArray :: forall a. Array a -> Array a -> Array a
-mergeArray ls rs = rs <> ls
