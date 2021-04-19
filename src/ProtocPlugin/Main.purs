@@ -70,12 +70,14 @@ generate (CodeGeneratorRequest{file_to_generate,parameter,proto_file,compiler_ve
       CodeGeneratorResponse
         { error: Nothing
         , file: file
+        , supported_features: Nothing
         , __unknown_fields: []
         }
     Left err ->
       CodeGeneratorResponse
         { error: Just err
         , file: []
+        , supported_features: Nothing
         , __unknown_fields: []
         }
 
@@ -1034,6 +1036,7 @@ import Protobuf.Runtime as Runtime
     { name : Just fileNameOut
     , insertion_point : Nothing
     , content : Just $ String.joinWith "\n" contents
+    , generated_code_info: Nothing
     , __unknown_fields : []
     }
 
