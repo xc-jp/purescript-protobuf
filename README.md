@@ -14,9 +14,9 @@ and in browser environments.
 ## Features
 
 We aim to support binary-encoded (not JSON-encoded)
-[`syntax = "proto3";`](https://developers.google.com/protocol-buffers/docs/proto3).
+`syntax = "proto3";` descriptor files.
 
-Many `syntax = "proto2";`  descriptor files will
+Many `syntax = "proto2";` descriptor files will
 also work, as long as they don't use __proto2__ features, like
 [groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
 
@@ -33,8 +33,7 @@ We do not support
 
 At the time of this writing, we pass all 651 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-wire-format proto3 v3.14.0.
-(https://github.com/protocolbuffers/protobuf/blob/f763a2a86084371fd0da95f3eeb879c2ff26b06d/CHANGES.txt#L223)
+for binary-wire-format [Protocol Buffers v3.14.0](https://github.com/protocolbuffers/protobuf/blob/f763a2a86084371fd0da95f3eeb879c2ff26b06d/CHANGES.txt#L223).
 
 See the `conformance/README.md` in this repository for details.
 
@@ -232,6 +231,8 @@ which are all in
 It also depends on the Javascript package
 [__long__](https://www.npmjs.com/package/long).
 
+For depending on generated code without pulling in any of the code-generation
+dependencies, we can use `spago-library.dhall`.
 ### Generated message instances
 
 All of the generated message types have instances of
