@@ -1,3 +1,7 @@
+# v1.7.0
+
+Upgraded from Protobuf v3.14.0 to v3.15.8
+
 # v1.6.0
 
 Upgraded from Protobuf v3.9.2 to v3.14.0.

@@ -3,14 +3,7 @@ module Conformance.Main (main) where
 
 import Prelude
 
-import Conformance.Conformance
-  ( ConformanceRequest(..)
-  , parseConformanceRequest
-  , ConformanceResponse
-  , ConformanceResponse_Result(..)
-  , putConformanceResponse
-  , mkConformanceResponse
-  )
+import Conformance.Conformance (ConformanceRequest(..), ConformanceResponse, ConformanceResponse_Result(..), mkConformanceResponse, parseConformanceRequest, putConformanceResponse)
 import Conformance.Conformance as C
 import Control.Monad.Writer (tell)
 import Data.ArrayBuffer.Builder (execPut, subBuilder, putInt32le)
@@ -23,10 +16,10 @@ import Node.Buffer (toArrayBuffer, fromArrayBuffer)
 import Node.Encoding (Encoding(..))
 import Node.Process (stdin, stdout, stderr, exit)
 import Node.Stream (onReadable, read, write, writeString)
+import Protobuf.Common (Bytes(..))
 import ProtobufTestMessages.Proto3.TestMessagesProto3 as T3
 import Text.Parsing.Parser (runParserT)
 import Text.Parsing.Parser.DataView (anyInt32le)
-import Protobuf.Common (Bytes(..))
 
 bailOutMaybe :: forall a. String -> Effect (Maybe a) -> Effect a
 bailOutMaybe err thing =
@@ -65,9 +58,20 @@ main = do
 reply :: ConformanceRequest -> Effect ConformanceResponse
 
 reply (ConformanceRequest
-  { requested_output_format: Just C.WireFormat_PROTOBUF
-  , message_type: Just "protobuf_test_messages.proto3.TestAllTypesProto3"
+  { requested_output_format: _ -- :: Maybe.Maybe WireFormat
+  , message_type: Just "protobuf_test_messages.proto2.TestAllTypesProto2"
   , test_category: _ -- :: Maybe.Maybe TestCategory
+  , jspb_encoding_options: _ -- :: Maybe.Maybe JspbEncodingConfig
+  , print_unknown_fields: _ -- :: Maybe.Maybe Boolean
+  , payload: _ -- Just (C.ConformanceRequest_Payload_Protobuf_payload arraybuffer)
+  }) = pure $ mkConformanceResponse
+  { result: Just $ ConformanceResponse_Result_Skipped "Skipped proto2"
+  }
+
+reply (ConformanceRequest
+  { requested_output_format: Just C.WireFormat_PROTOBUF
+  , message_type: _ -- Just "protobuf_test_messages.proto3.TestAllTypesProto3"
+  , test_category: Just C.TestCategory_BINARY_TEST
   , jspb_encoding_options: _ -- :: Maybe.Maybe JspbEncodingConfig
   , print_unknown_fields: _ -- :: Maybe.Maybe Boolean
   , payload: Just (C.ConformanceRequest_Payload_Protobuf_payload (Bytes receipt_payload))
@@ -84,17 +88,6 @@ reply (ConformanceRequest
         pure $ mkConformanceResponse
           { result: Just $ ConformanceResponse_Result_Protobuf_payload (Bytes reply_payload)
           }
-
-reply (ConformanceRequest
-  { requested_output_format: _ -- :: Maybe.Maybe WireFormat
-  , message_type: Just "protobuf_test_messages.proto2.TestAllTypesProto2"
-  , test_category: _ -- :: Maybe.Maybe TestCategory
-  , jspb_encoding_options: _ -- :: Maybe.Maybe JspbEncodingConfig
-  , print_unknown_fields: _ -- :: Maybe.Maybe Boolean
-  , payload: _ -- Just (C.ConformanceRequest_Payload_Protobuf_payload arraybuffer)
-  }) = pure $ mkConformanceResponse
-  { result: Just $ ConformanceResponse_Result_Skipped "Skipped proto2"
-  }
 
 reply _ = pure $ mkConformanceResponse
   { result: Just $ ConformanceResponse_Result_Skipped "Not enough information"

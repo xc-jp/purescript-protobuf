@@ -17,11 +17,16 @@ We aim to support binary-encoded (not JSON-encoded)
 `syntax = "proto3";` descriptor files.
 
 Many `syntax = "proto2";` descriptor files will
-also work, as long as they don't use __proto2__ features, like
-[groups](https://developers.google.com/protocol-buffers/docs/proto#groups).
+also work, as long as they don't use `"proto2"` features, especially
+[groups](https://developers.google.com/protocol-buffers/docs/proto#groups),
+which we do not support.
 
 The generated optional record fields will use `Nothing` instead of the
-[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default).
+[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default)
+when a field is not present.
+This equivalent to
+[*explicit presence tracking*](https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md)
+for all fields.
 
 We do not support
 [extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
@@ -33,7 +38,7 @@ We do not support
 
 At the time of this writing, we pass all 651 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-wire-format [Protocol Buffers v3.14.0](https://github.com/protocolbuffers/protobuf/blob/f763a2a86084371fd0da95f3eeb879c2ff26b06d/CHANGES.txt#L223).
+for binary-wire-format [Protocol Buffers v3.15.8](https://github.com/protocolbuffers/protobuf/blob/f763a2a86084371fd0da95f3eeb879c2ff26b06d/CHANGES.txt#L223).
 
 See the `conformance/README.md` in this repository for details.
 
@@ -258,8 +263,8 @@ for further examples of how to use the generated code.
 
 The [Protobuf Decoder Explainer](http://jamesdbrock.github.io/protobuf-decoder-explainer/) shows an
 example of how to use this library to parse binary protobuf when we don’t
-have access to the `.proto` descriptor schema file and can’t generate code
-to read messages.
+have access to the `.proto` descriptor schema file and can’t generate
+message-reading code.
 
 ### Interpreting invalid encoding parse failures
 
@@ -311,3 +316,7 @@ See the `nix/demo.nix` file for an example.
 ## Contributing
 
 Pull requests welcome.
+
+## Other References
+
+* [Third-Party Add-ons for Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/master/docs/third_party.md)

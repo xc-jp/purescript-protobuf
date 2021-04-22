@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package pack6;
+
+// import "google/protobuf/unittest_proto3_optional.proto";
+
+message Msg6 {
+  int32 singular_int32 = 1;
+  optional int32 optional_int32 = 2;
+}
+
+

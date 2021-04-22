@@ -23,6 +23,6 @@ let
     rev = "c6cc7edc7c180ef01f23bc2aff31a1cbb5524b0d";
   }) { inherit pkgs; };
 
-  protobuf = (import ./protobuf.nix { inherit pkgs; }).protobuf_v3_14_0;
+  protobuf = (import ./protobuf.nix { inherit pkgs; }).protobuf_v3_15_8;
 
 in pkgs // { inherit easy-ps; inherit spago2nix; inherit node2nix; inherit protobuf; }
