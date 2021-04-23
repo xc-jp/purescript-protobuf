@@ -19,7 +19,7 @@ module ProtocPlugin.Main (main) where
 
 import Prelude
 
-import Data.Array (catMaybes, concatMap, filter, fold)
+import Data.Array (catMaybes, concatMap, fold)
 import Data.Array as Array
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
@@ -31,9 +31,7 @@ import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
 import Data.String.Regex.Flags as String.Regex.Flags
 import Data.Traversable (sequence, traverse)
-import Data.TraversableWithIndex (traverseWithIndex)
 import Data.Tuple (Tuple(..))
-import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Google.Protobuf.Compiler.Plugin (CodeGeneratorRequest(..), CodeGeneratorResponse, CodeGeneratorResponse_File(..), mkCodeGeneratorResponse, parseCodeGeneratorRequest, putCodeGeneratorResponse)
 import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FieldOptions(..), FileDescriptorProto(..), OneofDescriptorProto(..))
@@ -145,7 +143,7 @@ genFile proto_file (FileDescriptorProto
         lookupPackageByFilepath =
           case Array.find (\(FileDescriptorProto f) -> maybe false (_ == fpath) f.name) proto_file of
             Just (FileDescriptorProto {package: Just p}) -> Right $ String.split (String.Pattern.Pattern ".") p
-            _ -> Left $ "Failed lookupPackageByFilepath " <> fpath
+            _ -> Left $ "Failed genImport lookupPackageByFilepath " <> fpath
         mkImportName
           :: String -- file path
           -> Array String -- package name
@@ -194,10 +192,6 @@ genFile proto_file (FileDescriptorProto
   -- We have an r and we're merging an l.
   -- About merging: https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md
   let genFieldMerge :: FieldDescriptorProto -> Resp String
-      -- genFieldMerge (FieldDescriptorProto
-      --   { oneof_index: Just _
-      --   , proto3_optional
-      --   }) | maybe true not proto3_optional = Right $ Nothing -- Oneof case handled separately by genFieldMergeOneof, unless it's a synthetic oneof for proto3_optional
       genFieldMerge (FieldDescriptorProto
         { name: Just name'
         , label: Just FieldDescriptorProto_Label_LABEL_REPEATED
@@ -218,14 +212,10 @@ genFile proto_file (FileDescriptorProto
        where fname = decapitalize name'
       genFieldMerge _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
 
-  -- let genFieldMergeOneof :: NameSpace -> Array FieldDescriptorProto -> Int -> OneofDescriptorProto -> Resp (Maybe String)
-  --     -- genFieldMergeOneof _ [FieldDescriptorProto{proto3_optional:Just true}] _ _ = Right Nothing -- skip the optional synthetic oneof
-  --     genFieldMergeOneof nameSpace allfields oneof_index (OneofDescriptorProto {name: Just oname}) =
   let genFieldMergeOneof
         :: NameSpace
         -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto))
         -> Resp String
-      -- genFieldMergeOneof _ [FieldDescriptorProto{proto3_optional:Just true}] _ _ = Right Nothing -- skip the optional synthetic oneof
       genFieldMergeOneof nameSpace (Tuple (OneofDescriptorProto {name: Just oname}) _) =
         Right $ fname <> ": merge" <> cname <> " l." <> fname <> " r." <> fname
        where
@@ -237,16 +227,12 @@ genFile proto_file (FileDescriptorProto
         :: NameSpace
         -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto))
         -> Resp String
-      -- genOneofMerge _ [FieldDescriptorProto{proto3_optional:Just true}] _ _ = Right Nothing -- skip the optional synthetic oneof
       genOneofMerge nameSpace (Tuple (OneofDescriptorProto {name: Just oname}) fields)  = do
         Right $ "merge" <> cname <> " :: Maybe.Maybe " <> cname <> " -> Maybe.Maybe " <> cname <> " -> Maybe.Maybe " <> cname <> "\n"
           <> "merge" <> cname <> " l r = case Tuple.Tuple l r of\n"
           <> (fold $ catMaybes $ map genField fields)
           <> "  _ -> Alt.alt l r\n"
        where
-        -- fields = filter ownfield allfields
-        -- ownfield (FieldDescriptorProto {oneof_index: Just i}) = i == oneof_index
-        -- ownfield _ = false
         cname = String.joinWith "_" $ map capitalize $ nameSpace <> [oname]
         genField :: FieldDescriptorProto -> Maybe String
         genField (FieldDescriptorProto
@@ -259,15 +245,10 @@ genFile proto_file (FileDescriptorProto
         genField _ = Nothing
       genOneofMerge _ _ = Left "Failed genOneofMerge missing name"
 
-
   let genTypeOneof
         :: NameSpace
-        -- -> Array FieldDescriptorProto
-        -- -> Int
-        -- -> OneofDescriptorProto
         -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto))
         -> Resp String
-      -- genTypeOneof _ [FieldDescriptorProto{proto3_optional:Just true}] _ _ = Right Nothing -- skip the optional synthetic oneof -- TODO
       genTypeOneof nameSpace (Tuple (OneofDescriptorProto {name: Just oname}) pfields) = do
         fields <- catMaybes <$> traverse go pfields
         Right $ String.joinWith "\n"
@@ -285,11 +266,6 @@ genFile proto_file (FileDescriptorProto
         go (FieldDescriptorProto {name: Just fname, oneof_index: Just index, type: Just ftype, type_name}) = do
           fieldType <- genFieldType ftype type_name
           Right $ Just $ (String.joinWith "_" $ map capitalize [cname,fname]) <> " " <> fieldType
-          --   if index == indexOneof
-          --     then do
-          --       fieldType <- genFieldType ftype type_name
-          --       Right $ Just $ (String.joinWith "_" $ map capitalize [cname,fname]) <> " " <> fieldType
-          --     else Right Nothing -- skip this Oneof
          where
           genFieldType :: FieldDescriptorProto_Type -> Maybe String -> Resp String
           genFieldType FieldDescriptorProto_Type_TYPE_DOUBLE _ = Right "Number"
@@ -317,12 +293,8 @@ genFile proto_file (FileDescriptorProto
 
   let genIsDefaultOneof
         :: NameSpace
-        -- -> Array FieldDescriptorProto
-        -- -> Int
-        -- -> OneofDescriptorProto
         -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto))
         -> Resp String
-      -- genIsDefaultOneof _ [FieldDescriptorProto{proto3_optional:Just true}] _ _ = Right Nothing -- skip the optional synthetic oneof TODO
       genIsDefaultOneof nameSpace (Tuple (OneofDescriptorProto {name: Just oname}) pfields)  = do
         fields <- catMaybes <$> traverse go pfields
         Right $ String.joinWith "\n"
@@ -340,10 +312,6 @@ genFile proto_file (FileDescriptorProto
         go _ = Right Nothing
       genIsDefaultOneof _ _ = Left $ "Failed genIsDefaultOneof missing OneofDescriptorProto name\n"
 
-
-  -- let genOneofPut :: NameSpace -> Array FieldDescriptorProto -> Int -> OneofDescriptorProto -> Resp (Maybe String)
-  --     -- genOneofPut _ [FieldDescriptorProto{proto3_optional:Just true}] _ _ = Right Nothing -- if it's an optional synthetic Oneof then we handle it as a singular field -- TODO
-  --     genOneofPut nameSpace field oindex (OneofDescriptorProto {name: Just oname}) =
   let genOneofPut :: NameSpace -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) -> Resp String
       genOneofPut nameSpace (Tuple (OneofDescriptorProto {name: Just oname}) myfields) =
         map (String.joinWith "\n") $ sequence $
@@ -353,9 +321,6 @@ genFile proto_file (FileDescriptorProto
         <>
         (map genOneofFieldPut myfields)
        where
-        -- myfields = Array.filter ismine field
-        -- ismine f@(FieldDescriptorProto {oneof_index: Just i}) = i == oindex
-        -- ismine _ = false
         genOneofFieldPut :: FieldDescriptorProto -> Resp String
         genOneofFieldPut (FieldDescriptorProto
           { name: Just name'
@@ -415,13 +380,9 @@ genFile proto_file (FileDescriptorProto
         , label: Just flabel
         , type: Just ftype
         , type_name
-        -- , oneof_index
         , options
         , proto3_optional
         }) = go flabel ftype type_name options
-        -- }) = case oneof_index of
-        --   (Just _) | not isSyntheticOneof -> Right Nothing -- must not be a member of a Oneof, that case handled seperately, unless it's an optional synthetic Oneof
-        --   _ -> go flabel ftype type_name options
        where
         isSyntheticOneof = fromMaybe false proto3_optional
         fname = decapitalize name'
@@ -546,7 +507,6 @@ genFile proto_file (FileDescriptorProto
           then Right $ "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " (\\_ -> false) Encode.sint64"
           else Right $ "  Runtime.putOptional " <> show fnumber <> " r." <> fname <> " Common.isDefault Encode.sint64"
         go _ FieldDescriptorProto_Type_TYPE_GROUP _ _ = Left "Failed genFieldPut GROUP not supported"
-      -- genFieldPut _ (FieldDescriptorProto { oneof_index: Just _ }) = Right Nothing -- It's a Oneof, this case is handled separately
       genFieldPut _ arg = Left $ "Failed genFieldPut missing FieldDescriptorProto name or number or label or type\n" <> show arg
 
   let genFieldParser :: NameSpace -> Array OneofDescriptorProto -> FieldDescriptorProto -> Resp String
@@ -894,14 +854,7 @@ genFile proto_file (FileDescriptorProto
         , oneof_index
         , proto3_optional
         }) = (map<<<map) (\x -> fname <> " :: " <> x) $ ptype flabel ftype type_name
-        -- }) = if isNonSyntheticOneof
-        --   then Right Nothing -- for Oneofs which are not optional synthetic Oneofs, we handle it in genFieldRecordOneof
-        --   else (map<<<map) (\x -> fname <> " :: " <> x) $ ptype flabel ftype type_name
        where
-        -- isNonSyntheticOneof = case oneof_index /\ proto3_optional of
-        --   Just _ /\ Nothing -> true
-        --   Just _ /\ Just false -> true
-        --   _ -> false
         fname = decapitalize name'
         ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ = Right $ Just "Array Number"
         ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ = Right $ Just "Array Float32.Float32"
@@ -966,43 +919,13 @@ genFile proto_file (FileDescriptorProto
       genMessage (ScopedMsg nameSpace (DescriptorProto {name: Just msgName, field, oneof_decl})) =
         let tname = mkTypeName $ nameSpace <> [msgName]
 
-            -- oneof_nonsynthetic = -- everything is oneof_decl that's not an optional synthetic oneof
-            --   catMaybes $ flip Array.mapWithIndex oneof_decl \i o ->
-            --     index i field >>= case _ of
-            --       (FieldDescriptorProto{proto3_optional: Just true}) -> Nothing
-            --       f@(FieldDescriptorProto{oneof_index: Just j}) | i==j -> Just f
-            --       _ -> Nothing
-
-            -- selectOneof :: FieldDescriptorProto -> Maybe (Array OneofDecriptorProto) -- select the oneof_decls for one field
-            -- selectOneof (FieldDescriptorProto{proto3_optional: Just true}) = Nothing -- if it's an optional synthetic Oneof, then we don't consider it a Oneof
-            -- selectOneof (FieldDescriptorProto{oneof_index: Just j}) = Array.index oneof_decl j
-            -- selectOneof _ = Nothing
-
             oneof_decl_fields = selectOneofFields oneof_decl field
-            -- oneof_decl_fields :: Array (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) -- The `oneof_decl` array annotated with which fields belong to it,
-            --                                                                                      -- excluding optional synthetic Oneofs.
-            -- oneof_decl_fields = catMaybes $ flip Array.mapWithIndex oneof_decl \i o -> do
-            --   let fields = flip Array.filter field $ case _ of
-            --         (FieldDescriptorProto{oneof_index: Just j}) | i==j -> true
-            --         _ -> false
-            --   case fields of
-            --     [FieldDescriptorProto{proto3_optional: Just true}] -> Nothing
-            --     _ -> Just $ Tuple o fields
-
-            -- oneof_decl_fields = catMaybes $ flip Array.mapWithIndex oneof_decl \i o -> Tuple o $
-            --   flip Array.filter field $ case _ of
-            --     -- FieldDescriptorProto{proto3_optional: Just true} -> false -- exclude
-            --     (FieldDescriptorProto{oneof_index: Just j}) | i==j -> true
-            --     _ -> false
-
             fields_singular :: Array FieldDescriptorProto -- the `field` array restricted to fields which are not in a Oneof,
                                                           -- but including fields which are in an optional synthetic Oneof
             fields_singular = catMaybes $ field <#> case _ of
               f@(FieldDescriptorProto{proto3_optional: Just true}) -> Just f
               (FieldDescriptorProto{oneof_index: Just _}) -> Nothing
               f -> Just f
-
-
         in
         map (String.joinWith "\n") $ sequence
           [ Right $ "\ntype " <> tname <> "Row ="
@@ -1010,7 +933,7 @@ genFile proto_file (FileDescriptorProto
             <>
             ( map (String.joinWith "\n  , ") $
                 (  (catMaybes <$> traverse (genFieldRecord nameSpace) fields_singular)
-                <> (traverse (genFieldRecordOneof (nameSpace <> [msgName])) oneof_decl_fields) -- TODO optional synthetic oneof
+                <> (traverse (genFieldRecordOneof (nameSpace <> [msgName])) oneof_decl_fields)
                 <> Right ["__unknown_fields :: Array Runtime.UnknownField"]
                 )
             )
@@ -1065,7 +988,7 @@ genFile proto_file (FileDescriptorProto
             <>
             (map (String.joinWith "\n  , ")
               (  (traverse genFieldMerge fields_singular)
-              <> (traverse (genFieldMergeOneof (nameSpace <> [msgName])) oneof_decl_fields) -- TODO synthetic oneof
+              <> (traverse (genFieldMergeOneof (nameSpace <> [msgName])) oneof_decl_fields)
               <> Right ["__unknown_fields: r.__unknown_fields <> l.__unknown_fields"]
               )
             )
@@ -1104,7 +1027,6 @@ import Data.Generic.Rep.Bounded as Generic.Rep.Bounded
 import Data.Generic.Rep.Enum as Generic.Rep.Enum
 import Data.Generic.Rep.Ord as Generic.Rep.Ord
 import Data.Semigroup as Semigroup
-import Data.Semiring as Semiring
 import Data.String as String
 import Data.Symbol as Symbol
 import Record as Record
@@ -1194,8 +1116,6 @@ import Protobuf.Runtime as Runtime
   -- excluding optional synthetic Oneofs.
   selectOneofFields :: Array OneofDescriptorProto -> Array FieldDescriptorProto -> Array (Tuple OneofDescriptorProto (Array FieldDescriptorProto))
   selectOneofFields oneof_decl field =
-              -- oneof_decl_fields :: Array (Tuple OneofDescriptorProto (Array FieldDescriptorProto))
-              -- oneof_decl_fields =
     catMaybes $ flip Array.mapWithIndex oneof_decl \i o -> do
       let fields = flip Array.filter field $ case _ of
             (FieldDescriptorProto{oneof_index: Just j}) | i==j -> true
@@ -1276,8 +1196,6 @@ import Protobuf.Runtime as Runtime
   genFieldDefault (FieldDescriptorProto
     { name: Just name'
     , label: Just flabel
-    -- , oneof_index
-    -- }) = Right $ (\x -> fname <> ": " <> x) <$> dtype oneof_index flabel
     }) = Right $ fname <> ": " <> dtype flabel
    where
     fname = decapitalize name'

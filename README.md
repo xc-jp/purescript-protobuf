@@ -300,7 +300,10 @@ For that reason, we can only use top-level
 ### PureScript Imports
 
 The generated Purescript code will usually have module imports which cause
-the `purs` compiler to emit warnings. We beg your pardon.
+the `purs` compiler to emit redundant import warnings. Sorry. If this causes
+trouble then the imports can be fixed automatically in a precompiling pass
+with the command-line tool
+[__purescript-suggest__](https://github.com/nwolverson/purescript-suggest).
 
 ## Nix derivation
 

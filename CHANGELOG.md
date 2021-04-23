@@ -1,6 +1,8 @@
 # v1.7.0
 
-Upgraded from Protobuf v3.14.0 to v3.15.8
+Upgraded from Protobuf v3.14.0 to v3.15.8.
+
+Now supporting [proto3 field presence](https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md).
 
 # v1.6.0
 
