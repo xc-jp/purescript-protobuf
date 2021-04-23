@@ -36,10 +36,9 @@ We do not support
 
 ### Conformance and Testing
 
-At the time of this writing, we pass all 651 of the
+In this version, we pass all 651 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-wire-format [Protocol Buffers v3.15.8](https://github.com/protocolbuffers/protobuf/blob/f763a2a86084371fd0da95f3eeb879c2ff26b06d/CHANGES.txt#L223).
-
+for binary-wire-format [Protocol Buffers v3.15.8](https://github.com/protocolbuffers/protobuf/blob/master/CHANGES.txt).
 See the `conformance/README.md` in this repository for details.
 
 We also have our own unit tests, see `test/README.md` in this repository.
