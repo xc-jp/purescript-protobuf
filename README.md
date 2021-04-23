@@ -38,7 +38,7 @@ We do not support
 
 In this version, we pass all 651 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-for binary-wire-format [Protocol Buffers v3.15.8](https://github.com/protocolbuffers/protobuf/blob/master/CHANGES.txt).
+of binary-wire-format *proto3* for [Protocol Buffers v3.15.8](https://github.com/protocolbuffers/protobuf/blob/master/CHANGES.txt).
 See the `conformance/README.md` in this repository for details.
 
 We also have our own unit tests, see `test/README.md` in this repository.
@@ -176,7 +176,7 @@ At this point we've consumed all of the parser input and constructed our
 `Rectangle` message, but we're not finished parsing.
 We want to “validate” the `Rectangle` message to make sure it has all of the
 fields that we require, because in
-[proto3, all fields are optional](https://github.com/protocolbuffers/protobuf/issues/2497).
+[*proto3*, all fields are optional](https://github.com/protocolbuffers/protobuf/issues/2497).
 
 Fortunately we are already in the `ParserT` monad,
 so we can do better than to “validate”:
