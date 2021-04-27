@@ -21,13 +21,6 @@ also work, as long as they don't use `"proto2"` features, especially
 [groups](https://developers.google.com/protocol-buffers/docs/proto#groups),
 which we do not support.
 
-The generated optional record fields will use `Nothing` instead of the
-[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default)
-when a field is not present.
-This equivalent to
-[*explicit presence tracking*](https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md)
-for all fields.
-
 We do not support
 [extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
 
@@ -264,6 +257,26 @@ The [Protobuf Decoder Explainer](http://jamesdbrock.github.io/protobuf-decoder-e
 example of how to use this library to parse binary protobuf when we don’t
 have access to the `.proto` descriptor schema file and can’t generate
 message-reading code.
+
+### Presence Discipline
+
+This is how [*field presence*](https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md) works
+in our implementation.
+
+#### When deserializing
+
+The generated record fields will always be `Nothing` when a field is not present on the wire.
+If we want to use
+[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default) then
+we have the `Protobuf.Library.Default` typeclass for that.
+
+#### When serializing
+
+The *no presence* fields will not be serialized when they are `Nothing` or `Just` their
+default value.
+
+The *explicit presence* (`optional`) fields will not be serialized when they are `Nothing`.
+They will be serialized when they are `Just` their default value.
 
 ### Interpreting invalid encoding parse failures
 
