@@ -40,7 +40,7 @@ We also have our own unit tests, see `test/README.md` in this repository.
 
 The `shell.nix` environment provides
 
-* The Purescript toolchain: `purs`, `spago`, and `npm`.
+* The PureScript toolchain: `purs`, `spago`, and `npm`.
 * The [`protoc`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating) compiler
 * The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
   [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
@@ -61,7 +61,7 @@ To generate Purescript .purs files from .proto files, run:
 [nix-shell]$
 ```
 
-If you don't want to use Nix, then install the Purescript toolchain and `protoc`,
+If you don't want to use Nix, then install the PureScript toolchain and `protoc`,
 and add the executable script
 [`bin/protoc-gen-purescript`](bin/protoc-gen-purescript)
 to your `PATH`.
@@ -69,7 +69,7 @@ to your `PATH`.
 ## Writing programs with the generated code
 
 The code generator will use the `package` import statement in the `.proto` file
-and the base `.proto` file name as the Purescript module name for that file.
+and the base `.proto` file name as the PureScript module name for that file.
 
 A message in a `shapes.proto` descriptor file declared as
 
