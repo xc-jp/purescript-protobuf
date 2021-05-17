@@ -23,7 +23,7 @@ let
     src = builtins.fetchGit {
       url = "https://github.com/protocolbuffers/protobuf";
       rev = "52b2447247f535663ac1c292e088b4b27d2910ef";
-      inherit ref;
+      ref = "refs/tags/${ref}";
     };
   };
   protobuf_repo_v3_14_0 = rec {
@@ -31,7 +31,7 @@ let
     src = builtins.fetchGit {
       url = "https://github.com/protocolbuffers/protobuf";
       rev = "2514f0bd7da7e2af1bed4c5d1b84f031c4d12c10";
-      inherit ref;
+      ref = "refs/tags/${ref}";
     };
   };
   protobuf_repo_v3_15_8 = rec {
@@ -39,7 +39,7 @@ let
     src = builtins.fetchGit {
       url = "https://github.com/protocolbuffers/protobuf";
       rev = "436bd7880e458532901c58f4d9d1ea23fa7edd52";
-      inherit ref;
+      ref = "refs/tags/${ref}";
     };
   };
 
@@ -60,13 +60,13 @@ let
     configurePhase = ''
       ./autogen.sh
       ./configure --prefix=$out
-      '';
+    '';
     buildPhase = ''
       make --jobs=$NIX_BUILD_CORES
       cd conformance
       make
       cd ..
-      '';
+    '';
     installPhase = ''
       mkdir -p $out
       make install
@@ -77,17 +77,18 @@ let
       rsync -am --include='*.proto' --include='*/' --exclude='*' src $out/
       mkdir -p $out/conformance
       cp ./conformance/conformance.proto $out/conformance/
-      '';
+    '';
     LC_ALL = "C.UTF-8";
   };
 
-in {
-inherit protobuf_repo_v3_9_2;
-inherit protobuf_repo_v3_14_0;
-inherit protobuf_repo_v3_15_8;
-protobuf_v3_9_2 = mkProtobuf protobuf_repo_v3_9_2;
-protobuf_v3_14_0 = mkProtobuf protobuf_repo_v3_14_0;
-protobuf_v3_15_8 = mkProtobuf protobuf_repo_v3_15_8;
+in
+{
+  inherit protobuf_repo_v3_9_2;
+  inherit protobuf_repo_v3_14_0;
+  inherit protobuf_repo_v3_15_8;
+  protobuf_v3_9_2 = mkProtobuf protobuf_repo_v3_9_2;
+  protobuf_v3_14_0 = mkProtobuf protobuf_repo_v3_14_0;
+  protobuf_v3_15_8 = mkProtobuf protobuf_repo_v3_15_8;
 }
 
 
