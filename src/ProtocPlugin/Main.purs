@@ -548,7 +548,8 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Decode.float"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
           , "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
-          , "    x <- Runtime.parseLenDel $ Runtime.manyLengthFloat"
+          -- , "    x <- Runtime.parseLenDel $ Runtime.manyLengthFloat"
+          , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.float"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
           ]
         go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = Right $ String.joinWith "\n"

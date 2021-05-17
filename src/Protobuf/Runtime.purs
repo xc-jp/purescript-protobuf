@@ -142,19 +142,19 @@ foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
 -- | but faster.
 manyLengthFloat :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
 manyLengthFloat len = label "manyLengthFloat / " do
-  -- let Tuple count leftover = len `divMod` 4
   let count = len `div` 4
       leftover = len `mod` 4
   when (leftover /= 0) $ fail "Cannot consume a byteLength indivisible by 4."
-  -- if (leftover /= 0) then fail "Cannot consume a byteLength indivisible by 4." else pure unit
   posBegin <- positionZero
   dv <- takeN len
-  let buf = DV.buffer dv
-      offset = DV.byteOffset dv
-  at :: Float32Array <- lift $ liftEffect $ AT.part buf (offset + posBegin) count
-  lift $ liftEffect $ AT.toArray at
-  -- pure []
+  -- let buf = DV.buffer dv
+  --     offset = DV.byteOffset dv
+  -- at :: Float32Array <- lift $ liftEffect $ AT.part buf (offset + posBegin) count
+  -- lift $ liftEffect $ AT.toArray at -- RangeError: start offset of Float32Array should be a multiple of 4
+  pure $ unsafeCopyFloat32 dv count
 
+-- | Copy *N* `Float32`s from the `DataView` into a new `Array`.
+foreign import unsafeCopyFloat32 :: DataView -> Int -> Array Float32
 
 data UnknownField
   = UnknownVarInt FieldNumber (Long Unsigned)
