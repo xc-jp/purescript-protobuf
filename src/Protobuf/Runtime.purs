@@ -12,6 +12,7 @@ module Protobuf.Runtime
 , FieldNumberInt
 , positionZero
 , manyLength
+, manyLengthFloat
 , putLenDel
 , putOptional
 , putRepeated
@@ -29,12 +30,15 @@ import Prelude
 import Control.Monad.Error.Class (throwError, catchError)
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.Trans.Class (lift)
+import Data.Argonaut ((.!=))
 import Data.Array (snoc)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
-import Data.ArrayBuffer.Types (DataView, ByteLength)
+import Data.ArrayBuffer.Typed as AT
+import Data.ArrayBuffer.Types (ByteLength, DataView, Float32Array)
 import Data.Enum (class BoundedEnum, fromEnum, toEnum)
+import Data.Float32 (Float32)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -43,9 +47,10 @@ import Data.Long.Unsigned as Long.Unsigned
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
+import Data.Typelevel.Num (divMod)
 import Data.UInt (UInt)
 import Data.UInt as UInt
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Protobuf.Common (Bytes(..), FieldNumber, WireType(..))
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
@@ -131,6 +136,24 @@ manyLength p len = do
 -- | With Purescript's strict semantics, we can probably get away
 -- | with this?
 foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
+
+-- | `manyLength` specialized to parse little-endian `Float32`.
+-- | Equivalent to `manyLength Protobuf.Decode.float`,
+-- | but faster.
+manyLengthFloat :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
+manyLengthFloat len = label "manyLengthFloat / " do
+  -- let Tuple count leftover = len `divMod` 4
+  let count = len `div` 4
+      leftover = len `mod` 4
+  when (leftover /= 0) $ fail "Cannot consume a byteLength indivisible by 4."
+  -- if (leftover /= 0) then fail "Cannot consume a byteLength indivisible by 4." else pure unit
+  posBegin <- positionZero
+  dv <- takeN len
+  let buf = DV.buffer dv
+      offset = DV.byteOffset dv
+  at :: Float32Array <- lift $ liftEffect $ AT.part buf (offset + posBegin) count
+  lift $ liftEffect $ AT.toArray at
+  -- pure []
 
 
 data UnknownField

@@ -17,7 +17,7 @@ import Effect.Unsafe (unsafePerformEffect)
 import Performance.Minibench (bench, benchWith)
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
-import Protobuf.Runtime (manyLength)
+import Protobuf.Runtime (manyLength, manyLengthFloat)
 import Text.Parsing.Parser (runParserT)
 
 main :: Effect Unit
@@ -48,6 +48,10 @@ main = do
   log "\nmanyLength float 10e4"
   benchWith 100 $ \_ -> void $ unsafePerformEffect $ runParserT (whole buf10e4) do
     manyLength (Decode.float) (byteLength buf10e4)
+
+  log "\nmanyLengthFloat specialized 10e4"
+  benchWith 100 $ \_ -> void $ unsafePerformEffect $ runParserT (whole buf10e4) do
+    manyLengthFloat (byteLength buf10e4)
 
   buf10e5 <- empty (4*100000)
   buf10e5Float :: Float32Array <- Typed.whole buf10e5
