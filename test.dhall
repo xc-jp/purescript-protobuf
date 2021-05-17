@@ -19,5 +19,6 @@ in conf //
   , dependencies = conf.dependencies #
     [ "assert"
     , "psci-support"
+    , "minibench"
     ]
   }
