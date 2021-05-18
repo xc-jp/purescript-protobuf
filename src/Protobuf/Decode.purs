@@ -36,8 +36,9 @@ import Control.Monad.Trans.Class (lift)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView (AProxy(..), getFloat32le, getFloat64le, getInt32le, getUint32le)
 import Data.ArrayBuffer.DataView as DV
+import Data.ArrayBuffer.Typed (class TypedArray)
 import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer.Types (ByteLength, ByteOffset, DataView, Uint8Array, kind ArrayViewType)
+import Data.ArrayBuffer.Types (ArrayView, ByteLength, ByteOffset, DataView, Uint8Array, kind ArrayViewType)
 import Data.ArrayBuffer.Types as ArrayTypes
 import Data.ArrayBuffer.ValueMapping (class BinaryValue, class BytesPerValue, class ShowArrayViewType)
 import Data.Either (Either(..))
@@ -74,15 +75,34 @@ float = Parse.anyFloat32le
 
 -- | __repeated packed float__
 floatArray :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Float32)
-floatArray = typedArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
+floatArray = endianTypedArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
+
+endianTypedArray ::
+  forall a m b t name.
+  BinaryValue a t =>
+  BytesPerValue a b =>
+  ShowArrayViewType a name =>
+  IsSymbol name =>
+  TypedArray a t =>
+  Nat b =>
+  MonadEffect m =>
+  AProxy a ->
+  (DataView -> ByteOffset -> Effect (Maybe t)) ->
+  Int -> ParserT DataView m (Array t)
+endianTypedArray a p n = do
+  big <- lift (liftEffect _isBigEndian)
+  if big then
+    typedArray a p n
+  else
+    typedArray' a n >>= lift <<< liftEffect <<< AT.toArray
 
 -- | __repeated packed double__
 doubleArray :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Number)
-doubleArray = typedArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
+doubleArray = endianTypedArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
 
 -- | __repeated packed sfixed32__
 sfixed32Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Int)
-sfixed32Array = typedArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
+sfixed32Array = endianTypedArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
 
 foreign import data BigInt64 :: ArrayViewType
 
@@ -118,7 +138,7 @@ getULongle dv idx = do
 
 -- | __repeated packed fixed32__
 fixed32Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array UInt)
-fixed32Array = typedArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
+fixed32Array = endianTypedArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
 
 -- | __repeated packed fixed64__
 fixed64Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array (Long Unsigned))
@@ -126,6 +146,8 @@ fixed64Array = typedArray (AProxy :: AProxy BigUInt64) getULongle
 
 foreign import _decodeArray ::
   forall t. (ByteOffset -> Effect t) -> Int -> Effect (Array t)
+
+foreign import _isBigEndian :: Effect Boolean
 
 -- | Parse a slice of the DataView to an Array given a parser for the
 -- | individual elements
@@ -177,6 +199,62 @@ typedArray _ decodeValue n =
                 pure (Tuple (Left (ParseError "index out of bounds" pos')) state)
               else do
                 x <- liftEffect (_decodeArray unsafeDecodeValue (n `div` byteSize))
+                pure (Tuple (pure x) (ParseState s pos' true))
+
+-- | Parse a slice of the DataView to an Array given a parser for the
+-- | individual elements
+typedArray' ::
+  forall a m b t name.
+  BinaryValue a t =>
+  BytesPerValue a b =>
+  ShowArrayViewType a name =>
+  TypedArray a t =>
+  IsSymbol name =>
+  Nat b =>
+  MonadEffect m =>
+  AProxy a ->
+  ByteLength ->
+  ParserT DataView m (ArrayView a)
+typedArray' _ n =
+  let
+    byteSize = toInt' (Proxy :: Proxy b)
+
+    name = reflectSymbol (SProxy :: SProxy name)
+  in
+    do
+      unless
+        (n `mod` byteSize == 0)
+        ( pure unit
+            >>= \_ ->
+                fail
+                  $ joinWith " "
+                      [ "byte length not a multiple of"
+                      , show byteSize
+                      , "when parsing"
+                      , name
+                      , "array"
+                      ]
+        )
+      ParserT $ ExceptT
+        $ StateT \state@(ParseState s pos@(Position { line, column }) _) ->
+            let
+              pos' = Position { line, column: column + n }
+
+              backing = DV.buffer s
+
+              start = column - 1
+
+              isAligned = start `mod` byteSize == 0
+            in
+              if column + n - 1 > DV.byteLength s then
+                pure (Tuple (Left (ParseError "index out of bounds" pos')) state)
+              else do
+                x <-
+                  liftEffect
+                    $ if isAligned then
+                        AT.part backing (start `div` byteSize) (n `div` byteSize) :: Effect (ArrayView a)
+                      else
+                        AT.whole (AB.slice start (start + n) backing)
                 pure (Tuple (pure x) (ParseState s pos' true))
 
 -- | __int32__
