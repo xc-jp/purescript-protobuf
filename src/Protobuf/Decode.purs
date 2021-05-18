@@ -36,8 +36,9 @@ import Control.Monad.Trans.Class (lift)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView (AProxy(..), getFloat32le, getFloat64le, getInt32le, getUint32le)
 import Data.ArrayBuffer.DataView as DV
+import Data.ArrayBuffer.Typed (class TypedArray)
 import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer.Types (ByteLength, ByteOffset, DataView, Uint8Array, kind ArrayViewType)
+import Data.ArrayBuffer.Types (ArrayView, ByteLength, ByteOffset, DataView, Uint8Array, kind ArrayViewType)
 import Data.ArrayBuffer.Types as ArrayTypes
 import Data.ArrayBuffer.ValueMapping (class BinaryValue, class BytesPerValue, class ShowArrayViewType)
 import Data.Either (Either(..))
@@ -53,6 +54,7 @@ import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Unsafe (unsafePerformEffect)
 import Partial.Unsafe (unsafePartial)
 import Protobuf.Common (Bytes(..))
 import Protobuf.Decode32 (varint32, zigzag32, tag32)
@@ -72,17 +74,39 @@ double = Parse.anyFloat64le
 float :: forall m. MonadEffect m => ParserT DataView m Float32
 float = Parse.anyFloat32le
 
+isBigEndian :: Effect Boolean
+isBigEndian = unsafePerformEffect _isBigEndian
+
+decodeArray ::
+  forall a m b t name.
+  BinaryValue a t =>
+  BytesPerValue a b =>
+  ShowArrayViewType a name =>
+  IsSymbol name =>
+  TypedArray a t =>
+  Nat b =>
+  MonadEffect m =>
+  AProxy a ->
+  (DataView -> ByteOffset -> Effect (Maybe t)) ->
+  Int -> ParserT DataView m (Array t)
+decodeArray a p n = do
+  big <- lift (liftEffect isBigEndian)
+  if big then
+    packedArray a p n
+  else
+    typedArray a n >>= lift <<< liftEffect <<< AT.toArray
+
 -- | __repeated packed float__
 floatArray :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Float32)
-floatArray = typedArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
+floatArray = decodeArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
 
 -- | __repeated packed double__
 doubleArray :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Number)
-doubleArray = typedArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
+doubleArray = decodeArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
 
 -- | __repeated packed sfixed32__
 sfixed32Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Int)
-sfixed32Array = typedArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
+sfixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
 
 foreign import data BigInt64 :: ArrayViewType
 
@@ -100,7 +124,7 @@ getLongle dv idx = do
 
 -- | __repeated packed sfixed64__
 sfixed64Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array (Long Signed))
-sfixed64Array = typedArray (AProxy :: AProxy BigInt64) getLongle
+sfixed64Array = packedArray (AProxy :: AProxy BigInt64) getLongle
 
 foreign import data BigUInt64 :: ArrayViewType
 
@@ -118,18 +142,20 @@ getULongle dv idx = do
 
 -- | __repeated packed fixed32__
 fixed32Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array UInt)
-fixed32Array = typedArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
+fixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
 
 -- | __repeated packed fixed64__
 fixed64Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array (Long Unsigned))
-fixed64Array = typedArray (AProxy :: AProxy BigUInt64) getULongle
+fixed64Array = packedArray (AProxy :: AProxy BigUInt64) getULongle
 
 foreign import _decodeArray ::
   forall t. (ByteOffset -> Effect t) -> Int -> Effect (Array t)
 
+foreign import _isBigEndian :: Effect (Effect Boolean)
+
 -- | Parse a slice of the DataView to an Array given a parser for the
 -- | individual elements
-typedArray ::
+packedArray ::
   forall a m b t name.
   BinaryValue a t =>
   BytesPerValue a b =>
@@ -141,7 +167,7 @@ typedArray ::
   (DataView -> ByteOffset -> Effect (Maybe t)) ->
   ByteLength ->
   ParserT DataView m (Array t)
-typedArray _ decodeValue n =
+packedArray _ decodeValue n =
   let
     byteSize = toInt' (Proxy :: Proxy b)
 
@@ -177,6 +203,63 @@ typedArray _ decodeValue n =
                 pure (Tuple (Left (ParseError "index out of bounds" pos')) state)
               else do
                 x <- liftEffect (_decodeArray unsafeDecodeValue (n `div` byteSize))
+                pure (Tuple (pure x) (ParseState s pos' true))
+
+-- | Parse a slice of the DataView by casting the slice to a TypedArray
+typedArray ::
+  forall a m b t name.
+  BinaryValue a t =>
+  BytesPerValue a b =>
+  ShowArrayViewType a name =>
+  TypedArray a t =>
+  IsSymbol name =>
+  Nat b =>
+  MonadEffect m =>
+  AProxy a ->
+  ByteLength ->
+  ParserT DataView m (ArrayView a)
+typedArray _ n =
+  let
+    byteSize = toInt' (Proxy :: Proxy b)
+
+    name = reflectSymbol (SProxy :: SProxy name)
+  in
+    do
+      unless
+        (n `mod` byteSize == 0)
+        ( pure unit
+            >>= \_ ->
+                fail
+                  $ joinWith " "
+                      [ "byte length not a multiple of"
+                      , show byteSize
+                      , "when parsing"
+                      , name
+                      , "array"
+                      ]
+        )
+      ParserT $ ExceptT
+        $ StateT \state@(ParseState s pos@(Position { line, column }) _) ->
+            let
+              pos' = Position { line, column: column + n }
+
+              backing = DV.buffer s
+
+              start = DV.byteOffset s + column - 1
+
+              end = start + n
+
+              isAligned = start `mod` byteSize == 0
+            in
+              if end > DV.byteLength s then
+                pure (Tuple (Left (ParseError "index out of bounds" pos')) state)
+              else do
+                x <-
+                  liftEffect
+                    $ if isAligned then
+                        AT.part backing (start `div` byteSize) (n `div` byteSize)
+                      else
+                        AT.whole (AB.slice start end backing)
                 pure (Tuple (pure x) (ParseState s pos' true))
 
 -- | __int32__
