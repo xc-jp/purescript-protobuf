@@ -6,13 +6,16 @@ import Prelude
 import Conformance.Conformance (ConformanceRequest(..), ConformanceResponse, ConformanceResponse_Result(..), mkConformanceResponse, parseConformanceRequest, putConformanceResponse)
 import Conformance.Conformance as C
 import Control.Monad.Writer (tell)
+import Control.Promise (Promise, toAff, toAffE)
 import Data.ArrayBuffer.Builder (execPut, subBuilder, putInt32le)
 import Data.ArrayBuffer.Builder as Builder
 import Data.ArrayBuffer.DataView as DV
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Node.Buffer (toArrayBuffer, fromArrayBuffer)
+import Effect.Aff (Aff, launchAff_)
+import Effect.Class (liftEffect)
+import Node.Buffer (Buffer, fromArrayBuffer, toArrayBuffer)
 import Node.Encoding (Encoding(..))
 import Node.Process (stdin, stdout, stderr, exit)
 import Node.Stream (onReadable, read, write, writeString)
@@ -36,24 +39,44 @@ bailOutEither thing = thing >>= case _ of
       exit 1
     Right x -> pure x
 
+foreign import getStdinBufferImpl :: Effect (Promise Buffer)
+getStdinBuffer :: Aff Buffer
+-- getStdinBuffer = liftEffect getStdinBufferImpl >>= toAff
+getStdinBuffer = toAffE getStdinBufferImpl
+
 -- https://github.com/protocolbuffers/protobuf/blob/master/conformance/conformance_test_runner.cc
 main :: Effect Unit
 main = do
-  onReadable stdin $ do
+  -- launchAff_ do
+    -- stdinbuf <- getStdinBuffer
+    -- liftEffect do
+  onReadable stdin do
+      stdinbuf <- bailOutMaybe "No stdin" $ read stdin Nothing
+      stdinab <- toArrayBuffer stdinbuf
+      parsedRequest <- runParserT (DV.whole stdinab) do
+    -- onReadable stdin $ do
 
-    msglendv <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No message length" $ read stdin (Just 4))
-    msglen <- bailOutEither $ runParserT msglendv $ anyInt32le
-    stdinview <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No stdin" $ read stdin (Just msglen))
-    request <- bailOutEither $ runParserT stdinview $ parseConformanceRequest $ DV.byteLength stdinview
-    response <- reply request
+        -- msglendv <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No message length" $ read stdin (Just 4))
+        -- msglen <- bailOutEither $ runParserT msglendv $ anyInt32le
+        msglen <- anyInt32le
+        -- stdinview <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No stdin" $ read stdin (Just msglen))
+        -- stdinview <- takeN msglen
+        -- request <- bailOutEither $ runParserT stdinview $ parseConformanceRequest $ DV.byteLength stdinview
+        parseConformanceRequest msglen
 
-    responseab <- execPut $ do
-       responsesub <- subBuilder $ putConformanceResponse response
-       putInt32le $ Builder.length responsesub
-       tell responsesub
+      case parsedRequest of
+        Left err -> do
+          void $ writeString stderr UTF8 (show err) (pure unit)
+        Right request -> do
+          response <- reply request
 
-    responsebuffer <- fromArrayBuffer responseab
-    void $ write stdout responsebuffer (pure unit)
+          responseab <- execPut $ do
+            responsesub <- subBuilder $ putConformanceResponse response
+            putInt32le $ Builder.length responsesub
+            tell responsesub
+
+          responsebuffer <- fromArrayBuffer responseab
+          void $ write stdout responsebuffer (pure unit)
 
 reply :: ConformanceRequest -> Effect ConformanceResponse
 

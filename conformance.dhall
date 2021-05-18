@@ -14,5 +14,7 @@ in conf //
   { sources = [ "conformance/**/*.purs", "src/Protobuf/*.purs" ]
   , dependencies = conf.dependencies #
     [ "debug"
+    , "aff"
+    , "aff-promise"
     ]
   }
