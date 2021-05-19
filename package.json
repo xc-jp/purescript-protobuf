@@ -6,5 +6,9 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "long": "^4.0.0"
+  },
+  "devDependencies": {
+    "purescript-language-server": "^0.15.0",
+    "purty": "^7.0.0"
   }
 }
