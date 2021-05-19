@@ -12,6 +12,7 @@ module Protobuf.Runtime
 , FieldNumberInt
 , positionZero
 , manyLength
+, manyLengthFloat
 , putLenDel
 , putOptional
 , putRepeated
@@ -35,6 +36,7 @@ import Data.ArrayBuffer.Builder (PutM, subBuilder)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Types (DataView, ByteLength)
 import Data.Enum (class BoundedEnum, fromEnum, toEnum)
+import Data.Float32 (Float32)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -131,6 +133,21 @@ manyLength p len = do
 -- | With Purescript's strict semantics, we can probably get away
 -- | with this?
 foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
+
+-- | `manyLength` specialized to parse little-endian `Float32`.
+-- | Equivalent to `manyLength Protobuf.Decode.float`,
+-- | but faster.
+manyLengthFloat :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
+manyLengthFloat len = label "manyLengthFloat / " do
+  let count = len `div` 4
+      leftover = len `mod` 4
+  when (leftover /= 0) $ fail "Cannot consume a byteLength indivisible by 4."
+  posBegin <- positionZero
+  dv <- takeN len
+  pure $ unsafeCopyFloat32 dv count
+
+-- | Copy *N* `Float32`s from the `DataView` into a new `Array`.
+foreign import unsafeCopyFloat32 :: DataView -> Int -> Array Float32
 
 
 data UnknownField

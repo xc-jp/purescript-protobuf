@@ -43,6 +43,13 @@ main = do
     $ \_ ->
         void $ unsafePerformEffect
           $ runParserT (whole buf10e4) (Runtime.manyLength Decode.float (byteLength buf10e4))
+
+  log "\nmanyLengthFloat 10e4"
+  benchWith 100
+    $ \_ ->
+        void $ unsafePerformEffect
+          $ runParserT (whole buf10e4) (Runtime.manyLengthFloat (byteLength buf10e4))
+
   buf10e5 <- empty (4 * 100000)
   buf10e5Float :: Float32Array <- Typed.whole buf10e5
   Typed.fill (fromNumber' 1.0) 0 99999 buf10e5Float
