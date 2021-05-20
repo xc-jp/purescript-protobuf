@@ -540,7 +540,7 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Decode.double"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
           , "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
-          , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.double"
+          , "    x <- Runtime.parseLenDel $ Decode.doubleArray"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
           ]
         go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ = Right $ String.joinWith "\n"
@@ -548,7 +548,7 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Decode.float"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
           , "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
-          , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.float"
+          , "    x <- Runtime.parseLenDel $ Decode.floatArray"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
           ]
         go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = Right $ String.joinWith "\n"
@@ -580,7 +580,7 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Decode.fixed64"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
           , "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
-          , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed64"
+          , "    x <- Runtime.parseLenDel $ Decode.fixed64Array"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
           ]
         go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ = Right $ String.joinWith "\n"
@@ -588,7 +588,7 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Decode.fixed32"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
           , "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
-          , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.fixed32"
+          , "    x <- Runtime.parseLenDel $ Decode.fixed32Array"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
           ]
         go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ = Right $ String.joinWith "\n"
@@ -635,7 +635,7 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Decode.sfixed32"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
           , "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
-          , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed32"
+          , "    x <- Runtime.parseLenDel $ Decode.sfixed32Array"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
           ]
         go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Right $ String.joinWith "\n"
@@ -643,7 +643,7 @@ genFile proto_file (FileDescriptorProto
           , "    x <- Decode.sfixed64"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Array.snoc x"
           , "  parseField " <> show fnumber <> " Common.LenDel = Runtime.label \"" <> name' <> " / \" $ do"
-          , "    x <- Runtime.parseLenDel $ Runtime.manyLength Decode.sfixed64"
+          , "    x <- Runtime.parseLenDel $ Decode.sfixed64Array"
           , "    pure $ Record.Builder.modify (Symbol.SProxy :: Symbol.SProxy \"" <> fname <> "\") $ Function.flip Semigroup.append x"
           ]
         go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ = Right $ String.joinWith "\n"

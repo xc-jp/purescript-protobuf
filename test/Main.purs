@@ -2,26 +2,45 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (catMaybes)
+import Control.Apply (lift2)
+import Data.Array (catMaybes, zipWith)
+import Data.Array (mapMaybe, range)
+import Data.ArrayBuffer.ArrayBuffer (byteLength, empty)
 import Data.ArrayBuffer.Builder (execPut)
+import Data.ArrayBuffer.Builder (execPut)
+import Data.ArrayBuffer.DataView (part, whole)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
+import Data.ArrayBuffer.Typed as Typed
+import Data.ArrayBuffer.Types (Float32Array)
 import Data.Either (Either(..))
+import Data.Float32 (fromNumber, fromNumber', toNumber)
 import Data.Float32 as Float32
+import Data.Foldable (for_, sum)
 import Data.Long.Internal as Long
 import Data.Maybe (Maybe(..))
+import Data.TextEncoding (encodeUtf8)
+import Data.Tuple (Tuple(..))
 import Data.UInt as UInt
 import Data.Unfoldable (replicate)
 import Effect (Effect)
+import Effect (Effect, forE)
+import Effect.Console (log)
+import Effect.Unsafe (unsafePerformEffect)
+import Math (abs)
 import Pack.Msg1 as Pack1
 import Pack.Msg2 as Pack2
 import Pack3.Msg3 as Pack3
 import Pack4.Msg4 as Pack4
 import Pack5.Msg5 as Pack5
+import Performance.Minibench (bench, benchWith)
+import Protobuf.Common (Bytes(..))
+import Protobuf.Decode (floatArray)
+import Protobuf.Decode as Decode
+import Protobuf.Encode as Encode
 import Test.Assert (assert')
 import Text.Parsing.Parser (runParserT)
-import Data.TextEncoding (encodeUtf8)
-import Protobuf.Common (Bytes(..))
+import Text.Parsing.Parser (runParserT)
 
 billion' :: Int
 billion' = -1000000000
@@ -111,5 +130,17 @@ main = do
   case parseResult3 of
     Left err -> assert' ("msg3 parse " <> show err) false
     Right msg3' -> assert' "msg3 roundtrip" $ msg3 == msg3'
-
-
+  buf <- Typed.fromArray (mapMaybe fromNumber [ 1.0, 0.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0 ]) :: Effect Float32Array
+  parseResult4 <- runParserT (whole (Typed.buffer buf)) (lift2 Tuple (Decode.floatArray 8) (Decode.floatArray 4))
+  case parseResult4 of
+       Left err -> assert' ("floatArray" <> show err) false
+       Right x -> assert' "floatArray roundtrip" $ x == Tuple (mapMaybe fromNumber [1.0,0.0]) (mapMaybe fromNumber [3.0])
+  trimmedcustom <- part (Typed.buffer buf) 3 16
+  parseResult5 <- runParserT trimmedcustom (lift2 Tuple (Decode.floatArray 8) (Decode.floatArray 4))
+  let almostEqual a b = sum (zipWith (\x y -> abs (toNumber x - toNumber y)) a b) < 1.0e-5
+  case parseResult5 of
+       Left err -> assert' ("floatArray unaligned " <> show err) false
+       Right x@(Tuple a b) -> assert' "floatArray unaligned roundtrip" $
+          unsafePerformEffect (log (show x)) == unit
+          && almostEqual a (mapMaybe fromNumber [8.828180325246348e-44,2.0])
+          && almostEqual b (mapMaybe fromNumber [-8.96831017167883e-44])

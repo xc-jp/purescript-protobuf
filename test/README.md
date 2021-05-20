@@ -8,3 +8,12 @@ of the repo, then:
     protoc --purescript_out=./test/generated test/*.proto
     spago -x test.dhall build
     spago -x test.dhall test
+
+# Benchmarks
+
+To run the benchmarks, run `nix-shell` then:
+
+```
+    npm install
+    spago -x test.dhall run --main Test.Bench
+```
