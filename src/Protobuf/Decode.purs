@@ -74,6 +74,7 @@ double = Parse.anyFloat64le
 float :: forall m. MonadEffect m => ParserT DataView m Float32
 float = Parse.anyFloat32le
 
+-- | True if we are running in a JavaScript environment in which `TypedArray` is big-endian.
 isBigEndian :: Effect Boolean
 isBigEndian = unsafePerformEffect _isBigEndian
 
@@ -88,7 +89,7 @@ decodeArray ::
   MonadEffect m =>
   AProxy a ->
   (DataView -> ByteOffset -> Effect (Maybe t)) ->
-  Int -> ParserT DataView m (Array t)
+  ByteLength -> ParserT DataView m (Array t)
 decodeArray a p n = do
   big <- lift (liftEffect isBigEndian)
   if big then
@@ -96,16 +97,16 @@ decodeArray a p n = do
   else
     typedArray a n >>= lift <<< liftEffect <<< AT.toArray
 
--- | __repeated packed float__
-floatArray :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Float32)
+-- | repeated packed __float__
+floatArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
 floatArray = decodeArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
 
--- | __repeated packed double__
-doubleArray :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Number)
+-- | repeated packed __double__
+doubleArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Number)
 doubleArray = decodeArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
 
--- | __repeated packed sfixed32__
-sfixed32Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array Int)
+-- | repeated packed __sfixed32__
+sfixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Int)
 sfixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
 
 foreign import data BigInt64 :: ArrayViewType
@@ -122,8 +123,8 @@ getLongle dv idx = do
   hi <- getInt32le dv (idx + 4)
   pure $ lift2 fromLowHighBits lo hi
 
--- | __repeated packed sfixed64__
-sfixed64Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array (Long Signed))
+-- | repeated packed __sfixed64__
+sfixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Signed))
 sfixed64Array = packedArray (AProxy :: AProxy BigInt64) getLongle
 
 foreign import data BigUInt64 :: ArrayViewType
@@ -140,12 +141,12 @@ getULongle dv idx = do
   hi <- getInt32le dv (idx + 4)
   pure $ lift2 fromLowHighBits lo hi
 
--- | __repeated packed fixed32__
-fixed32Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array UInt)
+-- | repeated packed __fixed32__
+fixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array UInt)
 fixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
 
--- | __repeated packed fixed64__
-fixed64Array :: forall m. MonadEffect m => Int -> ParserT DataView m (Array (Long Unsigned))
+-- | repeated packed __fixed64__
+fixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Unsigned))
 fixed64Array = packedArray (AProxy :: AProxy BigUInt64) getULongle
 
 foreign import _decodeArray ::

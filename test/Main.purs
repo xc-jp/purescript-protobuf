@@ -3,10 +3,7 @@ module Test.Main where
 import Prelude
 
 import Control.Apply (lift2)
-import Data.Array (catMaybes, zipWith)
-import Data.Array (mapMaybe, range)
-import Data.ArrayBuffer.ArrayBuffer (byteLength, empty)
-import Data.ArrayBuffer.Builder (execPut)
+import Data.Array (catMaybes, mapMaybe, zipWith)
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView (part, whole)
 import Data.ArrayBuffer.DataView as DV
@@ -14,9 +11,9 @@ import Data.ArrayBuffer.Typed as TA
 import Data.ArrayBuffer.Typed as Typed
 import Data.ArrayBuffer.Types (Float32Array)
 import Data.Either (Either(..))
-import Data.Float32 (fromNumber, fromNumber', toNumber)
+import Data.Float32 (fromNumber, toNumber)
 import Data.Float32 as Float32
-import Data.Foldable (for_, sum)
+import Data.Foldable (sum)
 import Data.Long.Internal as Long
 import Data.Maybe (Maybe(..))
 import Data.TextEncoding (encodeUtf8)
@@ -24,22 +21,15 @@ import Data.Tuple (Tuple(..))
 import Data.UInt as UInt
 import Data.Unfoldable (replicate)
 import Effect (Effect)
-import Effect (Effect, forE)
-import Effect.Console (log)
-import Effect.Unsafe (unsafePerformEffect)
 import Math (abs)
 import Pack.Msg1 as Pack1
 import Pack.Msg2 as Pack2
 import Pack3.Msg3 as Pack3
 import Pack4.Msg4 as Pack4
 import Pack5.Msg5 as Pack5
-import Performance.Minibench (bench, benchWith)
 import Protobuf.Common (Bytes(..))
-import Protobuf.Decode (floatArray)
 import Protobuf.Decode as Decode
-import Protobuf.Encode as Encode
 import Test.Assert (assert')
-import Text.Parsing.Parser (runParserT)
 import Text.Parsing.Parser (runParserT)
 
 billion' :: Int
@@ -141,6 +131,5 @@ main = do
   case parseResult5 of
        Left err -> assert' ("floatArray unaligned " <> show err) false
        Right x@(Tuple a b) -> assert' "floatArray unaligned roundtrip" $
-          unsafePerformEffect (log (show x)) == unit
-          && almostEqual a (mapMaybe fromNumber [8.828180325246348e-44,2.0])
+          almostEqual a (mapMaybe fromNumber [8.828180325246348e-44,2.0])
           && almostEqual b (mapMaybe fromNumber [-8.96831017167883e-44])

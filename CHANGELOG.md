@@ -1,3 +1,14 @@
+# v1.8.0
+
+Large (×1000) speedup for decoding packed repeated fields of
+
+* double
+* float
+* fixed32
+* fixed64
+* sfixed32
+* sfixed64
+
 # v1.7.0
 
 Upgraded from Protobuf v3.14.0 to v3.15.8.
