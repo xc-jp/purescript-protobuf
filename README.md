@@ -265,10 +265,12 @@ in our implementation.
 
 #### When deserializing
 
-The generated record fields will always be `Nothing` when a field is not present on the wire.
-If we want to use
-[default values](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default) then
-we have the `Protobuf.Library.Default` typeclass for that.
+A message field will always be `Just` when a field is present on the wire.
+A message field will always be `Nothing` when a field is not present on the wire, even if
+its a *no presence* field.
+If we want interpret a missing *no presence* field as a
+[default value](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default) then
+we have the `Protobuf.Library.toDefault` function for that.
 
 #### When serializing
 
