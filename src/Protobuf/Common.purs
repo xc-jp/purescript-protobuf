@@ -168,14 +168,10 @@ fromDefault x = if x==default then Nothing else Just x
 
 -- | Turns `Nothing` into a `default` value.
 -- |
--- | The Protobuf spec requires that a field being set
--- | to zero (“default”) and a missing field are equivalent states.
--- | Because of this, there is
--- | no way to tell whether a missing field from a received message
--- | is really missing or if the sender meant that the field value is zero.
--- | We can use this function
--- | to manually choose whether we want
--- | a missing field to mean that it’s missing, or to mean that it’s zero.
+-- | The Protobuf spec requires that a *no presence* field set
+-- | to its “default” (zero) value must not be serialized to the wire.
+-- | We can use this function to interpret
+-- | a missing field as a “default” value.
 toDefault :: forall a. Default a => Maybe a -> a
 toDefault Nothing = default
 toDefault (Just x) = x
