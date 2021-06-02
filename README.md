@@ -3,7 +3,7 @@
 [![Test](https://github.com/xc-jp/purescript-protobuf/workflows/Test/badge.svg?branch=master)](https://github.com/xc-jp/purescript-protobuf/actions)
 [![Pursuit](http://pursuit.purescript.org/packages/purescript-protobuf/badge)](http://pursuit.purescript.org/packages/purescript-protobuf/)
 
-Purescript library and code generator for
+PureScript library and code generator for
 [Google Protocol Buffers version 3](https://developers.google.com/protocol-buffers/docs/proto3).
 
 This library operates on
@@ -303,7 +303,7 @@ The Protobuf
 statement allows Protobuf messages to have fields
 consisting of Protobuf messages imported from another file, and qualified
 by the package name in that file. In order to generate
-the correct Purescript module name qualifier on the types of imported message
+the correct PureScript module name qualifier on the types of imported message
 fields, the code generator must be able to lookup the package name
 statement in the imported file.
 
@@ -313,7 +313,7 @@ For that reason, we can only use top-level
 
 ### PureScript Imports
 
-The generated Purescript code will usually have module imports which cause
+The generated PureScript code will usually have module imports which cause
 the `purs` compiler to emit redundant import warnings. Sorry. If this causes
 trouble then the imports can be fixed automatically in a precompiling pass
 with the command-line tool
