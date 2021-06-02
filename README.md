@@ -48,7 +48,7 @@ The `shell.nix` environment provides
 ```
 $ nix-shell
 
-Purescript Protobuf development environment.
+PureScript Protobuf development environment.
 To build purescript-protobuf, run:
 
     npm install
