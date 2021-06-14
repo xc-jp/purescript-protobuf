@@ -3,29 +3,32 @@
 -- | You almost never need to import this module.
 -- | See package README for explanation.
 module Protobuf.Decode
-  ( double
-  , doubleArray
-  , float
-  , floatArray
-  , int32
-  , int64
-  , uint32
-  , uint64
-  , sint32
-  , sint64
-  , fixed32
-  , fixed32Array
-  , fixed64
-  , fixed64Array
-  , sfixed32
-  , sfixed32Array
-  , sfixed64
-  , sfixed64Array
-  , bool
-  , string
-  , bytes
-  , module Protobuf.Decode32
-  , module Protobuf.Decode64
+  ( decodeDouble
+  , decodeDoubleArray
+  , decodeFloat
+  , decodeFloatArray
+  , decodeInt32
+  , decodeInt64
+  , decodeUint32
+  , decodeUint64
+  , decodeSint32
+  , decodeSint64
+  , decodeFixed32
+  , decodeFixed32Array
+  , decodeFixed64
+  , decodeFixed64Array
+  , decodeSfixed32
+  , decodeSfixed32Array
+  , decodeSfixed64
+  , decodeSfixed64Array
+  , decodeBool
+  , decodeString
+  , decodeBytes
+  , decodeZigzag32
+  , decodeVarint32
+  , decodeTag32
+  , decodeZigzag64
+  , decodeVarint64
   ) where
 
 import Prelude
@@ -42,9 +45,9 @@ import Data.ArrayBuffer.Types (ArrayView, ByteLength, ByteOffset, DataView, Uint
 import Data.ArrayBuffer.Types as ArrayTypes
 import Data.ArrayBuffer.ValueMapping (class BinaryValue, class BytesPerValue, class ShowArrayViewType)
 import Data.Either (Either(..))
+import Data.Enum (toEnum)
 import Data.Float32 (Float32)
-import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, highBits, lowBits, unsignedToSigned)
-import Data.Maybe (Maybe, fromJust)
+import Data.Maybe (Maybe(..), fromJust)
 import Data.String (joinWith)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Data.TextDecoding (decodeUtf8)
@@ -56,23 +59,23 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Unsafe (unsafePerformEffect)
 import Partial.Unsafe (unsafePartial)
-import Protobuf.Common (Bytes(..))
-import Protobuf.Decode32 (varint32, zigzag32, tag32)
-import Protobuf.Decode64 (varint64, zigzag64)
+import Protobuf.Common (Bytes(..), FieldNumber, WireType)
 import Text.Parsing.Parser (ParseError(..), ParseState(..), ParserT(..), fail)
 import Text.Parsing.Parser.DataView as Parse
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
+import Data.Long.Internal (Long, Unsigned, Signed)
+import Data.Long.Internal as Long.Internal
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-double :: forall m. MonadEffect m => ParserT DataView m Number
-double = Parse.anyFloat64le
+decodeDouble :: forall m. MonadEffect m => ParserT DataView m Number
+decodeDouble = Parse.anyFloat64le
 
 -- | __float__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-float :: forall m. MonadEffect m => ParserT DataView m Float32
-float = Parse.anyFloat32le
+decodeFloat :: forall m. MonadEffect m => ParserT DataView m Float32
+decodeFloat = Parse.anyFloat32le
 
 -- | True if we are running in a JavaScript environment in which `TypedArray` is big-endian.
 isBigEndian :: Effect Boolean
@@ -98,16 +101,16 @@ decodeArray a p n = do
     typedArray a n >>= lift <<< liftEffect <<< AT.toArray
 
 -- | repeated packed __float__
-floatArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
-floatArray = decodeArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
+decodeFloatArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
+decodeFloatArray = decodeArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
 
 -- | repeated packed __double__
-doubleArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Number)
-doubleArray = decodeArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
+decodeDoubleArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Number)
+decodeDoubleArray = decodeArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
 
 -- | repeated packed __sfixed32__
-sfixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Int)
-sfixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
+decodeSfixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Int)
+decodeSfixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
 
 foreign import data BigInt64 :: ArrayViewType
 
@@ -121,11 +124,11 @@ getLongle :: DataView -> Int -> Effect (Maybe (Long Signed))
 getLongle dv idx = do
   lo <- getInt32le dv idx
   hi <- getInt32le dv (idx + 4)
-  pure $ lift2 fromLowHighBits lo hi
+  pure $ lift2 Long.Internal.fromLowHighBits lo hi
 
 -- | repeated packed __sfixed64__
-sfixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Signed))
-sfixed64Array = packedArray (AProxy :: AProxy BigInt64) getLongle
+decodeSfixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Signed))
+decodeSfixed64Array = packedArray (AProxy :: AProxy BigInt64) getLongle
 
 foreign import data BigUInt64 :: ArrayViewType
 
@@ -139,15 +142,15 @@ getULongle :: DataView -> Int -> Effect (Maybe (Long Unsigned))
 getULongle dv idx = do
   lo <- getInt32le dv idx
   hi <- getInt32le dv (idx + 4)
-  pure $ lift2 fromLowHighBits lo hi
+  pure $ lift2 Long.Internal.fromLowHighBits lo hi
 
 -- | repeated packed __fixed32__
-fixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array UInt)
-fixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
+decodeFixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array UInt)
+decodeFixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
 
 -- | repeated packed __fixed64__
-fixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Unsigned))
-fixed64Array = packedArray (AProxy :: AProxy BigUInt64) getULongle
+decodeFixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Unsigned))
+decodeFixed64Array = packedArray (AProxy :: AProxy BigUInt64) getULongle
 
 foreign import _decodeArray ::
   forall t. (ByteOffset -> Effect t) -> Int -> Effect (Array t)
@@ -265,9 +268,9 @@ typedArray _ n =
 
 -- | __int32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-int32 :: forall m. MonadEffect m => ParserT DataView m Int
-int32 = do
-  n <- varint64
+decodeInt32 :: forall m. MonadEffect m => ParserT DataView m Int
+decodeInt32 = do
+  n <- decodeVarint64
   -- But this is a problem with the Protobuf spec?
   -- “If you use int32 or int64 as the type for a negative number, the resulting
   -- varint is always ten bytes long”
@@ -284,72 +287,72 @@ int32 = do
   --   case Long.toInt n of
   --     Nothing -> fail "int32 value out of range."
   --     Just x -> pure x
-  pure $ lowBits n
+  pure $ Long.Internal.lowBits n
 
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-int64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
-int64 = unsignedToSigned <$> varint64
+decodeInt64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
+decodeInt64 = Long.Internal.unsignedToSigned <$> decodeVarint64
 
 -- | __uint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-uint32 :: forall m. MonadEffect m => ParserT DataView m UInt
-uint32 = do
-  n <- varint64
-  pure $ UInt.fromInt $ lowBits n
+decodeUint32 :: forall m. MonadEffect m => ParserT DataView m UInt
+decodeUint32 = do
+  n <- decodeVarint64
+  pure $ UInt.fromInt $ Long.Internal.lowBits n
 
 -- | __uint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-uint64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
-uint64 = varint64
+decodeUint64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
+decodeUint64 = decodeVarint64
 
 -- | __sint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sint32 :: forall m. MonadEffect m => ParserT DataView m Int
-sint32 = do
-  n <- zigzag32 <$> varint32
+decodeSint32 :: forall m. MonadEffect m => ParserT DataView m Int
+decodeSint32 = do
+  n <- decodeZigzag32 <$> decodeVarint32
   pure n
 
 -- | __sint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sint64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
-sint64 = zigzag64 <$> varint64
+decodeSint64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
+decodeSint64 = decodeZigzag64 <$> decodeVarint64
 
 -- | __fixed32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-fixed32 :: forall m. MonadEffect m => ParserT DataView m UInt
-fixed32 = Parse.anyUint32le
+decodeFixed32 :: forall m. MonadEffect m => ParserT DataView m UInt
+decodeFixed32 = Parse.anyUint32le
 
 -- | __fixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-fixed64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
-fixed64 = fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
+decodeFixed64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
+decodeFixed64 = Long.Internal.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
 
 -- | __sfixed32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sfixed32 :: forall m. MonadEffect m => ParserT DataView m Int
-sfixed32 = Parse.anyInt32le
+decodeSfixed32 :: forall m. MonadEffect m => ParserT DataView m Int
+decodeSfixed32 = Parse.anyInt32le
 
 -- | __sfixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sfixed64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
-sfixed64 = fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
+decodeSfixed64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
+decodeSfixed64 = Long.Internal.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
 
 -- | __bool__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bool :: forall m. MonadEffect m => ParserT DataView m Boolean
-bool = do
-  x <- varint64
-  if lowBits x == 0 && highBits x == 0 then
+decodeBool :: forall m. MonadEffect m => ParserT DataView m Boolean
+decodeBool = do
+  x <- decodeVarint64
+  if Long.Internal.lowBits x == 0 && Long.Internal.highBits x == 0 then
     pure false
   else
     pure true
 
 -- | __string__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-string :: forall m. MonadEffect m => ParserT DataView m String
-string = do
-  stringview <- varint32 >>= UInt.toInt >>> Parse.takeN
+decodeString :: forall m. MonadEffect m => ParserT DataView m String
+decodeString = do
+  stringview <- decodeVarint32 >>= UInt.toInt >>> Parse.takeN
   stringarray <- lift $ liftEffect $ mkTypedArray stringview
   case decodeUtf8 stringarray of
     Left err -> fail $ "string decodeUtf8 failed. " <> show err
@@ -367,12 +370,185 @@ string = do
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => ParserT DataView m Bytes
-bytes = do
-  len <- UInt.toInt <$> varint32
+decodeBytes :: forall m. MonadEffect m => ParserT DataView m Bytes
+decodeBytes = do
+  len <- UInt.toInt <$> decodeVarint32
   dv <- Parse.takeN len
   let
     ab = DV.buffer dv
   let
     begin = DV.byteOffset dv
   pure $ Bytes $ AB.slice begin (begin + len) ab
+
+-- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
+decodeZigzag32 :: UInt -> Int
+decodeZigzag32 n = UInt.toInt $ (n `UInt.zshr` (UInt.fromInt 1)) `UInt.xor` (unegate (n `UInt.and` (UInt.fromInt 1)))
+  where
+  unegate :: UInt -> UInt
+  unegate = UInt.fromInt <<< negate <<< UInt.toInt
+
+-- | Parse the field number and wire type of the next field.
+-- | https://developers.google.com/protocol-buffers/docs/encoding#structure
+decodeTag32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber WireType)
+decodeTag32 = do
+  n <- decodeVarint32
+  let
+    wireTypeInt = UInt.toInt $ n `UInt.and` (UInt.fromInt 7)
+  case toEnum wireTypeInt of
+    Just wireType -> pure $ Tuple (n `UInt.shr` (UInt.fromInt 3)) wireType
+    Nothing -> fail $ "Unknown WireType " <> show wireTypeInt
+
+-- | There is no `varint32` in the Protbuf spec, this is
+-- | just a performance-improving assumption we make
+-- | in cases where only a deranged lunatic would use a value
+-- | bigger than 32 bits, such as in field numbers.
+-- | We think this is worth the risk because `UInt` is
+-- | represented as a native Javascript Number whereas
+-- | `Long` is a composite library type, so we expect the
+-- | performance difference to be significant.
+-- |
+-- | https://developers.google.com/protocol-buffers/docs/encoding#varints
+decodeVarint32 :: forall m. MonadEffect m => ParserT DataView m UInt
+decodeVarint32 = do
+  n_0 <- Parse.anyUint8
+  if n_0 < u0x80 then
+    pure n_0
+  else do
+    let
+      acc_0 = n_0 `UInt.and` u0x7F
+    n_1 <- Parse.anyUint8
+    if n_1 < u0x80 then
+      pure $ acc_0 `UInt.or` (n_1 `UInt.shl` u7)
+    else do
+      let
+        acc_1 = ((n_1 `UInt.and` u0x7F) `UInt.shl` u7) `UInt.or` acc_0
+      n_2 <- Parse.anyUint8
+      if n_2 < u0x80 then
+        pure $ acc_1 `UInt.or` (n_2 `UInt.shl` u14)
+      else do
+        let
+          acc_2 = ((n_2 `UInt.and` u0x7F) `UInt.shl` u14) `UInt.or` acc_1
+        n_3 <- Parse.anyUint8
+        if n_3 < u0x80 then
+          pure $ acc_2 `UInt.or` (n_3 `UInt.shl` u21)
+        else do
+          let
+            acc_3 = ((n_3 `UInt.and` u0x7F) `UInt.shl` u21) `UInt.or` acc_2
+          n_4 <- Parse.anyUint8
+          -- if n_4 < u0x10 -- This is the correct logic, but doesn't pass conformance?
+          if n_4 < u0x80 then
+            pure $ acc_3 `UInt.or` (n_4 `UInt.shl` u28)
+          else
+            fail "varint32 overflow. This varint was expected to fit in 32 bits."
+  where
+  u7 = UInt.fromInt 7
+
+  u14 = UInt.fromInt 14
+
+  u21 = UInt.fromInt 21
+
+  u28 = UInt.fromInt 28
+
+  u0x10 = UInt.fromInt 0x10
+
+  u0x7F = UInt.fromInt 0x7F
+
+  u0x80 = UInt.fromInt 0x80
+
+-- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
+decodeZigzag64 :: Long Unsigned -> Long Signed
+decodeZigzag64 n = let n' = Long.Internal.unsignedToSigned n in (n' `Long.Internal.zshr` u1) `Long.Internal.xor` (lnegate (n' `Long.Internal.and` u1))
+  where
+  lnegate x = Long.Internal.complement x + u1
+
+  u1 = Long.Internal.unsafeFromInt 1
+
+-- | https://developers.google.com/protocol-buffers/docs/encoding#varints
+decodeVarint64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
+decodeVarint64 = do
+  n_0 <- fromInt <$> Parse.anyUint8
+  if n_0 < u0x80 then
+    pure n_0
+  else do
+    let
+      acc_0 = n_0 `Long.Internal.and` u0x7F
+    n_1 <- fromInt <$> Parse.anyUint8
+    if n_1 < u0x80 then
+      pure $ acc_0 `Long.Internal.or` (n_1 `Long.Internal.shl` u7)
+    else do
+      let
+        acc_1 = ((n_1 `Long.Internal.and` u0x7F) `Long.Internal.shl` u7) `Long.Internal.or` acc_0
+      n_2 <- fromInt <$> Parse.anyUint8
+      if n_2 < u0x80 then
+        pure $ acc_1 `Long.Internal.or` (n_2 `Long.Internal.shl` u14)
+      else do
+        let
+          acc_2 = ((n_2 `Long.Internal.and` u0x7F) `Long.Internal.shl` u14) `Long.Internal.or` acc_1
+        n_3 <- fromInt <$> Parse.anyUint8
+        if n_3 < u0x80 then
+          pure $ acc_2 `Long.Internal.or` (n_3 `Long.Internal.shl` u21)
+        else do
+          let
+            acc_3 = ((n_3 `Long.Internal.and` u0x7F) `Long.Internal.shl` u21) `Long.Internal.or` acc_2
+          n_4 <- fromInt <$> Parse.anyUint8
+          if n_4 < u0x80 then
+            pure $ acc_3 `Long.Internal.or` (n_4 `Long.Internal.shl` u28)
+          else do
+            let
+              acc_4 = ((n_4 `Long.Internal.and` u0x7F) `Long.Internal.shl` u28) `Long.Internal.or` acc_3
+            n_5 <- fromInt <$> Parse.anyUint8
+            if n_5 < u0x80 then
+              pure $ acc_4 `Long.Internal.or` (n_5 `Long.Internal.shl` u35)
+            else do
+              let
+                acc_5 = ((n_5 `Long.Internal.and` u0x7F) `Long.Internal.shl` u35) `Long.Internal.or` acc_4
+              n_6 <- fromInt <$> Parse.anyUint8
+              if n_6 < u0x80 then
+                pure $ acc_5 `Long.Internal.or` (n_6 `Long.Internal.shl` u42)
+              else do
+                let
+                  acc_6 = ((n_6 `Long.Internal.and` u0x7F) `Long.Internal.shl` u42) `Long.Internal.or` acc_5
+                n_7 <- fromInt <$> Parse.anyUint8
+                if n_7 < u0x80 then
+                  pure $ acc_6 `Long.Internal.or` (n_7 `Long.Internal.shl` u49)
+                else do
+                  let
+                    acc_7 = ((n_7 `Long.Internal.and` u0x7F) `Long.Internal.shl` u49) `Long.Internal.or` acc_6
+                  n_8 <- fromInt <$> Parse.anyUint8
+                  if n_8 < u0x80 then
+                    pure $ acc_7 `Long.Internal.or` (n_8 `Long.Internal.shl` u56)
+                  else do
+                    let
+                      acc_8 = ((n_8 `Long.Internal.and` u0x7F) `Long.Internal.shl` u56) `Long.Internal.or` acc_7
+                    n_9 <- fromInt <$> Parse.anyUint8
+                    if n_9 < u0x02 then
+                      pure $ acc_8 `Long.Internal.or` (n_9 `Long.Internal.shl` u63)
+                    else
+                      fail "varint64 overflow. Possibly there is an encoding error in the input stream."
+  where
+  fromInt :: UInt -> Long Unsigned
+  fromInt = Long.Internal.signedToUnsigned <<< Long.Internal.signedLongFromInt <<< UInt.toInt
+
+  u7 = Long.Internal.unsafeFromInt 7
+
+  u14 = Long.Internal.unsafeFromInt 14
+
+  u21 = Long.Internal.unsafeFromInt 21
+
+  u28 = Long.Internal.unsafeFromInt 28
+
+  u35 = Long.Internal.unsafeFromInt 35
+
+  u42 = Long.Internal.unsafeFromInt 42
+
+  u49 = Long.Internal.unsafeFromInt 49
+
+  u56 = Long.Internal.unsafeFromInt 56
+
+  u63 = Long.Internal.unsafeFromInt 63
+
+  u0x02 = Long.Internal.unsafeFromInt 2
+
+  u0x7F = Long.Internal.unsafeFromInt 0x7F
+
+  u0x80 = Long.Internal.unsafeFromInt 0x80

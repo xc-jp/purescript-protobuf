@@ -2,43 +2,42 @@
 -- |
 -- | You almost never need to import this module.
 -- | See package README for explanation.
--- |
--- | Primed (') encoder functions encode without the tag, for packed
--- | repeating fields.
 module Protobuf.Encode
-( double
-, double'
-, float
-, float'
-, int32
-, int32'
-, int64
-, int64'
-, uint32
-, uint32'
-, uint64
-, uint64'
-, sint32
-, sint32'
-, sint64
-, sint64'
-, fixed32
-, fixed32'
-, fixed64
-, fixed64'
-, sfixed32
-, sfixed32'
-, sfixed64
-, sfixed64'
-, bool
-, bool'
-, string
-, bytes
-, builder
-, module Protobuf.Encode32
-, module Protobuf.Encode64
-)
-where
+  ( encodeDoubleField
+  , encodeDouble
+  , encodeFloatField
+  , encodeFloat
+  , encodeInt32Field
+  , encodeInt32
+  , encodeInt64Field
+  , encodeInt64
+  , encodeUint32Field
+  , encodeUint32
+  , encodeUint64Field
+  , encodeUint64
+  , encodeSint32Field
+  , encodeSint32
+  , encodeSint64Field
+  , encodeSint64
+  , encodeFixed32Field
+  , encodeFixed32
+  , encodeFixed64Field
+  , encodeFixed64
+  , encodeSfixed32Field
+  , encodeSfixed32
+  , encodeSfixed64Field
+  , encodeSfixed64
+  , encodeBoolField
+  , encodeBool
+  , encodeStringField
+  , encodeBytesField
+  , encodeBuilder
+  , encodeVarint32
+  , encodeZigzag32
+  , encodeTag32
+  , encodeVarint64
+  , encodeZigzag64
+  ) where
 
 import Prelude
 import Effect.Class (class MonadEffect)
@@ -47,200 +46,356 @@ import Data.Float32 (Float32)
 import Data.ArrayBuffer.Builder as Builder
 import Data.UInt (UInt)
 import Data.UInt as UInt
-import Data.Long (toUnsigned, lowBits, highBits)
-import Data.Long.Unsigned as LU
-import Data.Long.Internal (Long, Unsigned, Signed, signedLongFromInt, signedToUnsigned)
 import Data.TextEncoding (encodeUtf8)
 import Data.ArrayBuffer.Typed as AT
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
+import Data.Enum (fromEnum)
+import Data.Long.Internal (Long, Unsigned, Signed)
+import Data.Long as Long
+import Data.Long.Internal as Long.Internal
 
-import Protobuf.Encode32 (zigzag32, tag32, varint32)
-import Protobuf.Encode64 (zigzag64, varint64)
+encodeDoubleField :: forall m. MonadEffect m => FieldNumber -> Number -> Builder.PutM m Unit
+-- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+encodeDoubleField fieldNumber n = do
+  encodeTag32 fieldNumber Bits64
+  encodeDouble n
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-double :: forall m. MonadEffect m => FieldNumber -> Number -> Builder.PutM m Unit
+encodeDouble :: forall m. MonadEffect m => Number -> Builder.PutM m Unit
 -- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
-double fieldNumber n = do
-  tag32 fieldNumber Bits64
-  double' n
-
-double' :: forall m. MonadEffect m => Number -> Builder.PutM m Unit
--- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
-double' n = do
+encodeDouble n = do
   Builder.putFloat64le n
+
+encodeFloatField :: forall m. MonadEffect m => FieldNumber -> Float32 -> Builder.PutM m Unit
+encodeFloatField fieldNumber n = do
+  encodeTag32 fieldNumber Bits32
+  encodeFloat n
 
 -- | __float__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-float :: forall m. MonadEffect m => FieldNumber -> Float32 -> Builder.PutM m Unit
-float fieldNumber n = do
-  tag32 fieldNumber Bits32
-  float' n
-
-float' :: forall m. MonadEffect m => Float32 -> Builder.PutM m Unit
-float' n = do
+encodeFloat :: forall m. MonadEffect m => Float32 -> Builder.PutM m Unit
+encodeFloat n = do
   Builder.putFloat32le n
+
+encodeInt32Field :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
+-- “If you use int32 or int64 as the type for a negative number, the resulting
+-- varint is always ten bytes long”
+-- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+encodeInt32Field fieldNumber n = do
+  encodeTag32 fieldNumber VarInt
+  encodeInt32 n
 
 -- | __int32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-int32 :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
+encodeInt32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
-int32 fieldNumber n = do
-  tag32 fieldNumber VarInt
-  int32' n
+encodeInt32 n = do
+  encodeVarint64 $ Long.Internal.signedToUnsigned $ Long.Internal.signedLongFromInt n
 
-int32' :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
+encodeInt64Field :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
-int32' n = do
-  varint64 $ signedToUnsigned $ signedLongFromInt n
+encodeInt64Field fieldNumber n = do
+  encodeTag32 fieldNumber VarInt
+  encodeInt64 n
 
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-int64 :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
+encodeInt64 :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
-int64 fieldNumber n = do
-  tag32 fieldNumber VarInt
-  int64' n
+encodeInt64 n = do
+  encodeVarint64 $ Long.toUnsigned n
 
-int64' :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
--- “If you use int32 or int64 as the type for a negative number, the resulting
--- varint is always ten bytes long”
--- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
-int64' n = do
-  varint64 $ toUnsigned n
+encodeUint32Field :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
+encodeUint32Field fieldNumber n = do
+  encodeTag32 fieldNumber VarInt
+  encodeUint32 n
 
 -- | __uint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-uint32 :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
-uint32 fieldNumber n = do
-  tag32 fieldNumber VarInt
-  uint32' n
+encodeUint32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
+encodeUint32 n = do
+  encodeVarint32 n
 
-uint32' :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
-uint32' n = do
-  varint32 n
+encodeUint64Field :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
+encodeUint64Field fieldNumber n = do
+  encodeTag32 fieldNumber VarInt
+  encodeUint64 n
 
 -- | __uint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-uint64 :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
-uint64 fieldNumber n = do
-  tag32 fieldNumber VarInt
-  uint64' n
+encodeUint64 :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+encodeUint64 n = do
+  encodeVarint64 n
 
-uint64' :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
-uint64' n = do
-  varint64 n
+encodeSint32Field :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
+encodeSint32Field fieldNumber n = do
+  encodeTag32 fieldNumber VarInt
+  encodeSint32 n
 
 -- | __sint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sint32 :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
-sint32 fieldNumber n = do
-  tag32 fieldNumber VarInt
-  sint32' n
+encodeSint32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
+encodeSint32 n = do
+  encodeVarint32 $ encodeZigzag32 n
 
-sint32' :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
-sint32' n = do
-  varint32 $ zigzag32 n
+encodeSint64Field :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
+encodeSint64Field fieldNumber n = do
+  encodeTag32 fieldNumber VarInt
+  encodeSint64 n
 
 -- | __sint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sint64 :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
-sint64 fieldNumber n = do
-  tag32 fieldNumber VarInt
-  sint64' n
+encodeSint64 :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+encodeSint64 n = do
+  encodeVarint64 $ encodeZigzag64 n
 
-sint64' :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
-sint64' n = do
-  varint64 $ zigzag64 n
+encodeFixed32Field :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
+-- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+encodeFixed32Field fieldNumber n = do
+  encodeTag32 fieldNumber Bits32
+  encodeFixed32 n
 
 -- | __fixed32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-fixed32 :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
+encodeFixed32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
 -- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
-fixed32 fieldNumber n = do
-  tag32 fieldNumber Bits32
-  fixed32' n
-
-fixed32' :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
--- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
-fixed32' n = do
+encodeFixed32 n = do
   Builder.putUint32le n
+
+encodeFixed64Field :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
+encodeFixed64Field fieldNumber n = do
+  encodeTag32 fieldNumber Bits64
+  encodeFixed64 n
 
 -- | __fixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-fixed64 :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
-fixed64 fieldNumber n = do
-  tag32 fieldNumber Bits64
-  fixed64' n
+encodeFixed64 :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+encodeFixed64 n = do
+  Builder.putInt32le $ Long.Internal.lowBits n
+  Builder.putInt32le $ Long.Internal.highBits n
 
-fixed64' :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
-fixed64' n = do
-  Builder.putInt32le $ LU.lowBits n
-  Builder.putInt32le $ LU.highBits n
+encodeSfixed32Field :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
+encodeSfixed32Field fieldNumber n = do
+  encodeTag32 fieldNumber Bits32
+  encodeSfixed32 n
 
 -- | __sfixed32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sfixed32 :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
-sfixed32 fieldNumber n = do
-  tag32 fieldNumber Bits32
-  sfixed32' n
-
-sfixed32' :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
-sfixed32' n = do
+encodeSfixed32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
+encodeSfixed32 n = do
   Builder.putInt32le n
+
+encodeSfixed64Field :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
+encodeSfixed64Field fieldNumber n = do
+  encodeTag32 fieldNumber Bits64
+  encodeSfixed64 n
 
 -- | __sfixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-sfixed64 :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
-sfixed64 fieldNumber n = do
-  tag32 fieldNumber Bits64
-  sfixed64' n
+encodeSfixed64 :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+encodeSfixed64 n = do
+  Builder.putInt32le $ Long.lowBits n
+  Builder.putInt32le $ Long.highBits n
 
-sfixed64' :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
-sfixed64' n = do
-  Builder.putInt32le $ lowBits n
-  Builder.putInt32le $ highBits n
+encodeBoolField :: forall m. MonadEffect m => FieldNumber -> Boolean -> Builder.PutM m Unit
+encodeBoolField fieldNumber n = do
+  encodeTag32 fieldNumber VarInt
+  encodeBool n
 
 -- | __bool__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bool :: forall m. MonadEffect m => FieldNumber -> Boolean -> Builder.PutM m Unit
-bool fieldNumber n = do
-  tag32 fieldNumber VarInt
-  bool' n
-
-bool' :: forall m. MonadEffect m => Boolean -> Builder.PutM m Unit
-bool' n = do
+encodeBool :: forall m. MonadEffect m => Boolean -> Builder.PutM m Unit
+encodeBool n = do
   if n then Builder.putInt8 1 else Builder.putInt8 0
 
 -- | __string__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-string :: forall m. MonadEffect m => FieldNumber -> String -> Builder.PutM m Unit
+encodeStringField :: forall m. MonadEffect m => FieldNumber -> String -> Builder.PutM m Unit
 -- https://developers.google.com/protocol-buffers/docs/encoding#strings
-string fieldNumber s = do
-  tag32 fieldNumber LenDel
-  let stringbuf = AT.buffer $ encodeUtf8 s
-  varint32 $ UInt.fromInt $ AB.byteLength stringbuf
+encodeStringField fieldNumber s = do
+  encodeTag32 fieldNumber LenDel
+  let
+    stringbuf = AT.buffer $ encodeUtf8 s
+  encodeVarint32 $ UInt.fromInt $ AB.byteLength stringbuf
   Builder.putArrayBuffer stringbuf
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-bytes :: forall m. MonadEffect m => FieldNumber -> Bytes -> Builder.PutM m Unit
-bytes fieldNumber (Bytes s) = do
-  tag32 fieldNumber LenDel
-  varint32 $ UInt.fromInt $ AB.byteLength s
+encodeBytesField :: forall m. MonadEffect m => FieldNumber -> Bytes -> Builder.PutM m Unit
+encodeBytesField fieldNumber (Bytes s) = do
+  encodeTag32 fieldNumber LenDel
+  encodeVarint32 $ UInt.fromInt $ AB.byteLength s
   Builder.putArrayBuffer s
 
 -- | `tell` with a tag and a length delimit.
-builder :: forall m. MonadEffect m => FieldNumber -> Builder.Builder -> Builder.PutM m Unit
-builder fieldNumber s = do
-  tag32 fieldNumber LenDel
-  varint32 $ UInt.fromInt $ Builder.length s
+encodeBuilder :: forall m. MonadEffect m => FieldNumber -> Builder.Builder -> Builder.PutM m Unit
+encodeBuilder fieldNumber s = do
+  encodeTag32 fieldNumber LenDel
+  encodeVarint32 $ UInt.fromInt $ Builder.length s
   tell s
 
+-- | https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+encodeZigzag32 :: Int -> UInt
+encodeZigzag32 n = let n' = UInt.fromInt n in (n' `UInt.shl` (UInt.fromInt 1)) `UInt.xor` (n' `UInt.shr` (UInt.fromInt 31))
+
+-- | https://developers.google.com/protocol-buffers/docs/encoding#structure
+encodeTag32 :: forall m. MonadEffect m => FieldNumber -> WireType -> Builder.PutM m Unit
+encodeTag32 fieldNumber wireType = encodeVarint32 $ (fieldNumber `UInt.shl` (UInt.fromInt 3)) `UInt.or` (UInt.fromInt $ fromEnum wireType)
+
+-- | There is no `varint32` in the Protbuf spec, this is
+-- | just a performance-improving assumption we make
+-- | in cases where only a deranged lunatic would use a value
+-- | bigger than 32 bits, such as in field numbers.
+-- | We think this is worth the risk because `UInt` is
+-- | represented as a native Javascript Number whereas
+-- | `Long` is a composite library type, so we expect the
+-- | performance difference to be significant.
+-- |
+-- | https://developers.google.com/protocol-buffers/docs/encoding#varints
+encodeVarint32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
+encodeVarint32 n_0 = do
+  let
+    group_0 = n_0 `UInt.and` u0x7F
+
+    n_1 = n_0 `UInt.zshr` u7
+  if n_1 == u0 then
+    Builder.putUint8 group_0
+  else do
+    Builder.putUint8 $ u0x80 `UInt.or` group_0
+    let
+      group_1 = n_1 `UInt.and` u0x7F
+
+      n_2 = n_1 `UInt.zshr` u7
+    if n_2 == u0 then
+      Builder.putUint8 group_1
+    else do
+      Builder.putUint8 $ u0x80 `UInt.or` group_1
+      let
+        group_2 = n_2 `UInt.and` u0x7F
+
+        n_3 = n_2 `UInt.zshr` u7
+      if n_3 == u0 then
+        Builder.putUint8 group_2
+      else do
+        Builder.putUint8 $ u0x80 `UInt.or` group_2
+        let
+          group_3 = n_3 `UInt.and` u0x7F
+
+          n_4 = n_3 `UInt.zshr` u7
+        if n_4 == u0 then
+          Builder.putUint8 group_3
+        else do
+          Builder.putUint8 $ u0x80 `UInt.or` group_3
+          Builder.putUint8 n_4
+  where
+  u0 = UInt.fromInt 0
+
+  u7 = UInt.fromInt 7
+
+  u0x7F = UInt.fromInt 0x7F
+
+  u0x80 = UInt.fromInt 0x80
+
+-- | https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+encodeZigzag64 :: Long Signed -> Long Unsigned
+encodeZigzag64 n = Long.toUnsigned $ (n `Long.Internal.shl` (Long.Internal.unsafeFromInt 1)) `Long.Internal.xor` (n `Long.Internal.shr` (Long.Internal.unsafeFromInt 63))
+
+encodeVarint64 :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+encodeVarint64 n_0 = do
+  let
+    group_0 = takeGroup n_0
+
+    n_1 = n_0 `Long.Internal.zshr` u7
+  if n_1 == u0 then
+    Builder.putUint8 group_0
+  else do
+    Builder.putUint8 $ contGroup group_0
+    let
+      group_1 = takeGroup n_1
+
+      n_2 = n_1 `Long.Internal.zshr` u7
+    if n_2 == u0 then
+      Builder.putUint8 group_1
+    else do
+      Builder.putUint8 $ contGroup group_1
+      let
+        group_2 = takeGroup n_2
+
+        n_3 = n_2 `Long.Internal.zshr` u7
+      if n_3 == u0 then
+        Builder.putUint8 group_2
+      else do
+        Builder.putUint8 $ contGroup group_2
+        let
+          group_3 = takeGroup n_3
+
+          n_4 = n_3 `Long.Internal.zshr` u7
+        if n_4 == u0 then
+          Builder.putUint8 group_3
+        else do
+          Builder.putUint8 $ contGroup group_3
+          let
+            group_4 = takeGroup n_4
+
+            n_5 = n_4 `Long.Internal.zshr` u7
+          if n_5 == u0 then
+            Builder.putUint8 group_4
+          else do
+            Builder.putUint8 $ contGroup group_4
+            let
+              group_5 = takeGroup n_5
+
+              n_6 = n_5 `Long.Internal.zshr` u7
+            if n_6 == u0 then
+              Builder.putUint8 group_5
+            else do
+              Builder.putUint8 $ contGroup group_5
+              let
+                group_6 = takeGroup n_6
+
+                n_7 = n_6 `Long.Internal.zshr` u7
+              if n_7 == u0 then
+                Builder.putUint8 group_6
+              else do
+                Builder.putUint8 $ contGroup group_6
+                let
+                  group_7 = takeGroup n_7
+
+                  n_8 = n_7 `Long.Internal.zshr` u7
+                if n_8 == u0 then
+                  Builder.putUint8 group_7
+                else do
+                  Builder.putUint8 $ contGroup group_7
+                  let
+                    group_8 = takeGroup n_8
+
+                    n_9 = n_8 `Long.Internal.zshr` u7
+                  if n_9 == u0 then
+                    Builder.putUint8 group_8
+                  else do
+                    Builder.putUint8 $ contGroup group_8
+                    Builder.putUint8 $ takeGroup n_9
+  where
+  -- copy the low seven bits group from a Long
+  takeGroup :: Long Unsigned -> UInt
+  takeGroup n = (UInt.fromInt $ Long.Internal.lowBits n) `UInt.and` u0x7F
+
+  -- Set the high eigth continuation bit of a group
+  contGroup :: UInt -> UInt
+  contGroup n = u0x80 `UInt.or` n
+
+  u0 = Long.Internal.unsafeFromInt 0 :: Long Unsigned
+
+  u7 = Long.Internal.unsafeFromInt 7 :: Long Unsigned
+
+  u0x7F = UInt.fromInt 0x7F
+
+  u0x80 = UInt.fromInt 0x80

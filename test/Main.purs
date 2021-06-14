@@ -121,12 +121,12 @@ main = do
     Left err -> assert' ("msg3 parse " <> show err) false
     Right msg3' -> assert' "msg3 roundtrip" $ msg3 == msg3'
   buf <- Typed.fromArray (mapMaybe fromNumber [ 1.0, 0.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0 ]) :: Effect Float32Array
-  parseResult4 <- runParserT (whole (Typed.buffer buf)) (lift2 Tuple (Decode.floatArray 8) (Decode.floatArray 4))
+  parseResult4 <- runParserT (whole (Typed.buffer buf)) (lift2 Tuple (Decode.decodeFloatArray 8) (Decode.decodeFloatArray 4))
   case parseResult4 of
        Left err -> assert' ("floatArray" <> show err) false
        Right x -> assert' "floatArray roundtrip" $ x == Tuple (mapMaybe fromNumber [1.0,0.0]) (mapMaybe fromNumber [3.0])
   trimmedcustom <- part (Typed.buffer buf) 3 16
-  parseResult5 <- runParserT trimmedcustom (lift2 Tuple (Decode.floatArray 8) (Decode.floatArray 4))
+  parseResult5 <- runParserT trimmedcustom (lift2 Tuple (Decode.decodeFloatArray 8) (Decode.decodeFloatArray 4))
   let almostEqual a b = sum (zipWith (\x y -> abs (toNumber x - toNumber y)) a b) < 1.0e-5
   case parseResult5 of
        Left err -> assert' ("floatArray unaligned " <> show err) false

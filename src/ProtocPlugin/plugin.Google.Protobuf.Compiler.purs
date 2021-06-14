@@ -30,10 +30,10 @@ instance showVersion :: Prelude.Show Version where show x = Prelude.genericShow 
 
 putVersion :: forall m. Prelude.MonadEffect m => Version -> Prelude.PutM m Prelude.Unit
 putVersion (Version r) = do
-  Prelude.putOptional 1 r.major Prelude.isDefault Prelude.encodeint32
-  Prelude.putOptional 2 r.minor Prelude.isDefault Prelude.encodeint32
-  Prelude.putOptional 3 r.patch Prelude.isDefault Prelude.encodeint32
-  Prelude.putOptional 4 r.suffix Prelude.isDefault Prelude.encodestring
+  Prelude.putOptional 1 r.major Prelude.isDefault Prelude.encodeInt32Field
+  Prelude.putOptional 2 r.minor Prelude.isDefault Prelude.encodeInt32Field
+  Prelude.putOptional 3 r.patch Prelude.isDefault Prelude.encodeInt32Field
+  Prelude.putOptional 4 r.suffix Prelude.isDefault Prelude.encodeStringField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
 parseVersion :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m Version
@@ -45,16 +45,16 @@ parseVersion length = Prelude.label "Version / " $
     -> Prelude.WireType
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder VersionR VersionR)
   parseField 1 Prelude.VarInt = Prelude.label "major / " $ do
-    x <- Prelude.int32
+    x <- Prelude.decodeInt32
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "major") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "minor / " $ do
-    x <- Prelude.int32
+    x <- Prelude.decodeInt32
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "minor") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "patch / " $ do
-    x <- Prelude.int32
+    x <- Prelude.decodeInt32
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "patch") $ \_ -> Prelude.Just x
   parseField 4 Prelude.LenDel = Prelude.label "suffix / " $ do
-    x <- Prelude.string
+    x <- Prelude.decodeString
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "suffix") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
@@ -96,8 +96,8 @@ instance showCodeGeneratorRequest :: Prelude.Show CodeGeneratorRequest where sho
 
 putCodeGeneratorRequest :: forall m. Prelude.MonadEffect m => CodeGeneratorRequest -> Prelude.PutM m Prelude.Unit
 putCodeGeneratorRequest (CodeGeneratorRequest r) = do
-  Prelude.putRepeated 1 r.file_to_generate Prelude.encodestring
-  Prelude.putOptional 2 r.parameter Prelude.isDefault Prelude.encodestring
+  Prelude.putRepeated 1 r.file_to_generate Prelude.encodeStringField
+  Prelude.putOptional 2 r.parameter Prelude.isDefault Prelude.encodeStringField
   Prelude.putRepeated 15 r.proto_file $ Prelude.putLenDel Google.Protobuf.putFileDescriptorProto
   Prelude.putOptional 3 r.compiler_version (\_ -> false) $ Prelude.putLenDel putVersion
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
@@ -111,10 +111,10 @@ parseCodeGeneratorRequest length = Prelude.label "CodeGeneratorRequest / " $
     -> Prelude.WireType
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
   parseField 1 Prelude.LenDel = Prelude.label "file_to_generate / " $ do
-    x <- Prelude.string
+    x <- Prelude.decodeString
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "file_to_generate") $ Prelude.flip Prelude.snoc x
   parseField 2 Prelude.LenDel = Prelude.label "parameter / " $ do
-    x <- Prelude.string
+    x <- Prelude.decodeString
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "parameter") $ \_ -> Prelude.Just x
   parseField 15 Prelude.LenDel = Prelude.label "proto_file / " $ do
     x <- Prelude.parseLenDel Google.Protobuf.parseFileDescriptorProto
@@ -161,8 +161,8 @@ instance showCodeGeneratorResponse :: Prelude.Show CodeGeneratorResponse where s
 
 putCodeGeneratorResponse :: forall m. Prelude.MonadEffect m => CodeGeneratorResponse -> Prelude.PutM m Prelude.Unit
 putCodeGeneratorResponse (CodeGeneratorResponse r) = do
-  Prelude.putOptional 1 r.error Prelude.isDefault Prelude.encodestring
-  Prelude.putOptional 2 r.supported_features Prelude.isDefault Prelude.encodeuint64
+  Prelude.putOptional 1 r.error Prelude.isDefault Prelude.encodeStringField
+  Prelude.putOptional 2 r.supported_features Prelude.isDefault Prelude.encodeUint64Field
   Prelude.putRepeated 15 r.file $ Prelude.putLenDel putCodeGeneratorResponse_File
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
@@ -175,10 +175,10 @@ parseCodeGeneratorResponse length = Prelude.label "CodeGeneratorResponse / " $
     -> Prelude.WireType
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder CodeGeneratorResponseR CodeGeneratorResponseR)
   parseField 1 Prelude.LenDel = Prelude.label "error / " $ do
-    x <- Prelude.string
+    x <- Prelude.decodeString
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "error") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "supported_features / " $ do
-    x <- Prelude.uint64
+    x <- Prelude.decodeUint64
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "supported_features") $ \_ -> Prelude.Just x
   parseField 15 Prelude.LenDel = Prelude.label "file / " $ do
     x <- Prelude.parseLenDel parseCodeGeneratorResponse_File
@@ -221,9 +221,9 @@ instance showCodeGeneratorResponse_File :: Prelude.Show CodeGeneratorResponse_Fi
 
 putCodeGeneratorResponse_File :: forall m. Prelude.MonadEffect m => CodeGeneratorResponse_File -> Prelude.PutM m Prelude.Unit
 putCodeGeneratorResponse_File (CodeGeneratorResponse_File r) = do
-  Prelude.putOptional 1 r.name Prelude.isDefault Prelude.encodestring
-  Prelude.putOptional 2 r.insertion_point Prelude.isDefault Prelude.encodestring
-  Prelude.putOptional 15 r.content Prelude.isDefault Prelude.encodestring
+  Prelude.putOptional 1 r.name Prelude.isDefault Prelude.encodeStringField
+  Prelude.putOptional 2 r.insertion_point Prelude.isDefault Prelude.encodeStringField
+  Prelude.putOptional 15 r.content Prelude.isDefault Prelude.encodeStringField
   Prelude.putOptional 16 r.generated_code_info (\_ -> false) $ Prelude.putLenDel Google.Protobuf.putGeneratedCodeInfo
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
@@ -236,13 +236,13 @@ parseCodeGeneratorResponse_File length = Prelude.label "File / " $
     -> Prelude.WireType
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder CodeGeneratorResponse_FileR CodeGeneratorResponse_FileR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
-    x <- Prelude.string
+    x <- Prelude.decodeString
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "insertion_point / " $ do
-    x <- Prelude.string
+    x <- Prelude.decodeString
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "insertion_point") $ \_ -> Prelude.Just x
   parseField 15 Prelude.LenDel = Prelude.label "content / " $ do
-    x <- Prelude.string
+    x <- Prelude.decodeString
     pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "content") $ \_ -> Prelude.Just x
   parseField 16 Prelude.LenDel = Prelude.label "generated_code_info / " $ do
     x <- Prelude.parseLenDel Google.Protobuf.parseGeneratedCodeInfo

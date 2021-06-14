@@ -1,19 +1,17 @@
 -- | You almost never need to `import` this module.
 -- | See package README for explanation.
 module Protobuf.Common
-( FieldNumber
-, WireType(..)
-, Bytes(..)
-, class Default
-, default
-, isDefault
-, fromDefault
-, toDefault
-)
-where
+  ( FieldNumber
+  , WireType(..)
+  , Bytes(..)
+  , class Default
+  , default
+  , isDefault
+  , fromDefault
+  , toDefault
+  ) where
 
 import Prelude
-
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.ArrayBuffer as ArrayBuffer
 import Data.ArrayBuffer.Typed as TA
@@ -33,7 +31,8 @@ import Effect (Effect)
 import Effect.Unsafe (unsafePerformEffect)
 import Partial.Unsafe (unsafePartial)
 
-type FieldNumber = UInt
+type FieldNumber
+  = UInt
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#structure
 data WireType
@@ -43,19 +42,17 @@ data WireType
   | Bits32
 
 derive instance eqWireType :: Eq WireType
+
 derive instance genericWireType :: Generic WireType _
 
-instance ordWireType :: Ord WireType
- where
+instance ordWireType :: Ord WireType where
   compare l r = compare (fromEnum l) (fromEnum r)
 
-instance boundedWireType :: Bounded WireType
- where
+instance boundedWireType :: Bounded WireType where
   top = Bits32
   bottom = VarInt
 
-instance enumWireType :: Enum WireType
- where
+instance enumWireType :: Enum WireType where
   succ VarInt = Just Bits64
   succ Bits64 = Just LenDel
   succ LenDel = Just Bits32
@@ -65,8 +62,7 @@ instance enumWireType :: Enum WireType
   pred LenDel = Just Bits64
   pred Bits32 = Just LenDel
 
-instance boundedEnumWireType :: BoundedEnum WireType
- where
+instance boundedEnumWireType :: BoundedEnum WireType where
   cardinality = Cardinality 4
   toEnum 0 = Just VarInt
   toEnum 1 = Just Bits64
@@ -78,30 +74,31 @@ instance boundedEnumWireType :: BoundedEnum WireType
   fromEnum LenDel = 2
   fromEnum Bits32 = 5
 
-instance showWireType :: Show WireType where show = genericShow
+instance showWireType :: Show WireType where
+  show = genericShow
 
 -- | Representation of a __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 -- | field.
-newtype Bytes = Bytes ArrayBuffer
+newtype Bytes
+  = Bytes ArrayBuffer
 
-instance showBytes :: Show Bytes
- where
+instance showBytes :: Show Bytes where
   show (Bytes ab) = "<Bytes length " <> show (AB.byteLength ab) <> ">"
 
-instance eqBytes :: Eq Bytes
- where
-  eq (Bytes l) (Bytes r) = unsafePerformEffect $ do
-    l' <- TA.whole l :: Effect Uint8Array
-    r' <- TA.whole r :: Effect Uint8Array
-    TA.eq l' r'
+instance eqBytes :: Eq Bytes where
+  eq (Bytes l) (Bytes r) =
+    unsafePerformEffect
+      $ do
+          l' <- TA.whole l :: Effect Uint8Array
+          r' <- TA.whole r :: Effect Uint8Array
+          TA.eq l' r'
 
 derive instance newtypeBytes :: Newtype Bytes _
 
 -- | In Protobuf, [zero values are “default values”](https://developers.google.com/protocol-buffers/docs/proto3#default)
 -- | and have special semantics.
-class Default a
- where
+class Default a where
   default :: a
   isDefault :: a -> Boolean
 
@@ -109,62 +106,41 @@ class Default a
 -- https://github.com/purescript/documentation/blob/master/language/Type-Classes.md#instance-chains
 -- so that we can define instance defaultBoundedEnum without overlapping.
 -- Discussion: https://github.com/purescript/purescript/issues/3596
-
-instance defaultString :: Default String
- where
+instance defaultString :: Default String where
   default = ""
   isDefault = String.null
-
-else instance defaultInt :: Default Int
- where
+else instance defaultInt :: Default Int where
   default = 0
   isDefault x = x == 0
-
-else instance defaultNumber :: Default Number
- where
+else instance defaultNumber :: Default Number where
   default = 0.0
   isDefault x = x == 0.0
-
-else instance defaultLongSigned :: Default (Long Signed)
- where
+else instance defaultLongSigned :: Default (Long Signed) where
   default = fromLowHighBits 0 0
   isDefault x = x == default
-
-else instance defaultLongUnsigned :: Default (Long Unsigned)
- where
+else instance defaultLongUnsigned :: Default (Long Unsigned) where
   default = fromLowHighBits 0 0
   isDefault x = x == default
-
-else instance defaultFloat32 :: Default Float32
- where
+else instance defaultFloat32 :: Default Float32 where
   default = Float32.fromNumber' 0.0
   isDefault x = x == default
-
-else instance defaultBoolean :: Default Boolean
- where
+else instance defaultBoolean :: Default Boolean where
   default = false
   isDefault x = not x
-
-else instance defaultUInt :: Default UInt
- where
+else instance defaultUInt :: Default UInt where
   default = UInt.fromInt 0
   isDefault x = x == default
-
-else instance defaultBytes :: Default Bytes
- where
+else instance defaultBytes :: Default Bytes where
   default = Bytes $ unsafePerformEffect $ AB.empty 0
   isDefault (Bytes ab) = ArrayBuffer.byteLength ab == 0
-
-else instance defaultBoundedEnum :: BoundedEnum a => Default a
- where
+else instance defaultBoundedEnum :: BoundedEnum a => Default a where
   default = unsafePartial $ fromJust $ toEnum 0 -- “There must be a zero value” https://developers.google.com/protocol-buffers/docs/proto3#enum
   isDefault x = x == default
 
 -- Maybe we want to rip off? https://pursuit.purescript.org/packages/purescript-data-default/0.3.2/docs/Data.Default#t:GDefault
-
 -- | Turns a `default` value into `Nothing`.
 fromDefault :: forall a. Default a => Eq a => a -> Maybe a
-fromDefault x = if x==default then Nothing else Just x
+fromDefault x = if x == default then Nothing else Just x
 
 -- | Turns `Nothing` into a `default` value.
 -- |
@@ -174,4 +150,5 @@ fromDefault x = if x==default then Nothing else Just x
 -- | a missing field as a “default” value.
 toDefault :: forall a. Default a => Maybe a -> a
 toDefault Nothing = default
+
 toDefault (Just x) = x
