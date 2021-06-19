@@ -15,6 +15,7 @@ pkgs.mkShell {
   shellHook = ''
   shopt -s globstar # Need for globbing packagePath in vscode PureScript IDE
   export PATH="./bin:./node_modules/.bin:$PATH"   # PATH to protoc-gen-purescript
+  source <(spago --bash-completion-script `which spago`)
   echo "PureScript Protobuf development environment."
   protoc --version
   echo -n "purs "
