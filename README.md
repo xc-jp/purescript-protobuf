@@ -219,6 +219,7 @@ The generated code depends on packages
   , "parsing-dataview"
   , "uint"
   , "longs"
+  , "float32"
   , "text-encoding"
 ```
 
