@@ -1,26 +1,27 @@
 # https://nixos.org/guides/towards-reproducibility-pinning-nixpkgs.html
-{ pkgs ? import (builtins.fetchTarball {
-  url = "https://github.com/NixOS/nixpkgs/archive/20.03.tar.gz";
-  sha256 = "0182ys095dfx02vl2a20j1hz92dx3mfgz2a6fhn31bqlp1wa8hlq";
+
+{ pkgs ? import (builtins.fetchGit {
+  # https://github.com/NixOS/nixpkgs/releases/tag/20.09
+  url = "https://github.com/nixos/nixpkgs/";
+  ref = "refs/tags/20.09";
+  rev = "cd63096d6d887d689543a0b97743d28995bc9bc3";
   }) {}
 }:
-
 let
-  easy-ps = import
-    (builtins.fetchGit {
-      url = "https://github.com/justinwoo/easy-purescript-nix.git";
-      rev = "1ec689df0adf8e8ada7fcfcb513876307ea34226";
-    }) { inherit pkgs; };
+  easy-ps = import (builtins.fetchGit {
+    url = "https://github.com/justinwoo/easy-purescript-nix.git";
+    rev = "bbef4245cd6810ea84e97a47c801947bfec9fadc";
+  }) { inherit pkgs; };
+
 
   spago2nix = import (builtins.fetchGit {
     url = "https://github.com/xc-jp/spago2nix.git";
-    ref = "ls-transitive";
-    rev = "1e65ec78def30b9c10bfc165cfb5f3b1c42bbd80";
+    rev = "898798204fa8f53837bbcf71e30aeb425deb0906";
   }) { inherit pkgs; };
 
   node2nix = import (builtins.fetchGit {
     url = "https://github.com/svanderburg/node2nix.git";
-    rev = "c6cc7edc7c180ef01f23bc2aff31a1cbb5524b0d";
+    rev = "0c94281ea98f1b17532176106f90f909aa133704";
   }) { inherit pkgs; };
 
   protobuf = (import ./protobuf.nix { inherit pkgs; }).protobuf_v3_15_8;

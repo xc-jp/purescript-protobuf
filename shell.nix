@@ -1,9 +1,9 @@
 { pkgs ? import ./nix/pkgs.nix {} }:
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
-    easy-ps.purs-0_13_8
+    easy-ps.purs-0_14_3
     easy-ps.spago
-    nodejs-13_x
+    nodejs-14_x
     easy-ps.pulp
     protobuf
     nodePackages.bower
