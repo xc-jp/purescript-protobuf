@@ -1449,11 +1449,11 @@ import Protobuf.Prelude as Prelude
 
     genEnumConstruct arg = Left $ "Failed genEnumConstruct\n" <> show arg
 
-    genEnumTo (EnumValueDescriptorProto { name: Just name, number: Just number }) = Right $ "  toEnum " <> show number <> " = Prelude.Just " <> mkEnumName name
+    genEnumTo (EnumValueDescriptorProto { name: Just name, number: Just number }) = Right $ "  toEnum (" <> show number <> ") = Prelude.Just " <> mkEnumName name
 
     genEnumTo arg = Left $ "Failed genEnumTo\n" <> show arg
 
-    genEnumFrom (EnumValueDescriptorProto { name: Just name, number: Just number }) = Right $ "  fromEnum " <> mkEnumName name <> " = " <> show number
+    genEnumFrom (EnumValueDescriptorProto { name: Just name, number: Just number }) = Right $ "  fromEnum " <> mkEnumName name <> " = (" <> show number <> ")"
 
     genEnumFrom arg = Left $ "Failed genEnumFrom\n" <> show arg
 

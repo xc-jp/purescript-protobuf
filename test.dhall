@@ -20,5 +20,8 @@ in conf //
     [ "assert"
     , "psci-support"
     , "minibench"
+    , "console"
+    , "math"
+    , "unfoldable"
     ]
   }
