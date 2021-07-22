@@ -2,9 +2,9 @@
 
 pkgs.mkShell {
   nativeBuildInputs = [
-    pkgs.easy-ps.purs-0_13_8
+    pkgs.easy-ps.purs-0_14_3
     pkgs.easy-ps.spago
-    pkgs.nodejs-13_x
+    pkgs.nodejs-14_x
     pkgs.protobuf
     # pkgs.writeScriptBin "run" ''
     #   set -e
