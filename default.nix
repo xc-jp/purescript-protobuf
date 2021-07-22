@@ -32,7 +32,7 @@ pkgs.stdenv.mkDerivation {
     spagoPkgs.buildSpagoStyle
     ];
   nativeBuildInputs = with pkgs; [
-    easy-ps.purs-0_13_8
+    purs
     easy-ps.spago
     ];
   src = ./.;

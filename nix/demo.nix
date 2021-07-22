@@ -6,8 +6,8 @@ let
 in
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
-    nodejs-13_x
-    protobuf3_9
+    nodejs
+    protobuf
     protoc-gen-purescript
   ];
   LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507

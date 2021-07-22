@@ -26,4 +26,11 @@ let
 
   protobuf = (import ./protobuf.nix { inherit pkgs; }).protobuf_v3_15_8;
 
-in pkgs // { inherit easy-ps; inherit spago2nix; inherit node2nix; inherit protobuf; }
+in pkgs //
+  { inherit easy-ps;
+    inherit spago2nix;
+    inherit node2nix;
+    inherit protobuf;
+    purs = easy-ps.purs-0_14_3;
+    nodejs = pkgs.nodejs-14_x;
+  }
