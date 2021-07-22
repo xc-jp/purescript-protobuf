@@ -32,21 +32,25 @@ module Protobuf.Decode
   ) where
 
 import Prelude
+
 import Control.Apply (lift2)
 import Control.Monad.Except (ExceptT(..))
 import Control.Monad.State (StateT(..))
 import Control.Monad.Trans.Class (lift)
 import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.ArrayBuffer.Builder (DataBuff(..))
 import Data.ArrayBuffer.DataView (getFloat32le, getFloat64le, getInt32le, getUint32le)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed (class TypedArray)
 import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer.Types (ArrayView, ByteLength, ByteOffset, DataView, Uint8Array, kind ArrayViewType)
+import Data.ArrayBuffer.Types (ArrayView, ArrayViewType, ByteLength, ByteOffset, DataView)
 import Data.ArrayBuffer.Types as ArrayTypes
 import Data.ArrayBuffer.ValueMapping (class BinaryValue, class BytesPerType, class ShowArrayViewType, byteWidth)
 import Data.Either (Either(..))
 import Data.Enum (toEnum)
 import Data.Float32 (Float32)
+import Data.Long.Internal (Long, Unsigned, Signed)
+import Data.Long.Internal as Long.Internal
 import Data.Maybe (Maybe(..), fromJust)
 import Data.String (joinWith)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
@@ -58,13 +62,11 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Unsafe (unsafePerformEffect)
 import Partial.Unsafe (unsafePartial)
-import Protobuf.Common (Bytes(..), FieldNumber, WireType)
+import Protobuf.Common (Bytes(..), FieldNumber, WireType, mkUint8Array)
 import Text.Parsing.Parser (ParseError(..), ParseState(..), ParserT(..), fail)
 import Text.Parsing.Parser.DataView as Parse
 import Text.Parsing.Parser.Pos (Position(..))
 import Type.Proxy (Proxy(..))
-import Data.Long.Internal (Long, Unsigned, Signed)
-import Data.Long.Internal as Long.Internal
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -160,7 +162,7 @@ foreign import _decodeArray ::
 foreign import _isBigEndian :: Effect (Effect Boolean)
 
 -- | Parse a slice of the DataView to an Array given a parser for the
--- | individual elements
+-- | individual elements.
 packedArray ::
   forall a m t name.
   BinaryValue a t =>
@@ -205,7 +207,7 @@ packedArray _ decodeValue n =
                   $ decodeValue s ((i * byteSize) + column - 1)
             in
               if column + n - 1 > DV.byteLength s then
-                pure (Tuple (Left (ParseError "index out of bounds" pos')) state)
+                pure (Tuple (Left (ParseError "packedArray index out of bounds" pos')) state)
               else do
                 x <- liftEffect (_decodeArray unsafeDecodeValue (n `div` byteSize))
                 pure (Tuple (pure x) (ParseState s pos' true))
@@ -255,8 +257,8 @@ typedArray _ n =
 
               isAligned = start `mod` byteSize == 0
             in
-              if end > DV.byteLength s then
-                pure (Tuple (Left (ParseError "index out of bounds" pos')) state)
+              if end > start + DV.byteLength s then
+                pure (Tuple (Left (ParseError "typedArray index out of bounds" pos')) state)
               else do
                 x <-
                   liftEffect
@@ -353,20 +355,10 @@ decodeBool = do
 decodeString :: forall m. MonadEffect m => ParserT DataView m String
 decodeString = do
   stringview <- decodeVarint32 >>= UInt.toInt >>> Parse.takeN
-  stringarray <- lift $ liftEffect $ mkTypedArray stringview
+  stringarray <- lift $ liftEffect $ mkUint8Array stringview
   case decodeUtf8 stringarray of
     Left err -> fail $ "string decodeUtf8 failed. " <> show err
     Right s -> pure s
-  where
-  mkTypedArray :: DataView -> Effect Uint8Array
-  mkTypedArray dv = do
-    let
-      buffer = DV.buffer dv
-
-      byteOffset = DV.byteOffset dv
-
-      byteLength = DV.byteLength dv
-    AT.part buffer byteOffset byteLength
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -374,11 +366,7 @@ decodeBytes :: forall m. MonadEffect m => ParserT DataView m Bytes
 decodeBytes = do
   len <- UInt.toInt <$> decodeVarint32
   dv <- Parse.takeN len
-  let
-    ab = DV.buffer dv
-  let
-    begin = DV.byteOffset dv
-  pure $ Bytes $ AB.slice begin (begin + len) ab
+  pure $ Bytes $ View dv
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
 decodeZigzag32 :: UInt -> Int
@@ -400,8 +388,8 @@ decodeTag32 = do
 
 -- | There is no `varint32` in the Protbuf spec, this is
 -- | just a performance-improving assumption we make
--- | in cases where only a deranged lunatic would use a value
--- | bigger than 32 bits, such as in field numbers.
+-- | in cases where we would be surprised to see a number
+-- | larger than 32 bits, such as in field numbers.
 -- | We think this is worth the risk because `UInt` is
 -- | represented as a native Javascript Number whereas
 -- | `Long` is a composite library type, so we expect the

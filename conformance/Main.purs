@@ -6,7 +6,7 @@ import Prelude
 import Conformance.Conformance (ConformanceRequest(..), ConformanceResponse, ConformanceResponse_Result(..), mkConformanceResponse, parseConformanceRequest, putConformanceResponse)
 import Conformance.Conformance as C
 import Control.Monad.Writer (tell)
-import Data.ArrayBuffer.Builder (execPut, subBuilder, putInt32le)
+import Data.ArrayBuffer.Builder (DataBuff(..), execPut, putInt32le, subBuilder, toView)
 import Data.ArrayBuffer.Builder as Builder
 import Data.ArrayBuffer.DataView as DV
 import Data.Either (Either(..))
@@ -76,7 +76,7 @@ reply (ConformanceRequest
   , print_unknown_fields: _ -- :: Maybe.Maybe Boolean
   , payload: Just (C.ConformanceRequest_Payload_Protobuf_payload (Bytes receipt_payload))
   }) = do
-    let dv = DV.whole receipt_payload
+    let dv = toView receipt_payload
     parsed <- runParserT dv $ T3.parseTestAllTypesProto3 $ DV.byteLength dv
     case parsed of
       Left err ->
@@ -86,7 +86,7 @@ reply (ConformanceRequest
       Right x -> do
         reply_payload <- execPut $ T3.putTestAllTypesProto3 x
         pure $ mkConformanceResponse
-          { result: Just $ ConformanceResponse_Result_Protobuf_payload (Bytes reply_payload)
+          { result: Just $ ConformanceResponse_Result_Protobuf_payload (Bytes $ Buff reply_payload)
           }
 
 reply _ = pure $ mkConformanceResponse

@@ -4,7 +4,7 @@ import Prelude
 
 import Control.Apply (lift2)
 import Data.Array (catMaybes, mapMaybe, zipWith)
-import Data.ArrayBuffer.Builder (execPut)
+import Data.ArrayBuffer.Builder (DataBuff(..), execPut)
 import Data.ArrayBuffer.DataView (part, whole)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
@@ -72,7 +72,7 @@ main = do
     , f11: Just billion2'
     , f12: Just true
     , f13: Just "🍝"
-    , f14: Just $ Bytes somebytes
+    , f14: Just $ Bytes $ Buff somebytes
     , f15: Just Pack1.Msg1_E1_Three
     })
 
@@ -97,7 +97,7 @@ main = do
     , f11: replicate 3 billion2'
     , f12: replicate 3 true
     , f13: replicate 3 "🍝"
-    , f14: replicate 3 $ Bytes somebytes
+    , f14: replicate 3 $ Bytes $ Buff somebytes
     , f15: replicate 3 Pack2.Msg2_E1_Three
     })
 

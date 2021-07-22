@@ -40,20 +40,23 @@ module Protobuf.Encode
   ) where
 
 import Prelude
-import Effect.Class (class MonadEffect)
+
 import Control.Monad.Writer.Trans (tell)
-import Data.Float32 (Float32)
+import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.ArrayBuffer.Builder (toView)
 import Data.ArrayBuffer.Builder as Builder
+import Data.ArrayBuffer.DataView as DV
+import Data.ArrayBuffer.Typed as AT
+import Data.Enum (fromEnum)
+import Data.Float32 (Float32)
+import Data.Long as Long
+import Data.Long.Internal (Long, Unsigned, Signed)
+import Data.Long.Internal as Long.Internal
+import Data.TextEncoding (encodeUtf8)
 import Data.UInt (UInt)
 import Data.UInt as UInt
-import Data.TextEncoding (encodeUtf8)
-import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer.ArrayBuffer as AB
+import Effect.Class (class MonadEffect)
 import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
-import Data.Enum (fromEnum)
-import Data.Long.Internal (Long, Unsigned, Signed)
-import Data.Long as Long
-import Data.Long.Internal as Long.Internal
 
 encodeDoubleField :: forall m. MonadEffect m => FieldNumber -> Number -> Builder.PutM m Unit
 -- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
@@ -230,10 +233,10 @@ encodeStringField fieldNumber s = do
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 encodeBytesField :: forall m. MonadEffect m => FieldNumber -> Bytes -> Builder.PutM m Unit
-encodeBytesField fieldNumber (Bytes s) = do
+encodeBytesField fieldNumber (Bytes buf) = do
   encodeTag32 fieldNumber LenDel
-  encodeVarint32 $ UInt.fromInt $ AB.byteLength s
-  Builder.putArrayBuffer s
+  encodeVarint32 $ UInt.fromInt $ DV.byteLength $ toView buf
+  Builder.putDataBuff buf
 
 -- | `tell` with a tag and a length delimit.
 encodeBuilder :: forall m. MonadEffect m => FieldNumber -> Builder.Builder -> Builder.PutM m Unit
@@ -252,8 +255,8 @@ encodeTag32 fieldNumber wireType = encodeVarint32 $ (fieldNumber `UInt.shl` (UIn
 
 -- | There is no `varint32` in the Protbuf spec, this is
 -- | just a performance-improving assumption we make
--- | in cases where only a deranged lunatic would use a value
--- | bigger than 32 bits, such as in field numbers.
+-- | in cases where we would be surprised to see a number
+-- | larger than 32 bits, such as in field numbers.
 -- | We think this is worth the risk because `UInt` is
 -- | represented as a native Javascript Number whereas
 -- | `Long` is a composite library type, so we expect the

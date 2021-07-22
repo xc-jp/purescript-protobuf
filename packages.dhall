@@ -124,7 +124,7 @@ in  upstream
     }
   with arraybuffer-builder =
     { repo = "https://github.com/jamesdbrock/purescript-arraybuffer-builder.git"
-    , version = "v2.0.0"
+    , version = "v2.1.0"
     , dependencies =
       [ "effect"
       , "float32"

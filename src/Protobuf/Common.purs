@@ -9,21 +9,24 @@ module Protobuf.Common
   , isDefault
   , fromDefault
   , toDefault
+  , mkUint8Array
   ) where
 
 import Prelude
+
 import Data.ArrayBuffer.ArrayBuffer as AB
-import Data.ArrayBuffer.ArrayBuffer as ArrayBuffer
+import Data.ArrayBuffer.Builder (DataBuff(..), toView)
+import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
-import Data.ArrayBuffer.Types (ArrayBuffer, Uint8Array)
+import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), fromEnum, toEnum)
 import Data.Float32 (Float32)
 import Data.Float32 as Float32
 import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype)
+import Data.Show.Generic (genericShow)
 import Data.String as String
 import Data.UInt (UInt)
 import Data.UInt as UInt
@@ -80,18 +83,31 @@ instance showWireType :: Show WireType where
 -- | Representation of a __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 -- | field.
-newtype Bytes
-  = Bytes ArrayBuffer
+-- |
+-- | On a message which has been decoded,
+-- | The wrapped `DataBuff` will usually be a `DataView`.
+-- | In that case, the `DataView` is a view into the
+-- | received message I/O buffer.
+-- |
+-- | For messages which you intend to encode,
+-- | You may set it the `DataBuff` to `DataView` or `ArrayBuffer`,
+-- | whichever seems best.
+-- |
+-- | The `ArrayBuffer` and `DataView` are mutable, so be careful not to mutate
+-- | them if anything might read them again. Here we trade off typechecker
+-- | guarantees for implementation simplicity.
+newtype Bytes = Bytes DataBuff
 
 instance showBytes :: Show Bytes where
-  show (Bytes ab) = "<Bytes length " <> show (AB.byteLength ab) <> ">"
+  show (Bytes (Buff ab)) = "<ArrayBuffer length " <> show (AB.byteLength ab) <> ">"
+  show (Bytes (View dv)) = "<DataView length " <> show (DV.byteLength dv) <> ">"
 
 instance eqBytes :: Eq Bytes where
   eq (Bytes l) (Bytes r) =
     unsafePerformEffect
       $ do
-          l' <- TA.whole l :: Effect Uint8Array
-          r' <- TA.whole r :: Effect Uint8Array
+          l' <- mkUint8Array $ toView l -- :: Effect Uint8Array
+          r' <- mkUint8Array $ toView r -- :: Effect Uint8Array
           TA.eq l' r'
 
 derive instance newtypeBytes :: Newtype Bytes _
@@ -131,13 +147,12 @@ else instance defaultUInt :: Default UInt where
   default = UInt.fromInt 0
   isDefault x = x == default
 else instance defaultBytes :: Default Bytes where
-  default = Bytes $ unsafePerformEffect $ AB.empty 0
-  isDefault (Bytes ab) = ArrayBuffer.byteLength ab == 0
+  default = Bytes $ Buff $ unsafePerformEffect $ AB.empty 0
+  isDefault (Bytes buf) = DV.byteLength (toView buf) == 0
 else instance defaultBoundedEnum :: BoundedEnum a => Default a where
   default = unsafePartial $ fromJust $ toEnum 0 -- “There must be a zero value” https://developers.google.com/protocol-buffers/docs/proto3#enum
   isDefault x = x == default
 
--- Maybe we want to rip off? https://pursuit.purescript.org/packages/purescript-data-default/0.3.2/docs/Data.Default#t:GDefault
 -- | Turns a `default` value into `Nothing`.
 fromDefault :: forall a. Default a => Eq a => a -> Maybe a
 fromDefault x = if x == default then Nothing else Just x
@@ -150,5 +165,9 @@ fromDefault x = if x == default then Nothing else Just x
 -- | a missing field as a “default” value.
 toDefault :: forall a. Default a => Maybe a -> a
 toDefault Nothing = default
-
 toDefault (Just x) = x
+
+-- | Make a `Uint8Array` Typed Array from a `DataView`. We can do this
+-- | for the case of `Uint8` because byte arrays are always aligned.
+mkUint8Array :: DataView -> Effect Uint8Array
+mkUint8Array dv = TA.part (DV.buffer dv) (DV.byteOffset dv) (DV.byteLength dv)
