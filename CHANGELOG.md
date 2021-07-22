@@ -1,3 +1,25 @@
+# v2.0.0 2021-07-22
+
+Upgrade to PureScript 0.14.3.
+
+For byte fields we’re now using the `DataBuff` type
+from __arraybuffer-builder__ v2.1.0 which allows us to avoid array copies,
+and so may speed up encoding and decoding in some cases.
+
+## Breaking changes
+
+The `Bytes` field type was formerly a wrapper for `ArrayBuffer`, and now
+it is a wrapper for `DataBuff`, which may be either `ArrayBuffer` or `DataView`.
+This changes the API and will require some changes in dependent code.
+
+## Bugfixes
+
+Fixed a bug which sometimes incorrectly errored with “index out of bounds” when
+decoding packed repeated fields of double, float, fixed32, or sfixed32.
+
+Fixed a bug which would cause a compilation failure in generated code for
+enums with negative values.
+
 # v1.8.0
 
 Large (×1000) speedup for decoding packed repeated fields of

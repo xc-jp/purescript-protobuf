@@ -24,21 +24,20 @@ module Protobuf.Runtime
   ) where
 
 import Prelude
+
 import Control.Monad.Error.Class (throwError, catchError)
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.Trans.Class (lift)
 import Data.Array (snoc)
-import Data.ArrayBuffer.ArrayBuffer as AB
-import Data.ArrayBuffer.Builder (PutM, subBuilder)
-import Data.ArrayBuffer.DataView as DV
+import Data.ArrayBuffer.Builder (DataBuff(..), PutM, subBuilder)
 import Data.ArrayBuffer.Types (DataView, ByteLength)
 import Data.Enum (class BoundedEnum, fromEnum, toEnum)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, highBits, lowBits, signedLongFromInt)
 import Data.Long.Unsigned as Long.Unsigned
 import Data.Maybe (Maybe(..))
+import Data.Show.Generic (genericShow)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
@@ -174,10 +173,7 @@ parseFieldUnknown fieldNumberInt wireType =
             Just l -> do
               dv <- takeN l
               pure $ modify (SProxy :: SProxy "__unknown_fields")
-                $ flip snoc
-                $ UnknownLenDel fieldNumber
-                $ Bytes
-                $ AB.slice (DV.byteOffset dv) (DV.byteLength dv) (DV.buffer dv)
+                $ flip snoc $ UnknownLenDel fieldNumber $ Bytes $ View dv
         Bits32 -> do
           x <- Decode.decodeFixed32
           pure $ modify (SProxy :: SProxy "__unknown_fields")
