@@ -106,9 +106,9 @@ in  upstream
 -}
 
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.3-20210716/packages.dhall sha256:1f9af624ddfd5352455b7ac6df714f950d499e7e3c6504f62ff467eebd11042c
+https://github.com/purescript/package-sets/releases/download/psc-0.14.3-20210722/packages.dhall sha256:1ceb43aa59436bf5601bac45f6f3781c4e1f0e4c2b8458105b018e5ed8c30f8c
 in  upstream
-  with longs =
+with longs =
     { dependencies =
       [ "effect"
       , "console"
@@ -121,35 +121,5 @@ in  upstream
       ]
     , repo = "https://github.com/zapph/purescript-longs.git"
     , version = "v0.1.1"
-    }
-  with arraybuffer-builder =
-    { repo = "https://github.com/jamesdbrock/purescript-arraybuffer-builder.git"
-    , version = "v2.1.0"
-    , dependencies =
-      [ "effect"
-      , "float32"
-      , "maybe"
-      , "prelude"
-      , "transformers"
-      , "uint"
-      , "arraybuffer-types"
-      , "arraybuffer"
-      ]
-    }
-  with parsing-dataview =
-    { repo = "https://github.com/jamesdbrock/purescript-parsing-dataview.git"
-    , version = "v2.0.0"
-    , dependencies =
-      [ "arraybuffer"
-      , "arraybuffer-types"
-      , "effect"
-      , "float32"
-      , "maybe"
-      , "parsing"
-      , "prelude"
-      , "transformers"
-      , "tuples"
-      , "uint"
-      ]
     }
 

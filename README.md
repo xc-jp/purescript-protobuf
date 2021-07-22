@@ -208,29 +208,15 @@ And now the `result` is either a parsing error or a fully validated rectangle.
 The generated code modules will import modules from this
 package.
 
-The generated code depends on packages
-
-```
-  , "protobuf"
-  , "arraybuffer"
-  , "arraybuffer-types"
-  , "arraybuffer-builder"
-  , "parsing"
-  , "parsing-dataview"
-  , "uint"
-  , "longs"
-  , "float32"
-  , "text-encoding"
-```
-
-which are all in
+The generated code depends on packages which are all in
 [__package-sets__](https://github.com/purescript/package-sets).
 
-It also depends on the Javascript package
+The generated code also depends on the Javascript package
 [__long__](https://www.npmjs.com/package/long).
 
-For depending on generated code without pulling in any of the code-generation
-dependencies, we can use `spago-library.dhall`.
+For depending on generated code without pulling in any of the
+`protoc` plugin code-generation dependencies, we can use `spago-library.dhall`.
+
 ### Generated message instances
 
 All of the generated message types have instances of

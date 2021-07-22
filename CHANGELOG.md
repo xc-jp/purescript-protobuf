@@ -1,10 +1,13 @@
 # v2.0.0 2021-07-22
 
-Upgrade to PureScript 0.14.3.
+Upgraded to PureScript 0.14.3.
 
 For byte fields we’re now using the `DataBuff` type
 from __arraybuffer-builder__ v2.1.0 which allows us to avoid array copies,
 and so may speed up encoding and decoding in some cases.
+
+Created a `Protobuf.Prelude` module to eliminate many import warnings
+in the generated code.
 
 ## Breaking changes
 

@@ -29,6 +29,7 @@ in spagodhall //
     , "transformers"
     , "tuples"
     , "either"
+    , "quickcheck" --for longs
     ]
   , sources = [ "src/Protobuf/*.purs" ]
   }

@@ -28,6 +28,7 @@
   , "transformers"
   , "tuples"
   , "either"
+  , "quickcheck" -- for longs
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

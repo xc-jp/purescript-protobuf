@@ -19,11 +19,11 @@ let
 
     "arraybuffer-builder" = pkgs.stdenv.mkDerivation {
         name = "arraybuffer-builder";
-        version = "v2.0.0";
+        version = "v2.1.0";
         src = pkgs.fetchgit {
           url = "https://github.com/jamesdbrock/purescript-arraybuffer-builder.git";
-          rev = "a7cd403e8cf35353ca8b919f89d6c8d9a2c4e025";
-          sha256 = "0rsxqajdzva2fbwnmsp9mhh6gg8a8as825c4x96kbl9fjsxi6afh";
+          rev = "e2b73e0327e5eb49e0b320bd5a73d19deb2c52db";
+          sha256 = "0nssh9zjclp00gpp4r22pkhl22w36c7rsffhmgz09f4hqybivcga";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";
@@ -31,11 +31,11 @@ let
 
     "arraybuffer-types" = pkgs.stdenv.mkDerivation {
         name = "arraybuffer-types";
-        version = "v3.0.0";
+        version = "v3.0.1";
         src = pkgs.fetchgit {
           url = "https://github.com/purescript-contrib/purescript-arraybuffer-types.git";
-          rev = "c15bd045c847a401531aab32c3e60ce94f2c5227";
-          sha256 = "19dh4k3n1lr8hbj15ivkiv1886s1q7brl9hic6zrkrr2rx1bz69r";
+          rev = "48cd7f4887791db1d9c2daf5fd98b62ba00e15bd";
+          sha256 = "09r6bhsiq9iqdsjf9p8m3p31qkszsipsafvy836mfdi8af6h5fv6";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";
@@ -499,11 +499,11 @@ let
 
     "parsing-dataview" = pkgs.stdenv.mkDerivation {
         name = "parsing-dataview";
-        version = "v2.0.0";
+        version = "v2.0.1";
         src = pkgs.fetchgit {
           url = "https://github.com/jamesdbrock/purescript-parsing-dataview.git";
-          rev = "8b615d13df4a7b0ded45153dc6ba68604efab010";
-          sha256 = "0nqr1zyi5zcr9dzkrw8cz6sfrav2sx17y7v7dc1zc4a4sghx4v0g";
+          rev = "70311a8baada7284e7b1168f8251466e32605051";
+          sha256 = "1ky8na4lyybdhm61rnnmszx71f3qv6399jbyvcnnd8k75xhvfz0c";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";

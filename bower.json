@@ -1,39 +1,84 @@
 {
   "name": "purescript-protobuf",
-  "description": "Google Protocol Buffers for Purescript",
-  "main": "src/ProtocPlugin/Main.purs",
-  "authors": [
-    "Cross Compass LLC.",
-    "jamesbrock@gmail.com"
+  "license": [
+    "BSD-3-Clause"
   ],
-  "license": "BSD-3-Clause",
-  "keywords": [
-    "protobuf"
-  ],
-  "homepage": "https://github.com/xc-jp/purescript-protobuf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xc-jp/purescript-protobuf"
+  },
   "ignore": [
     "**/.*",
     "node_modules",
     "bower_components",
-    "test",
-    "tests"
+    "output"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/xc-jp/purescript-protobuf.git"
-  },
   "dependencies": {
-    "purescript-parsing": "^5.0.3",
-    "purescript-arraybuffer-types": "^2.0.0",
-    "purescript-arraybuffer": "^10.0.2",
-    "purescript-uint": "^5.1.4",
-    "purescript-text-encoding": "^1.0.0",
+    "purescript-arraybuffer": "^v11.0.1",
+    "purescript-arraybuffer-builder": "https://github.com/jamesdbrock/purescript-arraybuffer-builder.git#v2.1.0",
+    "purescript-arraybuffer-types": "^v3.0.1",
+    "purescript-arrays": "^v6.0.1",
+    "purescript-control": "^v5.0.0",
+    "purescript-effect": "^v3.0.0",
+    "purescript-either": "^v5.0.0",
+    "purescript-enums": "^v5.0.0",
+    "purescript-float32": "^v1.0.0",
+    "purescript-foldable-traversable": "^v5.0.1",
     "purescript-longs": "^0.1.1",
-    "purescript-node-streams": "^4.0.1",
-    "purescript-node-process": "^7.0.0",
-    "purescript-node-buffer": "^6.0.0",
-    "purescript-node-path": "^3.0.0",
-    "purescript-arraybuffer-builder": "jamesdbrock/purescript-arraybuffer-builder#1.1.0",
-    "purescript-parsing-dataview": "jamesdbrock/purescript-parsing-dataview#1.1.1"
+    "purescript-maybe": "^v5.0.0",
+    "purescript-newtype": "^v4.0.0",
+    "purescript-node-buffer": "^v7.0.1",
+    "purescript-node-path": "^v4.0.0",
+    "purescript-node-process": "^v8.2.0",
+    "purescript-node-streams": "^v5.0.0",
+    "purescript-parsing": "^v6.0.2",
+    "purescript-parsing-dataview": "https://github.com/jamesdbrock/purescript-parsing-dataview.git#v2.0.1",
+    "purescript-partial": "^v3.0.0",
+    "purescript-prelude": "^v5.0.1",
+    "purescript-quickcheck": "^v7.1.0",
+    "purescript-record": "^v3.0.0",
+    "purescript-strings": "^v5.0.0",
+    "purescript-tailrec": "^v5.0.1",
+    "purescript-text-encoding": "^v1.0.0",
+    "purescript-transformers": "^v5.1.0",
+    "purescript-tuples": "^v6.0.1",
+    "purescript-uint": "^v6.0.3"
+  },
+  "resolutions": {
+    "purescript-arrays": "^v6.0.1",
+    "purescript-control": "^v5.0.0",
+    "purescript-arraybuffer-types": "^3.0.0",
+    "purescript-effect": "^v3.0.0",
+    "purescript-foldable-traversable": "^v5.0.1",
+    "purescript-either": "^v5.0.0",
+    "purescript-maybe": "^v5.0.0",
+    "purescript-newtype": "^v4.0.0",
+    "purescript-enums": "^5.0.0",
+    "purescript-prelude": "^v5.0.0",
+    "purescript-partial": "^v3.0.0",
+    "purescript-strings": "^v5.0.0",
+    "purescript-tailrec": "^v5.0.1",
+    "purescript-tuples": "^v6.0.1",
+    "purescript-transformers": "^5.0.0",
+    "purescript-functions": "^v5.0.0",
+    "purescript-unfoldable": "^v5.0.0",
+    "purescript-nullable": "^v5.0.0",
+    "purescript-bifunctors": "^5.0.0",
+    "purescript-nonempty": "^6.0.0",
+    "purescript-unsafe-coerce": "^5.0.0",
+    "purescript-gen": "^v3.0.0",
+    "purescript-st": "^5.0.0",
+    "purescript-console": "^5.0.0",
+    "purescript-orders": "^5.0.0",
+    "purescript-identity": "^5.0.0",
+    "purescript-invariant": "^5.0.0",
+    "purescript-exceptions": "^5.0.0",
+    "purescript-integers": "^5.0.0",
+    "purescript-lazy": "^5.0.0",
+    "purescript-lists": "^6.0.0",
+    "purescript-math": "^v3.0.0",
+    "purescript-refs": "^5.0.0",
+    "purescript-distributive": "^5.0.0",
+    "purescript-type-equality": "^4.0.0"
   }
 }
