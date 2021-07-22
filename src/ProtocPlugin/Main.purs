@@ -65,7 +65,7 @@ main = do
                 void $ write stdout responsebuffer (pure unit)
 
 generate :: CodeGeneratorRequest -> CodeGeneratorResponse
-generate (CodeGeneratorRequest { file_to_generate, parameter, proto_file, compiler_version }) = do
+generate (CodeGeneratorRequest { proto_file }) = do
   case traverse (genFile proto_file) proto_file of
     Right file ->
       mkCodeGeneratorResponse
@@ -80,8 +80,6 @@ generate (CodeGeneratorRequest { file_to_generate, parameter, proto_file, compil
         }
   where
   -- https://github.com/protocolbuffers/protobuf/blob/3f5fc4df1de8e12b2235c3006593e22d6993c3f5/src/google/protobuf/compiler/plugin.proto#L115
-  feature_none = 0
-
   feature_proto3_optional = 1
 
 -- | Names of parent messages for a message or enum.
@@ -109,10 +107,8 @@ genFile proto_file ( FileDescriptorProto
     { name: fileName
   , package
   , dependency
-  , public_dependency
   , message_type
   , enum_type
-  , syntax
   }
 ) = do
   let
@@ -298,7 +294,7 @@ genFile proto_file ( FileDescriptorProto
       cname = String.joinWith "_" $ map capitalize $ nameSpace <> [ oname ]
 
       go :: FieldDescriptorProto -> Resp (Maybe String)
-      go (FieldDescriptorProto { name: Just fname, oneof_index: Just index, type: Just ftype, type_name }) = do
+      go (FieldDescriptorProto { name: Just fname, oneof_index: Just _, type: Just ftype, type_name }) = do
         fieldType <- genFieldType ftype type_name
         Right $ Just $ (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " " <> fieldType
         where
@@ -363,9 +359,9 @@ genFile proto_file ( FileDescriptorProto
       cname = String.joinWith "_" $ map capitalize $ nameSpace <> [ oname ]
 
       go :: FieldDescriptorProto -> Resp (Maybe String)
-      go (FieldDescriptorProto { name: Just fname, type: Just FieldDescriptorProto_Type_TYPE_MESSAGE, type_name }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " _) = false"
+      go (FieldDescriptorProto { name: Just fname, type: Just FieldDescriptorProto_Type_TYPE_MESSAGE }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " _) = false"
 
-      go (FieldDescriptorProto { name: Just fname, type: _, type_name }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " x) = Prelude.isDefault x"
+      go (FieldDescriptorProto { name: Just fname, type: _ }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " x) = Prelude.isDefault x"
 
       go _ = Right Nothing
 
@@ -387,9 +383,7 @@ genFile proto_file ( FileDescriptorProto
         , type_name
         }
       ) = go ftype type_name
-        where
-        fname = decapitalize name'
-
+       where
         -- If you set a oneof field to the default value (such as setting an int32 oneof field to 0), the "case" of that oneof field will be set, and the value will be serialized on the wire.
         -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
         go FieldDescriptorProto_Type_TYPE_DOUBLE _ = Right $ "    Prelude.Just (" <> mkTypeName (nameSpace <> [ oname, name' ]) <> " x) -> Prelude.putOptional " <> show fnumber <> " (Prelude.Just x) (\\_ -> false) Prelude.encodeDoubleField"
@@ -435,8 +429,8 @@ genFile proto_file ( FileDescriptorProto
     genOneofPut _ _ = Left "Failed genOneofPut missing OneofDescriptoroProto name"
   let
     genFieldPut :: NameSpace -> FieldDescriptorProto -> Resp String
-    genFieldPut nameSpace ( FieldDescriptorProto
-        { name: Just name'
+    genFieldPut _ ( FieldDescriptorProto
+      { name: Just name'
       , number: Just fnumber
       , label: Just flabel
       , type: Just ftype
@@ -1114,14 +1108,11 @@ genFile proto_file ( FileDescriptorProto
   -- | https://developers.google.com/protocol-buffers/docs/encoding?hl=en#optional
   let
     genFieldRecord :: NameSpace -> FieldDescriptorProto -> Resp (Maybe String)
-    genFieldRecord nameSpace ( FieldDescriptorProto
-        { name: Just name'
-      , number: Just fnumber
+    genFieldRecord _ ( FieldDescriptorProto
+      { name: Just name'
       , label: Just flabel
       , type: Just ftype
       , type_name
-      , oneof_index
-      , proto3_optional
       }
     ) = (map <<< map) (\x -> fname <> " :: " <> x) $ ptype flabel ftype type_name
       where
@@ -1371,7 +1362,7 @@ import Protobuf.Prelude as Prelude
       Left _ -> identity
       Right patt -> String.Regex.replace' patt toUpper
 
-    toUpper _ [ x ] = String.toUpper x
+    toUpper _ [ Just x ] = String.toUpper x
 
     toUpper x _ = x
 
@@ -1382,6 +1373,7 @@ import Protobuf.Prelude as Prelude
         , multiline: false
         , sticky: false
         , unicode: true
+        , dotAll: true
         }
 
     illegalDelete :: String -> String

@@ -37,13 +37,13 @@ import Control.Monad.Except (ExceptT(..))
 import Control.Monad.State (StateT(..))
 import Control.Monad.Trans.Class (lift)
 import Data.ArrayBuffer.ArrayBuffer as AB
-import Data.ArrayBuffer.DataView (AProxy(..), getFloat32le, getFloat64le, getInt32le, getUint32le)
+import Data.ArrayBuffer.DataView (getFloat32le, getFloat64le, getInt32le, getUint32le)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed (class TypedArray)
 import Data.ArrayBuffer.Typed as AT
 import Data.ArrayBuffer.Types (ArrayView, ByteLength, ByteOffset, DataView, Uint8Array, kind ArrayViewType)
 import Data.ArrayBuffer.Types as ArrayTypes
-import Data.ArrayBuffer.ValueMapping (class BinaryValue, class BytesPerValue, class ShowArrayViewType)
+import Data.ArrayBuffer.ValueMapping (class BinaryValue, class BytesPerType, class ShowArrayViewType, byteWidth)
 import Data.Either (Either(..))
 import Data.Enum (toEnum)
 import Data.Float32 (Float32)
@@ -52,7 +52,6 @@ import Data.String (joinWith)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
 import Data.TextDecoding (decodeUtf8)
 import Data.Tuple (Tuple(..))
-import Data.Typelevel.Num (class Nat, D8, toInt')
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect (Effect)
@@ -82,15 +81,14 @@ isBigEndian :: Effect Boolean
 isBigEndian = unsafePerformEffect _isBigEndian
 
 decodeArray ::
-  forall a m b t name.
+  forall a m t name.
   BinaryValue a t =>
-  BytesPerValue a b =>
+  BytesPerType a =>
   ShowArrayViewType a name =>
   IsSymbol name =>
   TypedArray a t =>
-  Nat b =>
   MonadEffect m =>
-  AProxy a ->
+  Proxy a ->
   (DataView -> ByteOffset -> Effect (Maybe t)) ->
   ByteLength -> ParserT DataView m (Array t)
 decodeArray a p n = do
@@ -102,19 +100,21 @@ decodeArray a p n = do
 
 -- | repeated packed __float__
 decodeFloatArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
-decodeFloatArray = decodeArray (AProxy :: AProxy ArrayTypes.Float32) getFloat32le
+decodeFloatArray = decodeArray (Proxy :: Proxy ArrayTypes.Float32) getFloat32le
 
 -- | repeated packed __double__
 decodeDoubleArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Number)
-decodeDoubleArray = decodeArray (AProxy :: AProxy ArrayTypes.Float64) getFloat64le
+decodeDoubleArray = decodeArray (Proxy :: Proxy ArrayTypes.Float64) getFloat64le
 
 -- | repeated packed __sfixed32__
 decodeSfixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Int)
-decodeSfixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Int32) getInt32le
+decodeSfixed32Array = decodeArray (Proxy :: Proxy ArrayTypes.Int32) getInt32le
 
 foreign import data BigInt64 :: ArrayViewType
 
-instance bytesPerValueBigInt64 :: BytesPerValue BigInt64 D8
+instance bytesPerValueBigInt64 :: BytesPerType BigInt64
+ where
+  byteWidth _ = 8
 
 instance binaryValueBigInt64 :: BinaryValue BigInt64 (Long Signed)
 
@@ -128,11 +128,13 @@ getLongle dv idx = do
 
 -- | repeated packed __sfixed64__
 decodeSfixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Signed))
-decodeSfixed64Array = packedArray (AProxy :: AProxy BigInt64) getLongle
+decodeSfixed64Array = packedArray (Proxy :: Proxy BigInt64) getLongle
 
 foreign import data BigUInt64 :: ArrayViewType
 
-instance bytesPerValueBigUInt64 :: BytesPerValue BigUInt64 D8
+instance bytesPerValueBigUInt64 :: BytesPerType BigUInt64
+ where
+  byteWidth _ = 8
 
 instance binaryValueBigUInt64 :: BinaryValue BigUInt64 (Long Unsigned)
 
@@ -146,11 +148,11 @@ getULongle dv idx = do
 
 -- | repeated packed __fixed32__
 decodeFixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array UInt)
-decodeFixed32Array = decodeArray (AProxy :: AProxy ArrayTypes.Uint32) getUint32le
+decodeFixed32Array = decodeArray (Proxy :: Proxy ArrayTypes.Uint32) getUint32le
 
 -- | repeated packed __fixed64__
 decodeFixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Unsigned))
-decodeFixed64Array = packedArray (AProxy :: AProxy BigUInt64) getULongle
+decodeFixed64Array = packedArray (Proxy :: Proxy BigUInt64) getULongle
 
 foreign import _decodeArray ::
   forall t. (ByteOffset -> Effect t) -> Int -> Effect (Array t)
@@ -160,20 +162,19 @@ foreign import _isBigEndian :: Effect (Effect Boolean)
 -- | Parse a slice of the DataView to an Array given a parser for the
 -- | individual elements
 packedArray ::
-  forall a m b t name.
+  forall a m t name.
   BinaryValue a t =>
-  BytesPerValue a b =>
+  BytesPerType a =>
   ShowArrayViewType a name =>
   IsSymbol name =>
-  Nat b =>
   MonadEffect m =>
-  AProxy a ->
+  Proxy a ->
   (DataView -> ByteOffset -> Effect (Maybe t)) ->
   ByteLength ->
   ParserT DataView m (Array t)
 packedArray _ decodeValue n =
   let
-    byteSize = toInt' (Proxy :: Proxy b)
+    byteSize = byteWidth (Proxy :: Proxy a)
 
     name = reflectSymbol (SProxy :: SProxy name)
   in
@@ -192,7 +193,7 @@ packedArray _ decodeValue n =
                       ]
         )
       ParserT $ ExceptT
-        $ StateT \state@(ParseState s pos@(Position { line, column }) _) ->
+        $ StateT \state@(ParseState s (Position { line, column }) _) ->
             let
               pos' = Position { line, column: column + n }
 
@@ -211,20 +212,19 @@ packedArray _ decodeValue n =
 
 -- | Parse a slice of the DataView by casting the slice to a TypedArray
 typedArray ::
-  forall a m b t name.
+  forall a m t name.
   BinaryValue a t =>
-  BytesPerValue a b =>
+  BytesPerType a =>
   ShowArrayViewType a name =>
   TypedArray a t =>
   IsSymbol name =>
-  Nat b =>
   MonadEffect m =>
-  AProxy a ->
+  Proxy a ->
   ByteLength ->
   ParserT DataView m (ArrayView a)
 typedArray _ n =
   let
-    byteSize = toInt' (Proxy :: Proxy b)
+    byteSize = byteWidth (Proxy :: Proxy a)
 
     name = reflectSymbol (SProxy :: SProxy name)
   in
@@ -243,7 +243,7 @@ typedArray _ n =
                       ]
         )
       ParserT $ ExceptT
-        $ StateT \state@(ParseState s pos@(Position { line, column }) _) ->
+        $ StateT \state@(ParseState s (Position { line, column }) _) ->
             let
               pos' = Position { line, column: column + n }
 
@@ -448,8 +448,6 @@ decodeVarint32 = do
   u21 = UInt.fromInt 21
 
   u28 = UInt.fromInt 28
-
-  u0x10 = UInt.fromInt 0x10
 
   u0x7F = UInt.fromInt 0x7F
 
