@@ -35,7 +35,7 @@ import Data.ArrayBuffer.Types (DataView, ByteLength)
 import Data.Enum (class BoundedEnum, fromEnum, toEnum)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, highBits, lowBits, signedLongFromInt)
 import Data.Long.Unsigned as Long.Unsigned
 import Data.Maybe (Maybe(..))
@@ -88,7 +88,7 @@ type FieldNumberInt
 -- | Zero-based position in the parser.
 positionZero :: forall s m. Monad m => ParserT s m Pos
 positionZero = do
-  Position { column, line } <- position
+  Position { column } <- position
   pure $ column - 1
 
 -- | Call a parser repeatedly until exactly *N* bytes have been consumed.

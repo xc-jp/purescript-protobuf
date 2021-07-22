@@ -13,10 +13,10 @@ module Protobuf.Prelude
   , module Data.Maybe
   , module Data.Newtype
   , module Data.Generic.Rep
-  , module Data.Generic.Rep.Show
-  , module Data.Generic.Rep.Bounded
-  , module Data.Generic.Rep.Enum
-  , module Data.Generic.Rep.Ord
+  , module Data.Show.Generic
+  , module Data.Bounded.Generic
+  , module Data.Enum.Generic
+  , module Data.Ord.Generic
   , module Data.Semigroup
   , module Data.String
   , module Data.Symbol
@@ -48,10 +48,10 @@ import Data.Eq (class Eq)
 import Data.Float32 (Float32)
 import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Bounded (genericBottom, genericTop)
-import Data.Generic.Rep.Enum (genericCardinality, genericPred, genericSucc)
-import Data.Generic.Rep.Ord (genericCompare)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Bounded.Generic (genericBottom, genericTop)
+import Data.Enum.Generic (genericCardinality, genericPred, genericSucc)
+import Data.Ord.Generic (genericCompare)
+import Data.Show.Generic (genericShow)
 import Data.Long.Internal (fromLowHighBits, Long, Signed, Unsigned)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype)

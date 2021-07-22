@@ -12,6 +12,22 @@
   , "parsing-dataview"
   , "text-encoding"
   , "uint"
+  , "arrays"
+  , "control"
+  , "effect"
+  , "enums"
+  , "float32"
+  , "foldable-traversable"
+  , "maybe"
+  , "newtype"
+  , "partial"
+  , "prelude"
+  , "record"
+  , "strings"
+  , "tailrec"
+  , "transformers"
+  , "tuples"
+  , "either"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

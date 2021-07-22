@@ -20,7 +20,7 @@ import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), fromEnum, toEn
 import Data.Float32 (Float32)
 import Data.Float32 as Float32
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype)
