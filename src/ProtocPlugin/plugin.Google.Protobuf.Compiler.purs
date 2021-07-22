@@ -289,9 +289,9 @@ instance enumCodeGeneratorResponse_Feature :: Prelude.Enum CodeGeneratorResponse
 instance boundedenumCodeGeneratorResponse_Feature :: Prelude.BoundedEnum CodeGeneratorResponse_Feature
  where
   cardinality = Prelude.genericCardinality
-  toEnum 0 = Prelude.Just CodeGeneratorResponse_Feature_FEATURE_NONE
-  toEnum 1 = Prelude.Just CodeGeneratorResponse_Feature_FEATURE_PROTO3_OPTIONAL
+  toEnum (0) = Prelude.Just CodeGeneratorResponse_Feature_FEATURE_NONE
+  toEnum (1) = Prelude.Just CodeGeneratorResponse_Feature_FEATURE_PROTO3_OPTIONAL
   toEnum _ = Prelude.Nothing
-  fromEnum CodeGeneratorResponse_Feature_FEATURE_NONE = 0
-  fromEnum CodeGeneratorResponse_Feature_FEATURE_PROTO3_OPTIONAL = 1
+  fromEnum CodeGeneratorResponse_Feature_FEATURE_NONE = (0)
+  fromEnum CodeGeneratorResponse_Feature_FEATURE_PROTO3_OPTIONAL = (1)
 

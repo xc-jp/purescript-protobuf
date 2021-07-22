@@ -1991,43 +1991,43 @@ instance enumFieldDescriptorProto_Type :: Prelude.Enum FieldDescriptorProto_Type
 instance boundedenumFieldDescriptorProto_Type :: Prelude.BoundedEnum FieldDescriptorProto_Type
  where
   cardinality = Prelude.genericCardinality
-  toEnum 1 = Prelude.Just FieldDescriptorProto_Type_TYPE_DOUBLE
-  toEnum 2 = Prelude.Just FieldDescriptorProto_Type_TYPE_FLOAT
-  toEnum 3 = Prelude.Just FieldDescriptorProto_Type_TYPE_INT64
-  toEnum 4 = Prelude.Just FieldDescriptorProto_Type_TYPE_UINT64
-  toEnum 5 = Prelude.Just FieldDescriptorProto_Type_TYPE_INT32
-  toEnum 6 = Prelude.Just FieldDescriptorProto_Type_TYPE_FIXED64
-  toEnum 7 = Prelude.Just FieldDescriptorProto_Type_TYPE_FIXED32
-  toEnum 8 = Prelude.Just FieldDescriptorProto_Type_TYPE_BOOL
-  toEnum 9 = Prelude.Just FieldDescriptorProto_Type_TYPE_STRING
-  toEnum 10 = Prelude.Just FieldDescriptorProto_Type_TYPE_GROUP
-  toEnum 11 = Prelude.Just FieldDescriptorProto_Type_TYPE_MESSAGE
-  toEnum 12 = Prelude.Just FieldDescriptorProto_Type_TYPE_BYTES
-  toEnum 13 = Prelude.Just FieldDescriptorProto_Type_TYPE_UINT32
-  toEnum 14 = Prelude.Just FieldDescriptorProto_Type_TYPE_ENUM
-  toEnum 15 = Prelude.Just FieldDescriptorProto_Type_TYPE_SFIXED32
-  toEnum 16 = Prelude.Just FieldDescriptorProto_Type_TYPE_SFIXED64
-  toEnum 17 = Prelude.Just FieldDescriptorProto_Type_TYPE_SINT32
-  toEnum 18 = Prelude.Just FieldDescriptorProto_Type_TYPE_SINT64
+  toEnum (1) = Prelude.Just FieldDescriptorProto_Type_TYPE_DOUBLE
+  toEnum (2) = Prelude.Just FieldDescriptorProto_Type_TYPE_FLOAT
+  toEnum (3) = Prelude.Just FieldDescriptorProto_Type_TYPE_INT64
+  toEnum (4) = Prelude.Just FieldDescriptorProto_Type_TYPE_UINT64
+  toEnum (5) = Prelude.Just FieldDescriptorProto_Type_TYPE_INT32
+  toEnum (6) = Prelude.Just FieldDescriptorProto_Type_TYPE_FIXED64
+  toEnum (7) = Prelude.Just FieldDescriptorProto_Type_TYPE_FIXED32
+  toEnum (8) = Prelude.Just FieldDescriptorProto_Type_TYPE_BOOL
+  toEnum (9) = Prelude.Just FieldDescriptorProto_Type_TYPE_STRING
+  toEnum (10) = Prelude.Just FieldDescriptorProto_Type_TYPE_GROUP
+  toEnum (11) = Prelude.Just FieldDescriptorProto_Type_TYPE_MESSAGE
+  toEnum (12) = Prelude.Just FieldDescriptorProto_Type_TYPE_BYTES
+  toEnum (13) = Prelude.Just FieldDescriptorProto_Type_TYPE_UINT32
+  toEnum (14) = Prelude.Just FieldDescriptorProto_Type_TYPE_ENUM
+  toEnum (15) = Prelude.Just FieldDescriptorProto_Type_TYPE_SFIXED32
+  toEnum (16) = Prelude.Just FieldDescriptorProto_Type_TYPE_SFIXED64
+  toEnum (17) = Prelude.Just FieldDescriptorProto_Type_TYPE_SINT32
+  toEnum (18) = Prelude.Just FieldDescriptorProto_Type_TYPE_SINT64
   toEnum _ = Prelude.Nothing
-  fromEnum FieldDescriptorProto_Type_TYPE_DOUBLE = 1
-  fromEnum FieldDescriptorProto_Type_TYPE_FLOAT = 2
-  fromEnum FieldDescriptorProto_Type_TYPE_INT64 = 3
-  fromEnum FieldDescriptorProto_Type_TYPE_UINT64 = 4
-  fromEnum FieldDescriptorProto_Type_TYPE_INT32 = 5
-  fromEnum FieldDescriptorProto_Type_TYPE_FIXED64 = 6
-  fromEnum FieldDescriptorProto_Type_TYPE_FIXED32 = 7
-  fromEnum FieldDescriptorProto_Type_TYPE_BOOL = 8
-  fromEnum FieldDescriptorProto_Type_TYPE_STRING = 9
-  fromEnum FieldDescriptorProto_Type_TYPE_GROUP = 10
-  fromEnum FieldDescriptorProto_Type_TYPE_MESSAGE = 11
-  fromEnum FieldDescriptorProto_Type_TYPE_BYTES = 12
-  fromEnum FieldDescriptorProto_Type_TYPE_UINT32 = 13
-  fromEnum FieldDescriptorProto_Type_TYPE_ENUM = 14
-  fromEnum FieldDescriptorProto_Type_TYPE_SFIXED32 = 15
-  fromEnum FieldDescriptorProto_Type_TYPE_SFIXED64 = 16
-  fromEnum FieldDescriptorProto_Type_TYPE_SINT32 = 17
-  fromEnum FieldDescriptorProto_Type_TYPE_SINT64 = 18
+  fromEnum FieldDescriptorProto_Type_TYPE_DOUBLE = (1)
+  fromEnum FieldDescriptorProto_Type_TYPE_FLOAT = (2)
+  fromEnum FieldDescriptorProto_Type_TYPE_INT64 = (3)
+  fromEnum FieldDescriptorProto_Type_TYPE_UINT64 = (4)
+  fromEnum FieldDescriptorProto_Type_TYPE_INT32 = (5)
+  fromEnum FieldDescriptorProto_Type_TYPE_FIXED64 = (6)
+  fromEnum FieldDescriptorProto_Type_TYPE_FIXED32 = (7)
+  fromEnum FieldDescriptorProto_Type_TYPE_BOOL = (8)
+  fromEnum FieldDescriptorProto_Type_TYPE_STRING = (9)
+  fromEnum FieldDescriptorProto_Type_TYPE_GROUP = (10)
+  fromEnum FieldDescriptorProto_Type_TYPE_MESSAGE = (11)
+  fromEnum FieldDescriptorProto_Type_TYPE_BYTES = (12)
+  fromEnum FieldDescriptorProto_Type_TYPE_UINT32 = (13)
+  fromEnum FieldDescriptorProto_Type_TYPE_ENUM = (14)
+  fromEnum FieldDescriptorProto_Type_TYPE_SFIXED32 = (15)
+  fromEnum FieldDescriptorProto_Type_TYPE_SFIXED64 = (16)
+  fromEnum FieldDescriptorProto_Type_TYPE_SINT32 = (17)
+  fromEnum FieldDescriptorProto_Type_TYPE_SINT64 = (18)
 
 data FieldDescriptorProto_Label
   = FieldDescriptorProto_Label_LABEL_OPTIONAL
@@ -2048,13 +2048,13 @@ instance enumFieldDescriptorProto_Label :: Prelude.Enum FieldDescriptorProto_Lab
 instance boundedenumFieldDescriptorProto_Label :: Prelude.BoundedEnum FieldDescriptorProto_Label
  where
   cardinality = Prelude.genericCardinality
-  toEnum 1 = Prelude.Just FieldDescriptorProto_Label_LABEL_OPTIONAL
-  toEnum 2 = Prelude.Just FieldDescriptorProto_Label_LABEL_REQUIRED
-  toEnum 3 = Prelude.Just FieldDescriptorProto_Label_LABEL_REPEATED
+  toEnum (1) = Prelude.Just FieldDescriptorProto_Label_LABEL_OPTIONAL
+  toEnum (2) = Prelude.Just FieldDescriptorProto_Label_LABEL_REQUIRED
+  toEnum (3) = Prelude.Just FieldDescriptorProto_Label_LABEL_REPEATED
   toEnum _ = Prelude.Nothing
-  fromEnum FieldDescriptorProto_Label_LABEL_OPTIONAL = 1
-  fromEnum FieldDescriptorProto_Label_LABEL_REQUIRED = 2
-  fromEnum FieldDescriptorProto_Label_LABEL_REPEATED = 3
+  fromEnum FieldDescriptorProto_Label_LABEL_OPTIONAL = (1)
+  fromEnum FieldDescriptorProto_Label_LABEL_REQUIRED = (2)
+  fromEnum FieldDescriptorProto_Label_LABEL_REPEATED = (3)
 
 data FileOptions_OptimizeMode
   = FileOptions_OptimizeMode_SPEED
@@ -2075,13 +2075,13 @@ instance enumFileOptions_OptimizeMode :: Prelude.Enum FileOptions_OptimizeMode
 instance boundedenumFileOptions_OptimizeMode :: Prelude.BoundedEnum FileOptions_OptimizeMode
  where
   cardinality = Prelude.genericCardinality
-  toEnum 1 = Prelude.Just FileOptions_OptimizeMode_SPEED
-  toEnum 2 = Prelude.Just FileOptions_OptimizeMode_CODE_SIZE
-  toEnum 3 = Prelude.Just FileOptions_OptimizeMode_LITE_RUNTIME
+  toEnum (1) = Prelude.Just FileOptions_OptimizeMode_SPEED
+  toEnum (2) = Prelude.Just FileOptions_OptimizeMode_CODE_SIZE
+  toEnum (3) = Prelude.Just FileOptions_OptimizeMode_LITE_RUNTIME
   toEnum _ = Prelude.Nothing
-  fromEnum FileOptions_OptimizeMode_SPEED = 1
-  fromEnum FileOptions_OptimizeMode_CODE_SIZE = 2
-  fromEnum FileOptions_OptimizeMode_LITE_RUNTIME = 3
+  fromEnum FileOptions_OptimizeMode_SPEED = (1)
+  fromEnum FileOptions_OptimizeMode_CODE_SIZE = (2)
+  fromEnum FileOptions_OptimizeMode_LITE_RUNTIME = (3)
 
 data FieldOptions_CType
   = FieldOptions_CType_STRING
@@ -2102,13 +2102,13 @@ instance enumFieldOptions_CType :: Prelude.Enum FieldOptions_CType
 instance boundedenumFieldOptions_CType :: Prelude.BoundedEnum FieldOptions_CType
  where
   cardinality = Prelude.genericCardinality
-  toEnum 0 = Prelude.Just FieldOptions_CType_STRING
-  toEnum 1 = Prelude.Just FieldOptions_CType_CORD
-  toEnum 2 = Prelude.Just FieldOptions_CType_STRING_PIECE
+  toEnum (0) = Prelude.Just FieldOptions_CType_STRING
+  toEnum (1) = Prelude.Just FieldOptions_CType_CORD
+  toEnum (2) = Prelude.Just FieldOptions_CType_STRING_PIECE
   toEnum _ = Prelude.Nothing
-  fromEnum FieldOptions_CType_STRING = 0
-  fromEnum FieldOptions_CType_CORD = 1
-  fromEnum FieldOptions_CType_STRING_PIECE = 2
+  fromEnum FieldOptions_CType_STRING = (0)
+  fromEnum FieldOptions_CType_CORD = (1)
+  fromEnum FieldOptions_CType_STRING_PIECE = (2)
 
 data FieldOptions_JSType
   = FieldOptions_JSType_JS_NORMAL
@@ -2129,13 +2129,13 @@ instance enumFieldOptions_JSType :: Prelude.Enum FieldOptions_JSType
 instance boundedenumFieldOptions_JSType :: Prelude.BoundedEnum FieldOptions_JSType
  where
   cardinality = Prelude.genericCardinality
-  toEnum 0 = Prelude.Just FieldOptions_JSType_JS_NORMAL
-  toEnum 1 = Prelude.Just FieldOptions_JSType_JS_STRING
-  toEnum 2 = Prelude.Just FieldOptions_JSType_JS_NUMBER
+  toEnum (0) = Prelude.Just FieldOptions_JSType_JS_NORMAL
+  toEnum (1) = Prelude.Just FieldOptions_JSType_JS_STRING
+  toEnum (2) = Prelude.Just FieldOptions_JSType_JS_NUMBER
   toEnum _ = Prelude.Nothing
-  fromEnum FieldOptions_JSType_JS_NORMAL = 0
-  fromEnum FieldOptions_JSType_JS_STRING = 1
-  fromEnum FieldOptions_JSType_JS_NUMBER = 2
+  fromEnum FieldOptions_JSType_JS_NORMAL = (0)
+  fromEnum FieldOptions_JSType_JS_STRING = (1)
+  fromEnum FieldOptions_JSType_JS_NUMBER = (2)
 
 data MethodOptions_IdempotencyLevel
   = MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
@@ -2156,11 +2156,11 @@ instance enumMethodOptions_IdempotencyLevel :: Prelude.Enum MethodOptions_Idempo
 instance boundedenumMethodOptions_IdempotencyLevel :: Prelude.BoundedEnum MethodOptions_IdempotencyLevel
  where
   cardinality = Prelude.genericCardinality
-  toEnum 0 = Prelude.Just MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
-  toEnum 1 = Prelude.Just MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS
-  toEnum 2 = Prelude.Just MethodOptions_IdempotencyLevel_IDEMPOTENT
+  toEnum (0) = Prelude.Just MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
+  toEnum (1) = Prelude.Just MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS
+  toEnum (2) = Prelude.Just MethodOptions_IdempotencyLevel_IDEMPOTENT
   toEnum _ = Prelude.Nothing
-  fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN = 0
-  fromEnum MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS = 1
-  fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENT = 2
+  fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN = (0)
+  fromEnum MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS = (1)
+  fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENT = (2)
 
