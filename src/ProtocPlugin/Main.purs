@@ -1275,7 +1275,7 @@ genFile proto_file ( FileDescriptorProto
                   <> (sequence $ map (genOneofPut (nameSpace <> [ msgName ])) oneof_decl_fields)
               , Right "  Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields"
               , Right ""
-              , Right $ "parse" <> tname <> " :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m " <> tname
+              , Right $ "parse" <> tname <> " :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m " <> tname
               , Right $ "parse" <> tname <> " length = Prelude.label \"" <> msgName <> " / \" $"
               , Right $ "  Prelude.parseMessage " <> tname <> " default" <> tname <> " parseField length"
               , Right " where"

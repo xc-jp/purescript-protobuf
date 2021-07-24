@@ -57,7 +57,7 @@ putFileDescriptorSet (FileDescriptorSet r) = do
   Prelude.putRepeated 1 r.file $ Prelude.putLenDel putFileDescriptorProto
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseFileDescriptorSet :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m FileDescriptorSet
+parseFileDescriptorSet :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m FileDescriptorSet
 parseFileDescriptorSet length = Prelude.label "FileDescriptorSet / " $
   Prelude.parseMessage FileDescriptorSet defaultFileDescriptorSet parseField length
  where
@@ -124,7 +124,7 @@ putFileDescriptorProto (FileDescriptorProto r) = do
   Prelude.putOptional 12 r.syntax Prelude.isDefault Prelude.encodeStringField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseFileDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m FileDescriptorProto
+parseFileDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m FileDescriptorProto
 parseFileDescriptorProto length = Prelude.label "FileDescriptorProto / " $
   Prelude.parseMessage FileDescriptorProto defaultFileDescriptorProto parseField length
  where
@@ -248,7 +248,7 @@ putDescriptorProto (DescriptorProto r) = do
   Prelude.putRepeated 10 r.reserved_name Prelude.encodeStringField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m DescriptorProto
+parseDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m DescriptorProto
 parseDescriptorProto length = Prelude.label "DescriptorProto / " $
   Prelude.parseMessage DescriptorProto defaultDescriptorProto parseField length
  where
@@ -342,7 +342,7 @@ putDescriptorProto_ExtensionRange (DescriptorProto_ExtensionRange r) = do
   Prelude.putOptional 3 r.options (\_ -> false) $ Prelude.putLenDel putExtensionRangeOptions
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseDescriptorProto_ExtensionRange :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m DescriptorProto_ExtensionRange
+parseDescriptorProto_ExtensionRange :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m DescriptorProto_ExtensionRange
 parseDescriptorProto_ExtensionRange length = Prelude.label "ExtensionRange / " $
   Prelude.parseMessage DescriptorProto_ExtensionRange defaultDescriptorProto_ExtensionRange parseField length
  where
@@ -399,7 +399,7 @@ putDescriptorProto_ReservedRange (DescriptorProto_ReservedRange r) = do
   Prelude.putOptional 2 r.end Prelude.isDefault Prelude.encodeInt32Field
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseDescriptorProto_ReservedRange :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m DescriptorProto_ReservedRange
+parseDescriptorProto_ReservedRange :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m DescriptorProto_ReservedRange
 parseDescriptorProto_ReservedRange length = Prelude.label "ReservedRange / " $
   Prelude.parseMessage DescriptorProto_ReservedRange defaultDescriptorProto_ReservedRange parseField length
  where
@@ -449,7 +449,7 @@ putExtensionRangeOptions (ExtensionRangeOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseExtensionRangeOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m ExtensionRangeOptions
+parseExtensionRangeOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m ExtensionRangeOptions
 parseExtensionRangeOptions length = Prelude.label "ExtensionRangeOptions / " $
   Prelude.parseMessage ExtensionRangeOptions defaultExtensionRangeOptions parseField length
  where
@@ -514,7 +514,7 @@ putFieldDescriptorProto (FieldDescriptorProto r) = do
   Prelude.putOptional 17 r.proto3_optional Prelude.isDefault Prelude.encodeBoolField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseFieldDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m FieldDescriptorProto
+parseFieldDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m FieldDescriptorProto
 parseFieldDescriptorProto length = Prelude.label "FieldDescriptorProto / " $
   Prelude.parseMessage FieldDescriptorProto defaultFieldDescriptorProto parseField length
  where
@@ -611,7 +611,7 @@ putOneofDescriptorProto (OneofDescriptorProto r) = do
   Prelude.putOptional 2 r.options (\_ -> false) $ Prelude.putLenDel putOneofOptions
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseOneofDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m OneofDescriptorProto
+parseOneofDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m OneofDescriptorProto
 parseOneofDescriptorProto length = Prelude.label "OneofDescriptorProto / " $
   Prelude.parseMessage OneofDescriptorProto defaultOneofDescriptorProto parseField length
  where
@@ -669,7 +669,7 @@ putEnumDescriptorProto (EnumDescriptorProto r) = do
   Prelude.putRepeated 5 r.reserved_name Prelude.encodeStringField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseEnumDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m EnumDescriptorProto
+parseEnumDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m EnumDescriptorProto
 parseEnumDescriptorProto length = Prelude.label "EnumDescriptorProto / " $
   Prelude.parseMessage EnumDescriptorProto defaultEnumDescriptorProto parseField length
  where
@@ -736,7 +736,7 @@ putEnumDescriptorProto_EnumReservedRange (EnumDescriptorProto_EnumReservedRange 
   Prelude.putOptional 2 r.end Prelude.isDefault Prelude.encodeInt32Field
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseEnumDescriptorProto_EnumReservedRange :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m EnumDescriptorProto_EnumReservedRange
+parseEnumDescriptorProto_EnumReservedRange :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m EnumDescriptorProto_EnumReservedRange
 parseEnumDescriptorProto_EnumReservedRange length = Prelude.label "EnumReservedRange / " $
   Prelude.parseMessage EnumDescriptorProto_EnumReservedRange defaultEnumDescriptorProto_EnumReservedRange parseField length
  where
@@ -790,7 +790,7 @@ putEnumValueDescriptorProto (EnumValueDescriptorProto r) = do
   Prelude.putOptional 3 r.options (\_ -> false) $ Prelude.putLenDel putEnumValueOptions
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseEnumValueDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m EnumValueDescriptorProto
+parseEnumValueDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m EnumValueDescriptorProto
 parseEnumValueDescriptorProto length = Prelude.label "EnumValueDescriptorProto / " $
   Prelude.parseMessage EnumValueDescriptorProto defaultEnumValueDescriptorProto parseField length
  where
@@ -849,7 +849,7 @@ putServiceDescriptorProto (ServiceDescriptorProto r) = do
   Prelude.putOptional 3 r.options (\_ -> false) $ Prelude.putLenDel putServiceOptions
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseServiceDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m ServiceDescriptorProto
+parseServiceDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m ServiceDescriptorProto
 parseServiceDescriptorProto length = Prelude.label "ServiceDescriptorProto / " $
   Prelude.parseMessage ServiceDescriptorProto defaultServiceDescriptorProto parseField length
  where
@@ -914,7 +914,7 @@ putMethodDescriptorProto (MethodDescriptorProto r) = do
   Prelude.putOptional 6 r.server_streaming Prelude.isDefault Prelude.encodeBoolField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseMethodDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m MethodDescriptorProto
+parseMethodDescriptorProto :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m MethodDescriptorProto
 parseMethodDescriptorProto length = Prelude.label "MethodDescriptorProto / " $
   Prelude.parseMessage MethodDescriptorProto defaultMethodDescriptorProto parseField length
  where
@@ -1024,7 +1024,7 @@ putFileOptions (FileOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseFileOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m FileOptions
+parseFileOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m FileOptions
 parseFileOptions length = Prelude.label "FileOptions / " $
   Prelude.parseMessage FileOptions defaultFileOptions parseField length
  where
@@ -1177,7 +1177,7 @@ putMessageOptions (MessageOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseMessageOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m MessageOptions
+parseMessageOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m MessageOptions
 parseMessageOptions length = Prelude.label "MessageOptions / " $
   Prelude.parseMessage MessageOptions defaultMessageOptions parseField length
  where
@@ -1254,7 +1254,7 @@ putFieldOptions (FieldOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseFieldOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m FieldOptions
+parseFieldOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m FieldOptions
 parseFieldOptions length = Prelude.label "FieldOptions / " $
   Prelude.parseMessage FieldOptions defaultFieldOptions parseField length
  where
@@ -1329,7 +1329,7 @@ putOneofOptions (OneofOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseOneofOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m OneofOptions
+parseOneofOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m OneofOptions
 parseOneofOptions length = Prelude.label "OneofOptions / " $
   Prelude.parseMessage OneofOptions defaultOneofOptions parseField length
  where
@@ -1378,7 +1378,7 @@ putEnumOptions (EnumOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseEnumOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m EnumOptions
+parseEnumOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m EnumOptions
 parseEnumOptions length = Prelude.label "EnumOptions / " $
   Prelude.parseMessage EnumOptions defaultEnumOptions parseField length
  where
@@ -1435,7 +1435,7 @@ putEnumValueOptions (EnumValueOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseEnumValueOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m EnumValueOptions
+parseEnumValueOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m EnumValueOptions
 parseEnumValueOptions length = Prelude.label "EnumValueOptions / " $
   Prelude.parseMessage EnumValueOptions defaultEnumValueOptions parseField length
  where
@@ -1487,7 +1487,7 @@ putServiceOptions (ServiceOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseServiceOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m ServiceOptions
+parseServiceOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m ServiceOptions
 parseServiceOptions length = Prelude.label "ServiceOptions / " $
   Prelude.parseMessage ServiceOptions defaultServiceOptions parseField length
  where
@@ -1541,7 +1541,7 @@ putMethodOptions (MethodOptions r) = do
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseMethodOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m MethodOptions
+parseMethodOptions :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m MethodOptions
 parseMethodOptions length = Prelude.label "MethodOptions / " $
   Prelude.parseMessage MethodOptions defaultMethodOptions parseField length
  where
@@ -1608,7 +1608,7 @@ putUninterpretedOption (UninterpretedOption r) = do
   Prelude.putOptional 8 r.aggregate_value Prelude.isDefault Prelude.encodeStringField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseUninterpretedOption :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m UninterpretedOption
+parseUninterpretedOption :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m UninterpretedOption
 parseUninterpretedOption length = Prelude.label "UninterpretedOption / " $
   Prelude.parseMessage UninterpretedOption defaultUninterpretedOption parseField length
  where
@@ -1685,7 +1685,7 @@ putUninterpretedOption_NamePart (UninterpretedOption_NamePart r) = do
   Prelude.putOptional 2 r.is_extension Prelude.isDefault Prelude.encodeBoolField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseUninterpretedOption_NamePart :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m UninterpretedOption_NamePart
+parseUninterpretedOption_NamePart :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m UninterpretedOption_NamePart
 parseUninterpretedOption_NamePart length = Prelude.label "NamePart / " $
   Prelude.parseMessage UninterpretedOption_NamePart defaultUninterpretedOption_NamePart parseField length
  where
@@ -1735,7 +1735,7 @@ putSourceCodeInfo (SourceCodeInfo r) = do
   Prelude.putRepeated 1 r.location $ Prelude.putLenDel putSourceCodeInfo_Location
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseSourceCodeInfo :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m SourceCodeInfo
+parseSourceCodeInfo :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m SourceCodeInfo
 parseSourceCodeInfo length = Prelude.label "SourceCodeInfo / " $
   Prelude.parseMessage SourceCodeInfo defaultSourceCodeInfo parseField length
  where
@@ -1788,7 +1788,7 @@ putSourceCodeInfo_Location (SourceCodeInfo_Location r) = do
   Prelude.putRepeated 6 r.leading_detached_comments Prelude.encodeStringField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseSourceCodeInfo_Location :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m SourceCodeInfo_Location
+parseSourceCodeInfo_Location :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m SourceCodeInfo_Location
 parseSourceCodeInfo_Location length = Prelude.label "Location / " $
   Prelude.parseMessage SourceCodeInfo_Location defaultSourceCodeInfo_Location parseField length
  where
@@ -1859,7 +1859,7 @@ putGeneratedCodeInfo (GeneratedCodeInfo r) = do
   Prelude.putRepeated 1 r.annotation $ Prelude.putLenDel putGeneratedCodeInfo_Annotation
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseGeneratedCodeInfo :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m GeneratedCodeInfo
+parseGeneratedCodeInfo :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m GeneratedCodeInfo
 parseGeneratedCodeInfo length = Prelude.label "GeneratedCodeInfo / " $
   Prelude.parseMessage GeneratedCodeInfo defaultGeneratedCodeInfo parseField length
  where
@@ -1910,7 +1910,7 @@ putGeneratedCodeInfo_Annotation (GeneratedCodeInfo_Annotation r) = do
   Prelude.putOptional 4 r.end Prelude.isDefault Prelude.encodeInt32Field
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseGeneratedCodeInfo_Annotation :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m GeneratedCodeInfo_Annotation
+parseGeneratedCodeInfo_Annotation :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m GeneratedCodeInfo_Annotation
 parseGeneratedCodeInfo_Annotation length = Prelude.label "Annotation / " $
   Prelude.parseMessage GeneratedCodeInfo_Annotation defaultGeneratedCodeInfo_Annotation parseField length
  where

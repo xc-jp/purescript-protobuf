@@ -58,7 +58,7 @@ parseMessage ::
   (Record r -> a) ->
   (Record r) ->
   (FieldNumberInt -> WireType -> ParserT DataView m (RecordB.Builder (Record r) (Record r))) ->
-  Int ->
+  ByteLength ->
   ParserT DataView m a
 parseMessage construct default parseField length = do
   builders <- manyLength applyParser length

@@ -42,7 +42,7 @@ import Control.Alt (alt)
 import Control.Monad.Rec.Class (class MonadRec) as MonadRec.Class
 import Data.Array (snoc)
 import Data.ArrayBuffer.Builder (PutM)
-import Data.ArrayBuffer.Types (DataView)
+import Data.ArrayBuffer.Types (DataView, ByteLength)
 import Data.Bounded (class Bounded)
 import Data.Enum (class BoundedEnum, class Enum)
 import Data.Eq (class Eq)

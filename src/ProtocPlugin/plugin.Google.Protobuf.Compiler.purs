@@ -36,7 +36,7 @@ putVersion (Version r) = do
   Prelude.putOptional 4 r.suffix Prelude.isDefault Prelude.encodeStringField
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseVersion :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m Version
+parseVersion :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m Version
 parseVersion length = Prelude.label "Version / " $
   Prelude.parseMessage Version defaultVersion parseField length
  where
@@ -102,7 +102,7 @@ putCodeGeneratorRequest (CodeGeneratorRequest r) = do
   Prelude.putOptional 3 r.compiler_version (\_ -> false) $ Prelude.putLenDel putVersion
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseCodeGeneratorRequest :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m CodeGeneratorRequest
+parseCodeGeneratorRequest :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m CodeGeneratorRequest
 parseCodeGeneratorRequest length = Prelude.label "CodeGeneratorRequest / " $
   Prelude.parseMessage CodeGeneratorRequest defaultCodeGeneratorRequest parseField length
  where
@@ -166,7 +166,7 @@ putCodeGeneratorResponse (CodeGeneratorResponse r) = do
   Prelude.putRepeated 15 r.file $ Prelude.putLenDel putCodeGeneratorResponse_File
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseCodeGeneratorResponse :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m CodeGeneratorResponse
+parseCodeGeneratorResponse :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m CodeGeneratorResponse
 parseCodeGeneratorResponse length = Prelude.label "CodeGeneratorResponse / " $
   Prelude.parseMessage CodeGeneratorResponse defaultCodeGeneratorResponse parseField length
  where
@@ -227,7 +227,7 @@ putCodeGeneratorResponse_File (CodeGeneratorResponse_File r) = do
   Prelude.putOptional 16 r.generated_code_info (\_ -> false) $ Prelude.putLenDel Google.Protobuf.putGeneratedCodeInfo
   Prelude.traverse_ Prelude.putFieldUnknown r.__unknown_fields
 
-parseCodeGeneratorResponse_File :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Int -> Prelude.ParserT Prelude.DataView m CodeGeneratorResponse_File
+parseCodeGeneratorResponse_File :: forall m. Prelude.MonadEffect m => Prelude.MonadRec m => Prelude.ByteLength -> Prelude.ParserT Prelude.DataView m CodeGeneratorResponse_File
 parseCodeGeneratorResponse_File length = Prelude.label "File / " $
   Prelude.parseMessage CodeGeneratorResponse_File defaultCodeGeneratorResponse_File parseField length
  where

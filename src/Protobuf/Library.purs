@@ -12,7 +12,7 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Protobuf.Internal.Common (Bytes(..), class Default, default, isDefault, fromDefault, toDefault)
+import Protobuf.Internal.Common (Bytes(..), class Default, toDefault)
 import Protobuf.Internal.Runtime (label, manyLength)
 import Text.Parsing.Parser (ParserT, fail)
 
