@@ -35,8 +35,8 @@ module Google.Protobuf.Descriptor
 , MethodOptions_IdempotencyLevel(..)
 )
 where
-import Protobuf.Prelude
-import Protobuf.Prelude as Prelude
+import Protobuf.Internal.Prelude
+import Protobuf.Internal.Prelude as Prelude
 
 
 

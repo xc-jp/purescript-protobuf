@@ -27,8 +27,8 @@ import Pack.Msg2 as Pack2
 import Pack3.Msg3 as Pack3
 import Pack4.Msg4 as Pack4
 import Pack5.Msg5 as Pack5
-import Protobuf.Common (Bytes(..))
-import Protobuf.Decode as Decode
+import Protobuf.Library (Bytes(..))
+import Protobuf.Internal.Decode as Decode
 import Test.Assert (assert')
 import Text.Parsing.Parser (runParserT)
 

@@ -1325,8 +1325,8 @@ genFile proto_file ( FileDescriptorProto
       , Right
           """)
 where
-import Protobuf.Prelude
-import Protobuf.Prelude as Prelude
+import Protobuf.Internal.Prelude
+import Protobuf.Internal.Prelude as Prelude
 """
       ]
       <> (traverse genImport dependency)

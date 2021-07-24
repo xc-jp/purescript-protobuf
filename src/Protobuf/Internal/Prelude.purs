@@ -1,4 +1,5 @@
-module Protobuf.Prelude
+-- | The prelude for generated code.
+module Protobuf.Internal.Prelude
   ( module Prelude
   , module Control.Alt
   , module Record.Builder
@@ -29,10 +30,10 @@ module Protobuf.Prelude
   , module Text.Parsing.Parser
   , module Data.ArrayBuffer.Builder
   , module Data.ArrayBuffer.Types
-  , module Protobuf.Common
-  , module Protobuf.Decode
-  , module Protobuf.Encode
-  , module Protobuf.Runtime
+  , module Protobuf.Internal.Common
+  , module Protobuf.Internal.Decode
+  , module Protobuf.Internal.Encode
+  , module Protobuf.Internal.Runtime
   , module Effect.Class
   , module MonadRec.Class
   ) where
@@ -66,10 +67,10 @@ import Data.UInt (toInt, fromInt, UInt)
 import Effect.Class (class MonadEffect) as Effect.Class
 import Prelude ((>>>), ($), bind, (>>=), pure, discard, append, (<<<), Unit, unit, map, negate)
 import Prim.Row (class Union, class Nub)
-import Protobuf.Common (class Default, Bytes(..), FieldNumber, WireType(..), default, fromDefault, isDefault, toDefault)
-import Protobuf.Decode (decodeBool, decodeBytes, decodeDouble, decodeDoubleArray, decodeFixed32, decodeFixed32Array, decodeFixed64, decodeFixed64Array, decodeFloat, decodeFloatArray, decodeInt32, decodeInt64, decodeSfixed32, decodeSfixed32Array, decodeSfixed64, decodeSfixed64Array, decodeSint32, decodeSint64, decodeString, decodeTag32, decodeUint32, decodeUint64, decodeVarint32, decodeVarint64, decodeZigzag32, decodeZigzag64)
-import Protobuf.Encode (encodeBool, encodeBoolField, encodeBuilder, encodeBytesField, encodeDouble, encodeDoubleField, encodeFixed32, encodeFixed32Field, encodeFixed64, encodeFixed64Field, encodeFloat, encodeFloatField, encodeInt32, encodeInt32Field, encodeInt64, encodeInt64Field, encodeSfixed32, encodeSfixed32Field, encodeSfixed64, encodeSfixed64Field, encodeSint32, encodeSint32Field, encodeSint64, encodeSint64Field, encodeStringField, encodeTag32, encodeUint32, encodeUint32Field, encodeUint64, encodeUint64Field, encodeVarint32, encodeVarint64, encodeZigzag32, encodeZigzag64)
-import Protobuf.Runtime (FieldNumberInt, Pos, UnknownField(..), label, manyLength, mergeWith, parseEnum, parseFieldUnknown, parseLenDel, parseMessage, positionZero, putEnum, putEnumField, putFieldUnknown, putLenDel, putOptional, putPacked, putRepeated)
+import Protobuf.Internal.Common (class Default, Bytes(..), FieldNumber, WireType(..), default, fromDefault, isDefault, toDefault)
+import Protobuf.Internal.Decode (decodeBool, decodeBytes, decodeDouble, decodeDoubleArray, decodeFixed32, decodeFixed32Array, decodeFixed64, decodeFixed64Array, decodeFloat, decodeFloatArray, decodeInt32, decodeInt64, decodeSfixed32, decodeSfixed32Array, decodeSfixed64, decodeSfixed64Array, decodeSint32, decodeSint64, decodeString, decodeTag32, decodeUint32, decodeUint64, decodeVarint32, decodeVarint64, decodeZigzag32, decodeZigzag64)
+import Protobuf.Internal.Encode (encodeBool, encodeBoolField, encodeBuilder, encodeBytesField, encodeDouble, encodeDoubleField, encodeFixed32, encodeFixed32Field, encodeFixed64, encodeFixed64Field, encodeFloat, encodeFloatField, encodeInt32, encodeInt32Field, encodeInt64, encodeInt64Field, encodeSfixed32, encodeSfixed32Field, encodeSfixed64, encodeSfixed64Field, encodeSint32, encodeSint32Field, encodeSint64, encodeSint64Field, encodeStringField, encodeTag32, encodeUint32, encodeUint32Field, encodeUint64, encodeUint64Field, encodeVarint32, encodeVarint64, encodeZigzag32, encodeZigzag64)
+import Protobuf.Internal.Runtime (FieldNumberInt, Pos, UnknownField(..), label, manyLength, mergeWith, parseEnum, parseFieldUnknown, parseLenDel, parseMessage, positionZero, putEnum, putEnumField, putFieldUnknown, putLenDel, putOptional, putPacked, putRepeated)
 import Record (merge)
 import Record.Builder (modify, Builder)
 import Text.Parsing.Parser (ParserT)

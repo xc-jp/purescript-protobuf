@@ -1,8 +1,5 @@
 -- | Primitive parsers for decoding Google Protocol Buffers.
--- |
--- | You almost never need to import this module.
--- | See package README for explanation.
-module Protobuf.Decode
+module Protobuf.Internal.Decode
   ( decodeDouble
   , decodeDoubleArray
   , decodeFloat
@@ -62,7 +59,7 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Unsafe (unsafePerformEffect)
 import Partial.Unsafe (unsafePartial)
-import Protobuf.Common (Bytes(..), FieldNumber, WireType, mkUint8Array)
+import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType, mkUint8Array)
 import Text.Parsing.Parser (ParseError(..), ParseState(..), ParserT(..), fail)
 import Text.Parsing.Parser.DataView as Parse
 import Text.Parsing.Parser.Pos (Position(..))

@@ -1,6 +1,7 @@
 module Test.Bench where
 
 import Prelude
+
 import Data.Array (range)
 import Data.ArrayBuffer.ArrayBuffer (byteLength, empty)
 import Data.ArrayBuffer.Builder (execPut)
@@ -13,9 +14,9 @@ import Effect (Effect, forE)
 import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
 import Performance.Minibench (bench, benchWith)
-import Protobuf.Decode as Decode
-import Protobuf.Encode as Encode
-import Protobuf.Runtime as Runtime
+import Protobuf.Internal.Decode as Decode
+import Protobuf.Internal.Encode as Encode
+import Protobuf.Library (manyLength)
 import Text.Parsing.Parser (runParserT)
 
 main :: Effect Unit
@@ -42,7 +43,7 @@ main = do
   benchWith 100
     $ \_ ->
         void $ unsafePerformEffect
-          $ runParserT (whole buf10e4) (Runtime.manyLength Decode.decodeFloat (byteLength buf10e4))
+          $ runParserT (whole buf10e4) (manyLength Decode.decodeFloat (byteLength buf10e4))
   buf10e5 <- empty (4 * 100000)
   buf10e5Float :: Float32Array <- Typed.whole buf10e5
   Typed.fill (fromNumber' 1.0) 0 99999 buf10e5Float
@@ -55,7 +56,7 @@ main = do
   benchWith 100
     $ \_ ->
         void $ unsafePerformEffect
-          $ runParserT (whole buf10e5) (Runtime.manyLength Decode.decodeFloat (byteLength buf10e5))
+          $ runParserT (whole buf10e5) (manyLength Decode.decodeFloat (byteLength buf10e5))
   buf10e6 <- empty (4 * 1000000)
   buf10e6Float :: Float32Array <- Typed.whole buf10e6
   Typed.fill (fromNumber' 7.0) 0 1000000 buf10e6Float

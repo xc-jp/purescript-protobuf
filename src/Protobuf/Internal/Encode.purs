@@ -1,8 +1,5 @@
 -- | Primitive builders for encoding Google Protocol Buffers.
--- |
--- | You almost never need to import this module.
--- | See package README for explanation.
-module Protobuf.Encode
+module Protobuf.Internal.Encode
   ( encodeDoubleField
   , encodeDouble
   , encodeFloatField
@@ -56,7 +53,7 @@ import Data.TextEncoding (encodeUtf8)
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
-import Protobuf.Common (FieldNumber, WireType(..), Bytes(..))
+import Protobuf.Internal.Common (FieldNumber, WireType(..), Bytes(..))
 
 encodeDoubleField :: forall m. MonadEffect m => FieldNumber -> Number -> Builder.PutM m Unit
 -- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers

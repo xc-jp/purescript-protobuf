@@ -7,8 +7,8 @@ module Google.Protobuf.Compiler.Plugin
 , CodeGeneratorResponse_Feature(..)
 )
 where
-import Protobuf.Prelude
-import Protobuf.Prelude as Prelude
+import Protobuf.Internal.Prelude
+import Protobuf.Internal.Prelude as Prelude
 
 import Google.Protobuf.Descriptor as Google.Protobuf
 

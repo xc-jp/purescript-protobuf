@@ -1,6 +1,5 @@
--- | You almost never need to `import` this module.
--- | See package README for explanation.
-module Protobuf.Common
+-- | Common utility definitions.
+module Protobuf.Internal.Common
   ( FieldNumber
   , WireType(..)
   , Bytes(..)

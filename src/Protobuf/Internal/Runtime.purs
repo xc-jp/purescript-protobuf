@@ -1,8 +1,5 @@
 -- | This module is for import by the generated .purs message modules.
--- |
--- | You almost never need to import this module.
--- | See package README for explanation.
-module Protobuf.Runtime
+module Protobuf.Internal.Runtime
   ( parseMessage
   , UnknownField(..)
   , parseFieldUnknown
@@ -43,9 +40,9 @@ import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
-import Protobuf.Common (Bytes(..), FieldNumber, WireType(..))
-import Protobuf.Decode as Decode
-import Protobuf.Encode as Encode
+import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType(..))
+import Protobuf.Internal.Decode as Decode
+import Protobuf.Internal.Encode as Encode
 import Record.Builder (build, modify)
 import Record.Builder as RecordB
 import Text.Parsing.Parser (ParserT, fail, position, ParseError(..))

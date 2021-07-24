@@ -16,7 +16,7 @@ import Node.Buffer (toArrayBuffer, fromArrayBuffer)
 import Node.Encoding (Encoding(..))
 import Node.Process (stdin, stdout, stderr, exit)
 import Node.Stream (onReadable, read, write, writeString)
-import Protobuf.Common (Bytes(..))
+import Protobuf.Library (Bytes(..))
 import ProtobufTestMessages.Proto3.TestMessagesProto3 as T3
 import Text.Parsing.Parser (runParserT)
 import Text.Parsing.Parser.DataView (anyInt32le)
