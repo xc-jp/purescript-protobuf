@@ -21,10 +21,10 @@ pkgs.mkShell {
   echo -n "purs "
   purs --version
   echo ""
-  echo "To build purescript-protobuf, run:"
+  echo "To build the protoc compiler plugin, run:"
   echo ""
   echo "    npm install"
-  echo "    spago build"
+  echo "    spago -x spago-protoc.dhall build"
   echo ""
   echo "To generate Purescript .purs files from .proto files, run:"
   echo ""

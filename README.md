@@ -49,16 +49,17 @@ The `shell.nix` environment provides
 $ nix-shell
 
 PureScript Protobuf development environment.
-To build purescript-protobuf, run:
+libprotoc 3.15.8
+purs 0.14.3
+
+To build the protoc compiler plugin, run:
 
     npm install
-    spago build
+    spago -x spago-protoc.dhall build
 
 To generate Purescript .purs files from .proto files, run:
 
-    protoc --purescript_out=path_to_output file.proto
-
-[nix-shell]$
+    protoc --purescript_out=path_to_output *.proto
 ```
 
 If you don't want to use Nix, then install the PureScript toolchain and `protoc`,

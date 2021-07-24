@@ -1,21 +1,19 @@
--- Spago configuration for running the tests
+-- Spago configuration the protoc compiler plugin.
 --
 -- See:
 -- https://github.com/purescript/spago#devdependencies-testdependencies-or-in-general-a-situation-with-many-configurations
 --
 -- Usage:
 --
---     spago -x test.dhall test
---
--- Also use this for a repl:
---
---     spago -x test.dhall repl
+--     spago -x spago-protoc.dhall build
 --
 
 let conf = ./spago.dhall
 
 in conf //
-  { sources = [ "test/**/*.purs", "src/Protobuf/*.purs" ]
+  -- don't include conformance/generated/*.purs in sources because it will conflict
+  -- with test/generated/*.purs
+  { sources = [ "src/**/*.purs" ]
   , dependencies = conf.dependencies #
     [ "assert"
     , "psci-support"
@@ -23,5 +21,10 @@ in conf //
     , "console"
     , "math"
     , "unfoldable"
+    , "node-buffer"
+    , "node-path"
+    , "node-process"
+    , "node-streams"
+    , "debug"
     ]
   }
