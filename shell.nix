@@ -26,7 +26,7 @@ pkgs.mkShell {
   echo "    npm install"
   echo "    spago -x spago-protoc.dhall build"
   echo ""
-  echo "To generate Purescript .purs files from .proto files, run:"
+  echo "To generate PureScript .purs files from .proto files, run:"
   echo ""
   echo "    protoc --purescript_out=path_to_output *.proto"
   echo ""

@@ -1,3 +1,11 @@
+# v2.1.0 2021-07-25
+
+Reorganized the `spago` files so that programs which import generated code
+can use `spago.dhall` for the minimum necessary dependencies.
+
+Reorganized the PureScript modules so that all modules except `Library`
+are `Internal`.
+
 # v2.0.0 2021-07-22
 
 Upgraded to PureScript 0.14.3.

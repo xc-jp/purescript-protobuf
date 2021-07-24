@@ -40,7 +40,7 @@ We also have our own unit tests, see `test/README.md` in this repository.
 
 The `shell.nix` environment provides
 
-* The PureScript toolchain: `purs`, `spago`, and `npm`.
+* The PureScript toolchain: `purs`, `spago`, and `node`.
 * The [`protoc`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating) compiler
 * The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
   [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
@@ -57,7 +57,7 @@ To build the protoc compiler plugin, run:
     npm install
     spago -x spago-protoc.dhall build
 
-To generate Purescript .purs files from .proto files, run:
+To generate PureScript .purs files from .proto files, run:
 
     protoc --purescript_out=path_to_output *.proto
 ```
@@ -75,6 +75,7 @@ and the base `.proto` file name as the PureScript module name for that file.
 A message in a `shapes.proto` descriptor file declared as
 
 ```
+syntax = "proto3";
 package interproc;
 
 message Rectangle {
@@ -94,7 +95,7 @@ generated `shapes.Interproc.purs` file.
 
    The message data type will also include an `__unknown_fields` array field for
    holding received fields which were not in the descriptor `.proto` file. We can
-   completely ignore `__unknown_fields` if we want to.
+   ignore `__unknown_fields` if we want to.
 
 2. A message maker which constructs a message from a `Record`
    with some message fields
@@ -103,7 +104,7 @@ generated `shapes.Interproc.purs` file.
    mkRectangle :: forall r. Record r -> Rectangle
    ```
 
-   All message fields are optional, and can be elided when making a message.
+   All message fields are optional, and can be omitted when making a message.
    There are some extra type constraints, not shown here, which will cause a
    compiler error if we try to add a field which is not in the message data type.
 
@@ -214,9 +215,6 @@ The generated code depends on packages which are all in
 
 The generated code also depends on the Javascript package
 [__long__](https://www.npmjs.com/package/long).
-
-For depending on generated code without pulling in any of the
-`protoc` plugin code-generation dependencies, we can use `spago-library.dhall`.
 
 ### Generated message instances
 
