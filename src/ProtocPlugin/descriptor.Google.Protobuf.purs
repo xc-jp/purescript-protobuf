@@ -41,12 +41,13 @@ import Protobuf.Internal.Prelude as Prelude
 
 
 
+-- ---------- Message FileDescriptorSet ----------
+newtype FileDescriptorSet = FileDescriptorSet FileDescriptorSetR
 type FileDescriptorSetRow =
   ( file :: Array FileDescriptorProto
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type FileDescriptorSetR = Record FileDescriptorSetRow
-newtype FileDescriptorSet = FileDescriptorSet FileDescriptorSetR
 derive instance genericFileDescriptorSet :: Prelude.Generic FileDescriptorSet _
 derive instance newtypeFileDescriptorSet :: Prelude.Newtype FileDescriptorSet _
 derive instance eqFileDescriptorSet :: Prelude.Eq FileDescriptorSet
@@ -86,6 +87,8 @@ mergeFileDescriptorSet (FileDescriptorSet l) (FileDescriptorSet r) = FileDescrip
   }
 
 
+-- ---------- Message FileDescriptorProto ----------
+newtype FileDescriptorProto = FileDescriptorProto FileDescriptorProtoR
 type FileDescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , package :: Prelude.Maybe String
@@ -102,7 +105,6 @@ type FileDescriptorProtoRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type FileDescriptorProtoR = Record FileDescriptorProtoRow
-newtype FileDescriptorProto = FileDescriptorProto FileDescriptorProtoR
 derive instance genericFileDescriptorProto :: Prelude.Generic FileDescriptorProto _
 derive instance newtypeFileDescriptorProto :: Prelude.Newtype FileDescriptorProto _
 derive instance eqFileDescriptorProto :: Prelude.Eq FileDescriptorProto
@@ -214,6 +216,8 @@ mergeFileDescriptorProto (FileDescriptorProto l) (FileDescriptorProto r) = FileD
   }
 
 
+-- ---------- Message DescriptorProto ----------
+newtype DescriptorProto = DescriptorProto DescriptorProtoR
 type DescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , field :: Array FieldDescriptorProto
@@ -228,7 +232,6 @@ type DescriptorProtoRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type DescriptorProtoR = Record DescriptorProtoRow
-newtype DescriptorProto = DescriptorProto DescriptorProtoR
 derive instance genericDescriptorProto :: Prelude.Generic DescriptorProto _
 derive instance newtypeDescriptorProto :: Prelude.Newtype DescriptorProto _
 derive instance eqDescriptorProto :: Prelude.Eq DescriptorProto
@@ -322,6 +325,8 @@ mergeDescriptorProto (DescriptorProto l) (DescriptorProto r) = DescriptorProto
   }
 
 
+-- ---------- Message DescriptorProto_ExtensionRange ----------
+newtype DescriptorProto_ExtensionRange = DescriptorProto_ExtensionRange DescriptorProto_ExtensionRangeR
 type DescriptorProto_ExtensionRangeRow =
   ( start :: Prelude.Maybe Int
   , end :: Prelude.Maybe Int
@@ -329,7 +334,6 @@ type DescriptorProto_ExtensionRangeRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type DescriptorProto_ExtensionRangeR = Record DescriptorProto_ExtensionRangeRow
-newtype DescriptorProto_ExtensionRange = DescriptorProto_ExtensionRange DescriptorProto_ExtensionRangeR
 derive instance genericDescriptorProto_ExtensionRange :: Prelude.Generic DescriptorProto_ExtensionRange _
 derive instance newtypeDescriptorProto_ExtensionRange :: Prelude.Newtype DescriptorProto_ExtensionRange _
 derive instance eqDescriptorProto_ExtensionRange :: Prelude.Eq DescriptorProto_ExtensionRange
@@ -381,13 +385,14 @@ mergeDescriptorProto_ExtensionRange (DescriptorProto_ExtensionRange l) (Descript
   }
 
 
+-- ---------- Message DescriptorProto_ReservedRange ----------
+newtype DescriptorProto_ReservedRange = DescriptorProto_ReservedRange DescriptorProto_ReservedRangeR
 type DescriptorProto_ReservedRangeRow =
   ( start :: Prelude.Maybe Int
   , end :: Prelude.Maybe Int
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type DescriptorProto_ReservedRangeR = Record DescriptorProto_ReservedRangeRow
-newtype DescriptorProto_ReservedRange = DescriptorProto_ReservedRange DescriptorProto_ReservedRangeR
 derive instance genericDescriptorProto_ReservedRange :: Prelude.Generic DescriptorProto_ReservedRange _
 derive instance newtypeDescriptorProto_ReservedRange :: Prelude.Newtype DescriptorProto_ReservedRange _
 derive instance eqDescriptorProto_ReservedRange :: Prelude.Eq DescriptorProto_ReservedRange
@@ -433,12 +438,13 @@ mergeDescriptorProto_ReservedRange (DescriptorProto_ReservedRange l) (Descriptor
   }
 
 
+-- ---------- Message ExtensionRangeOptions ----------
+newtype ExtensionRangeOptions = ExtensionRangeOptions ExtensionRangeOptionsR
 type ExtensionRangeOptionsRow =
   ( uninterpreted_option :: Array UninterpretedOption
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type ExtensionRangeOptionsR = Record ExtensionRangeOptionsRow
-newtype ExtensionRangeOptions = ExtensionRangeOptions ExtensionRangeOptionsR
 derive instance genericExtensionRangeOptions :: Prelude.Generic ExtensionRangeOptions _
 derive instance newtypeExtensionRangeOptions :: Prelude.Newtype ExtensionRangeOptions _
 derive instance eqExtensionRangeOptions :: Prelude.Eq ExtensionRangeOptions
@@ -478,6 +484,8 @@ mergeExtensionRangeOptions (ExtensionRangeOptions l) (ExtensionRangeOptions r) =
   }
 
 
+-- ---------- Message FieldDescriptorProto ----------
+newtype FieldDescriptorProto = FieldDescriptorProto FieldDescriptorProtoR
 type FieldDescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , number :: Prelude.Maybe Int
@@ -493,7 +501,6 @@ type FieldDescriptorProtoRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type FieldDescriptorProtoR = Record FieldDescriptorProtoRow
-newtype FieldDescriptorProto = FieldDescriptorProto FieldDescriptorProtoR
 derive instance genericFieldDescriptorProto :: Prelude.Generic FieldDescriptorProto _
 derive instance newtypeFieldDescriptorProto :: Prelude.Newtype FieldDescriptorProto _
 derive instance eqFieldDescriptorProto :: Prelude.Eq FieldDescriptorProto
@@ -593,13 +600,14 @@ mergeFieldDescriptorProto (FieldDescriptorProto l) (FieldDescriptorProto r) = Fi
   }
 
 
+-- ---------- Message OneofDescriptorProto ----------
+newtype OneofDescriptorProto = OneofDescriptorProto OneofDescriptorProtoR
 type OneofDescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , options :: Prelude.Maybe OneofOptions
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type OneofDescriptorProtoR = Record OneofDescriptorProtoRow
-newtype OneofDescriptorProto = OneofDescriptorProto OneofDescriptorProtoR
 derive instance genericOneofDescriptorProto :: Prelude.Generic OneofDescriptorProto _
 derive instance newtypeOneofDescriptorProto :: Prelude.Newtype OneofDescriptorProto _
 derive instance eqOneofDescriptorProto :: Prelude.Eq OneofDescriptorProto
@@ -645,6 +653,8 @@ mergeOneofDescriptorProto (OneofDescriptorProto l) (OneofDescriptorProto r) = On
   }
 
 
+-- ---------- Message EnumDescriptorProto ----------
+newtype EnumDescriptorProto = EnumDescriptorProto EnumDescriptorProtoR
 type EnumDescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , value :: Array EnumValueDescriptorProto
@@ -654,7 +664,6 @@ type EnumDescriptorProtoRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type EnumDescriptorProtoR = Record EnumDescriptorProtoRow
-newtype EnumDescriptorProto = EnumDescriptorProto EnumDescriptorProtoR
 derive instance genericEnumDescriptorProto :: Prelude.Generic EnumDescriptorProto _
 derive instance newtypeEnumDescriptorProto :: Prelude.Newtype EnumDescriptorProto _
 derive instance eqEnumDescriptorProto :: Prelude.Eq EnumDescriptorProto
@@ -718,13 +727,14 @@ mergeEnumDescriptorProto (EnumDescriptorProto l) (EnumDescriptorProto r) = EnumD
   }
 
 
+-- ---------- Message EnumDescriptorProto_EnumReservedRange ----------
+newtype EnumDescriptorProto_EnumReservedRange = EnumDescriptorProto_EnumReservedRange EnumDescriptorProto_EnumReservedRangeR
 type EnumDescriptorProto_EnumReservedRangeRow =
   ( start :: Prelude.Maybe Int
   , end :: Prelude.Maybe Int
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type EnumDescriptorProto_EnumReservedRangeR = Record EnumDescriptorProto_EnumReservedRangeRow
-newtype EnumDescriptorProto_EnumReservedRange = EnumDescriptorProto_EnumReservedRange EnumDescriptorProto_EnumReservedRangeR
 derive instance genericEnumDescriptorProto_EnumReservedRange :: Prelude.Generic EnumDescriptorProto_EnumReservedRange _
 derive instance newtypeEnumDescriptorProto_EnumReservedRange :: Prelude.Newtype EnumDescriptorProto_EnumReservedRange _
 derive instance eqEnumDescriptorProto_EnumReservedRange :: Prelude.Eq EnumDescriptorProto_EnumReservedRange
@@ -770,6 +780,8 @@ mergeEnumDescriptorProto_EnumReservedRange (EnumDescriptorProto_EnumReservedRang
   }
 
 
+-- ---------- Message EnumValueDescriptorProto ----------
+newtype EnumValueDescriptorProto = EnumValueDescriptorProto EnumValueDescriptorProtoR
 type EnumValueDescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , number :: Prelude.Maybe Int
@@ -777,7 +789,6 @@ type EnumValueDescriptorProtoRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type EnumValueDescriptorProtoR = Record EnumValueDescriptorProtoRow
-newtype EnumValueDescriptorProto = EnumValueDescriptorProto EnumValueDescriptorProtoR
 derive instance genericEnumValueDescriptorProto :: Prelude.Generic EnumValueDescriptorProto _
 derive instance newtypeEnumValueDescriptorProto :: Prelude.Newtype EnumValueDescriptorProto _
 derive instance eqEnumValueDescriptorProto :: Prelude.Eq EnumValueDescriptorProto
@@ -829,6 +840,8 @@ mergeEnumValueDescriptorProto (EnumValueDescriptorProto l) (EnumValueDescriptorP
   }
 
 
+-- ---------- Message ServiceDescriptorProto ----------
+newtype ServiceDescriptorProto = ServiceDescriptorProto ServiceDescriptorProtoR
 type ServiceDescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , method :: Array MethodDescriptorProto
@@ -836,7 +849,6 @@ type ServiceDescriptorProtoRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type ServiceDescriptorProtoR = Record ServiceDescriptorProtoRow
-newtype ServiceDescriptorProto = ServiceDescriptorProto ServiceDescriptorProtoR
 derive instance genericServiceDescriptorProto :: Prelude.Generic ServiceDescriptorProto _
 derive instance newtypeServiceDescriptorProto :: Prelude.Newtype ServiceDescriptorProto _
 derive instance eqServiceDescriptorProto :: Prelude.Eq ServiceDescriptorProto
@@ -888,6 +900,8 @@ mergeServiceDescriptorProto (ServiceDescriptorProto l) (ServiceDescriptorProto r
   }
 
 
+-- ---------- Message MethodDescriptorProto ----------
+newtype MethodDescriptorProto = MethodDescriptorProto MethodDescriptorProtoR
 type MethodDescriptorProtoRow =
   ( name :: Prelude.Maybe String
   , input_type :: Prelude.Maybe String
@@ -898,7 +912,6 @@ type MethodDescriptorProtoRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type MethodDescriptorProtoR = Record MethodDescriptorProtoRow
-newtype MethodDescriptorProto = MethodDescriptorProto MethodDescriptorProtoR
 derive instance genericMethodDescriptorProto :: Prelude.Generic MethodDescriptorProto _
 derive instance newtypeMethodDescriptorProto :: Prelude.Newtype MethodDescriptorProto _
 derive instance eqMethodDescriptorProto :: Prelude.Eq MethodDescriptorProto
@@ -968,6 +981,8 @@ mergeMethodDescriptorProto (MethodDescriptorProto l) (MethodDescriptorProto r) =
   }
 
 
+-- ---------- Message FileOptions ----------
+newtype FileOptions = FileOptions FileOptionsR
 type FileOptionsRow =
   ( java_package :: Prelude.Maybe String
   , java_outer_classname :: Prelude.Maybe String
@@ -993,7 +1008,6 @@ type FileOptionsRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type FileOptionsR = Record FileOptionsRow
-newtype FileOptions = FileOptions FileOptionsR
 derive instance genericFileOptions :: Prelude.Generic FileOptions _
 derive instance newtypeFileOptions :: Prelude.Newtype FileOptions _
 derive instance eqFileOptions :: Prelude.Eq FileOptions
@@ -1153,6 +1167,8 @@ mergeFileOptions (FileOptions l) (FileOptions r) = FileOptions
   }
 
 
+-- ---------- Message MessageOptions ----------
+newtype MessageOptions = MessageOptions MessageOptionsR
 type MessageOptionsRow =
   ( message_set_wire_format :: Prelude.Maybe Boolean
   , no_standard_descriptor_accessor :: Prelude.Maybe Boolean
@@ -1162,7 +1178,6 @@ type MessageOptionsRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type MessageOptionsR = Record MessageOptionsRow
-newtype MessageOptions = MessageOptions MessageOptionsR
 derive instance genericMessageOptions :: Prelude.Generic MessageOptions _
 derive instance newtypeMessageOptions :: Prelude.Newtype MessageOptions _
 derive instance eqMessageOptions :: Prelude.Eq MessageOptions
@@ -1226,6 +1241,8 @@ mergeMessageOptions (MessageOptions l) (MessageOptions r) = MessageOptions
   }
 
 
+-- ---------- Message FieldOptions ----------
+newtype FieldOptions = FieldOptions FieldOptionsR
 type FieldOptionsRow =
   ( ctype :: Prelude.Maybe FieldOptions_CType
   , packed :: Prelude.Maybe Boolean
@@ -1237,7 +1254,6 @@ type FieldOptionsRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type FieldOptionsR = Record FieldOptionsRow
-newtype FieldOptions = FieldOptions FieldOptionsR
 derive instance genericFieldOptions :: Prelude.Generic FieldOptions _
 derive instance newtypeFieldOptions :: Prelude.Newtype FieldOptions _
 derive instance eqFieldOptions :: Prelude.Eq FieldOptions
@@ -1313,12 +1329,13 @@ mergeFieldOptions (FieldOptions l) (FieldOptions r) = FieldOptions
   }
 
 
+-- ---------- Message OneofOptions ----------
+newtype OneofOptions = OneofOptions OneofOptionsR
 type OneofOptionsRow =
   ( uninterpreted_option :: Array UninterpretedOption
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type OneofOptionsR = Record OneofOptionsRow
-newtype OneofOptions = OneofOptions OneofOptionsR
 derive instance genericOneofOptions :: Prelude.Generic OneofOptions _
 derive instance newtypeOneofOptions :: Prelude.Newtype OneofOptions _
 derive instance eqOneofOptions :: Prelude.Eq OneofOptions
@@ -1358,6 +1375,8 @@ mergeOneofOptions (OneofOptions l) (OneofOptions r) = OneofOptions
   }
 
 
+-- ---------- Message EnumOptions ----------
+newtype EnumOptions = EnumOptions EnumOptionsR
 type EnumOptionsRow =
   ( allow_alias :: Prelude.Maybe Boolean
   , deprecated :: Prelude.Maybe Boolean
@@ -1365,7 +1384,6 @@ type EnumOptionsRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type EnumOptionsR = Record EnumOptionsRow
-newtype EnumOptions = EnumOptions EnumOptionsR
 derive instance genericEnumOptions :: Prelude.Generic EnumOptions _
 derive instance newtypeEnumOptions :: Prelude.Newtype EnumOptions _
 derive instance eqEnumOptions :: Prelude.Eq EnumOptions
@@ -1417,13 +1435,14 @@ mergeEnumOptions (EnumOptions l) (EnumOptions r) = EnumOptions
   }
 
 
+-- ---------- Message EnumValueOptions ----------
+newtype EnumValueOptions = EnumValueOptions EnumValueOptionsR
 type EnumValueOptionsRow =
   ( deprecated :: Prelude.Maybe Boolean
   , uninterpreted_option :: Array UninterpretedOption
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type EnumValueOptionsR = Record EnumValueOptionsRow
-newtype EnumValueOptions = EnumValueOptions EnumValueOptionsR
 derive instance genericEnumValueOptions :: Prelude.Generic EnumValueOptions _
 derive instance newtypeEnumValueOptions :: Prelude.Newtype EnumValueOptions _
 derive instance eqEnumValueOptions :: Prelude.Eq EnumValueOptions
@@ -1469,13 +1488,14 @@ mergeEnumValueOptions (EnumValueOptions l) (EnumValueOptions r) = EnumValueOptio
   }
 
 
+-- ---------- Message ServiceOptions ----------
+newtype ServiceOptions = ServiceOptions ServiceOptionsR
 type ServiceOptionsRow =
   ( deprecated :: Prelude.Maybe Boolean
   , uninterpreted_option :: Array UninterpretedOption
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type ServiceOptionsR = Record ServiceOptionsRow
-newtype ServiceOptions = ServiceOptions ServiceOptionsR
 derive instance genericServiceOptions :: Prelude.Generic ServiceOptions _
 derive instance newtypeServiceOptions :: Prelude.Newtype ServiceOptions _
 derive instance eqServiceOptions :: Prelude.Eq ServiceOptions
@@ -1521,6 +1541,8 @@ mergeServiceOptions (ServiceOptions l) (ServiceOptions r) = ServiceOptions
   }
 
 
+-- ---------- Message MethodOptions ----------
+newtype MethodOptions = MethodOptions MethodOptionsR
 type MethodOptionsRow =
   ( deprecated :: Prelude.Maybe Boolean
   , idempotency_level :: Prelude.Maybe MethodOptions_IdempotencyLevel
@@ -1528,7 +1550,6 @@ type MethodOptionsRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type MethodOptionsR = Record MethodOptionsRow
-newtype MethodOptions = MethodOptions MethodOptionsR
 derive instance genericMethodOptions :: Prelude.Generic MethodOptions _
 derive instance newtypeMethodOptions :: Prelude.Newtype MethodOptions _
 derive instance eqMethodOptions :: Prelude.Eq MethodOptions
@@ -1580,6 +1601,8 @@ mergeMethodOptions (MethodOptions l) (MethodOptions r) = MethodOptions
   }
 
 
+-- ---------- Message UninterpretedOption ----------
+newtype UninterpretedOption = UninterpretedOption UninterpretedOptionR
 type UninterpretedOptionRow =
   ( name :: Array UninterpretedOption_NamePart
   , identifier_value :: Prelude.Maybe String
@@ -1591,7 +1614,6 @@ type UninterpretedOptionRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type UninterpretedOptionR = Record UninterpretedOptionRow
-newtype UninterpretedOption = UninterpretedOption UninterpretedOptionR
 derive instance genericUninterpretedOption :: Prelude.Generic UninterpretedOption _
 derive instance newtypeUninterpretedOption :: Prelude.Newtype UninterpretedOption _
 derive instance eqUninterpretedOption :: Prelude.Eq UninterpretedOption
@@ -1667,13 +1689,14 @@ mergeUninterpretedOption (UninterpretedOption l) (UninterpretedOption r) = Unint
   }
 
 
+-- ---------- Message UninterpretedOption_NamePart ----------
+newtype UninterpretedOption_NamePart = UninterpretedOption_NamePart UninterpretedOption_NamePartR
 type UninterpretedOption_NamePartRow =
   ( name_part :: Prelude.Maybe String
   , is_extension :: Prelude.Maybe Boolean
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type UninterpretedOption_NamePartR = Record UninterpretedOption_NamePartRow
-newtype UninterpretedOption_NamePart = UninterpretedOption_NamePart UninterpretedOption_NamePartR
 derive instance genericUninterpretedOption_NamePart :: Prelude.Generic UninterpretedOption_NamePart _
 derive instance newtypeUninterpretedOption_NamePart :: Prelude.Newtype UninterpretedOption_NamePart _
 derive instance eqUninterpretedOption_NamePart :: Prelude.Eq UninterpretedOption_NamePart
@@ -1719,12 +1742,13 @@ mergeUninterpretedOption_NamePart (UninterpretedOption_NamePart l) (Uninterprete
   }
 
 
+-- ---------- Message SourceCodeInfo ----------
+newtype SourceCodeInfo = SourceCodeInfo SourceCodeInfoR
 type SourceCodeInfoRow =
   ( location :: Array SourceCodeInfo_Location
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type SourceCodeInfoR = Record SourceCodeInfoRow
-newtype SourceCodeInfo = SourceCodeInfo SourceCodeInfoR
 derive instance genericSourceCodeInfo :: Prelude.Generic SourceCodeInfo _
 derive instance newtypeSourceCodeInfo :: Prelude.Newtype SourceCodeInfo _
 derive instance eqSourceCodeInfo :: Prelude.Eq SourceCodeInfo
@@ -1764,6 +1788,8 @@ mergeSourceCodeInfo (SourceCodeInfo l) (SourceCodeInfo r) = SourceCodeInfo
   }
 
 
+-- ---------- Message SourceCodeInfo_Location ----------
+newtype SourceCodeInfo_Location = SourceCodeInfo_Location SourceCodeInfo_LocationR
 type SourceCodeInfo_LocationRow =
   ( path :: Array Int
   , span :: Array Int
@@ -1773,7 +1799,6 @@ type SourceCodeInfo_LocationRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type SourceCodeInfo_LocationR = Record SourceCodeInfo_LocationRow
-newtype SourceCodeInfo_Location = SourceCodeInfo_Location SourceCodeInfo_LocationR
 derive instance genericSourceCodeInfo_Location :: Prelude.Generic SourceCodeInfo_Location _
 derive instance newtypeSourceCodeInfo_Location :: Prelude.Newtype SourceCodeInfo_Location _
 derive instance eqSourceCodeInfo_Location :: Prelude.Eq SourceCodeInfo_Location
@@ -1843,12 +1868,13 @@ mergeSourceCodeInfo_Location (SourceCodeInfo_Location l) (SourceCodeInfo_Locatio
   }
 
 
+-- ---------- Message GeneratedCodeInfo ----------
+newtype GeneratedCodeInfo = GeneratedCodeInfo GeneratedCodeInfoR
 type GeneratedCodeInfoRow =
   ( annotation :: Array GeneratedCodeInfo_Annotation
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type GeneratedCodeInfoR = Record GeneratedCodeInfoRow
-newtype GeneratedCodeInfo = GeneratedCodeInfo GeneratedCodeInfoR
 derive instance genericGeneratedCodeInfo :: Prelude.Generic GeneratedCodeInfo _
 derive instance newtypeGeneratedCodeInfo :: Prelude.Newtype GeneratedCodeInfo _
 derive instance eqGeneratedCodeInfo :: Prelude.Eq GeneratedCodeInfo
@@ -1888,6 +1914,8 @@ mergeGeneratedCodeInfo (GeneratedCodeInfo l) (GeneratedCodeInfo r) = GeneratedCo
   }
 
 
+-- ---------- Message GeneratedCodeInfo_Annotation ----------
+newtype GeneratedCodeInfo_Annotation = GeneratedCodeInfo_Annotation GeneratedCodeInfo_AnnotationR
 type GeneratedCodeInfo_AnnotationRow =
   ( path :: Array Int
   , source_file :: Prelude.Maybe String
@@ -1896,7 +1924,6 @@ type GeneratedCodeInfo_AnnotationRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type GeneratedCodeInfo_AnnotationR = Record GeneratedCodeInfo_AnnotationRow
-newtype GeneratedCodeInfo_Annotation = GeneratedCodeInfo_Annotation GeneratedCodeInfo_AnnotationR
 derive instance genericGeneratedCodeInfo_Annotation :: Prelude.Generic GeneratedCodeInfo_Annotation _
 derive instance newtypeGeneratedCodeInfo_Annotation :: Prelude.Newtype GeneratedCodeInfo_Annotation _
 derive instance eqGeneratedCodeInfo_Annotation :: Prelude.Eq GeneratedCodeInfo_Annotation
@@ -1957,6 +1984,7 @@ mergeGeneratedCodeInfo_Annotation (GeneratedCodeInfo_Annotation l) (GeneratedCod
   }
 
 
+-- ---------- Enum FieldDescriptorProto_Type ----------
 data FieldDescriptorProto_Type
   = FieldDescriptorProto_Type_TYPE_DOUBLE
   | FieldDescriptorProto_Type_TYPE_FLOAT
@@ -2029,6 +2057,7 @@ instance boundedenumFieldDescriptorProto_Type :: Prelude.BoundedEnum FieldDescri
   fromEnum FieldDescriptorProto_Type_TYPE_SINT32 = (17)
   fromEnum FieldDescriptorProto_Type_TYPE_SINT64 = (18)
 
+-- ---------- Enum FieldDescriptorProto_Label ----------
 data FieldDescriptorProto_Label
   = FieldDescriptorProto_Label_LABEL_OPTIONAL
   | FieldDescriptorProto_Label_LABEL_REQUIRED
@@ -2056,6 +2085,7 @@ instance boundedenumFieldDescriptorProto_Label :: Prelude.BoundedEnum FieldDescr
   fromEnum FieldDescriptorProto_Label_LABEL_REQUIRED = (2)
   fromEnum FieldDescriptorProto_Label_LABEL_REPEATED = (3)
 
+-- ---------- Enum FileOptions_OptimizeMode ----------
 data FileOptions_OptimizeMode
   = FileOptions_OptimizeMode_SPEED
   | FileOptions_OptimizeMode_CODE_SIZE
@@ -2083,6 +2113,7 @@ instance boundedenumFileOptions_OptimizeMode :: Prelude.BoundedEnum FileOptions_
   fromEnum FileOptions_OptimizeMode_CODE_SIZE = (2)
   fromEnum FileOptions_OptimizeMode_LITE_RUNTIME = (3)
 
+-- ---------- Enum FieldOptions_CType ----------
 data FieldOptions_CType
   = FieldOptions_CType_STRING
   | FieldOptions_CType_CORD
@@ -2110,6 +2141,7 @@ instance boundedenumFieldOptions_CType :: Prelude.BoundedEnum FieldOptions_CType
   fromEnum FieldOptions_CType_CORD = (1)
   fromEnum FieldOptions_CType_STRING_PIECE = (2)
 
+-- ---------- Enum FieldOptions_JSType ----------
 data FieldOptions_JSType
   = FieldOptions_JSType_JS_NORMAL
   | FieldOptions_JSType_JS_STRING
@@ -2137,6 +2169,7 @@ instance boundedenumFieldOptions_JSType :: Prelude.BoundedEnum FieldOptions_JSTy
   fromEnum FieldOptions_JSType_JS_STRING = (1)
   fromEnum FieldOptions_JSType_JS_NUMBER = (2)
 
+-- ---------- Enum MethodOptions_IdempotencyLevel ----------
 data MethodOptions_IdempotencyLevel
   = MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
   | MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS

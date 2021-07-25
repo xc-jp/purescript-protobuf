@@ -14,6 +14,8 @@ import Google.Protobuf.Descriptor as Google.Protobuf
 
 
 
+-- ---------- Message Version ----------
+newtype Version = Version VersionR
 type VersionRow =
   ( major :: Prelude.Maybe Int
   , minor :: Prelude.Maybe Int
@@ -22,7 +24,6 @@ type VersionRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type VersionR = Record VersionRow
-newtype Version = Version VersionR
 derive instance genericVersion :: Prelude.Generic Version _
 derive instance newtypeVersion :: Prelude.Newtype Version _
 derive instance eqVersion :: Prelude.Eq Version
@@ -80,6 +81,8 @@ mergeVersion (Version l) (Version r) = Version
   }
 
 
+-- ---------- Message CodeGeneratorRequest ----------
+newtype CodeGeneratorRequest = CodeGeneratorRequest CodeGeneratorRequestR
 type CodeGeneratorRequestRow =
   ( file_to_generate :: Array String
   , parameter :: Prelude.Maybe String
@@ -88,7 +91,6 @@ type CodeGeneratorRequestRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type CodeGeneratorRequestR = Record CodeGeneratorRequestRow
-newtype CodeGeneratorRequest = CodeGeneratorRequest CodeGeneratorRequestR
 derive instance genericCodeGeneratorRequest :: Prelude.Generic CodeGeneratorRequest _
 derive instance newtypeCodeGeneratorRequest :: Prelude.Newtype CodeGeneratorRequest _
 derive instance eqCodeGeneratorRequest :: Prelude.Eq CodeGeneratorRequest
@@ -146,6 +148,8 @@ mergeCodeGeneratorRequest (CodeGeneratorRequest l) (CodeGeneratorRequest r) = Co
   }
 
 
+-- ---------- Message CodeGeneratorResponse ----------
+newtype CodeGeneratorResponse = CodeGeneratorResponse CodeGeneratorResponseR
 type CodeGeneratorResponseRow =
   ( error :: Prelude.Maybe String
   , supported_features :: Prelude.Maybe (Prelude.Long Prelude.Unsigned)
@@ -153,7 +157,6 @@ type CodeGeneratorResponseRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type CodeGeneratorResponseR = Record CodeGeneratorResponseRow
-newtype CodeGeneratorResponse = CodeGeneratorResponse CodeGeneratorResponseR
 derive instance genericCodeGeneratorResponse :: Prelude.Generic CodeGeneratorResponse _
 derive instance newtypeCodeGeneratorResponse :: Prelude.Newtype CodeGeneratorResponse _
 derive instance eqCodeGeneratorResponse :: Prelude.Eq CodeGeneratorResponse
@@ -205,6 +208,8 @@ mergeCodeGeneratorResponse (CodeGeneratorResponse l) (CodeGeneratorResponse r) =
   }
 
 
+-- ---------- Message CodeGeneratorResponse_File ----------
+newtype CodeGeneratorResponse_File = CodeGeneratorResponse_File CodeGeneratorResponse_FileR
 type CodeGeneratorResponse_FileRow =
   ( name :: Prelude.Maybe String
   , insertion_point :: Prelude.Maybe String
@@ -213,7 +218,6 @@ type CodeGeneratorResponse_FileRow =
   , __unknown_fields :: Array Prelude.UnknownField
   )
 type CodeGeneratorResponse_FileR = Record CodeGeneratorResponse_FileRow
-newtype CodeGeneratorResponse_File = CodeGeneratorResponse_File CodeGeneratorResponse_FileR
 derive instance genericCodeGeneratorResponse_File :: Prelude.Generic CodeGeneratorResponse_File _
 derive instance newtypeCodeGeneratorResponse_File :: Prelude.Newtype CodeGeneratorResponse_File _
 derive instance eqCodeGeneratorResponse_File :: Prelude.Eq CodeGeneratorResponse_File
@@ -271,6 +275,7 @@ mergeCodeGeneratorResponse_File (CodeGeneratorResponse_File l) (CodeGeneratorRes
   }
 
 
+-- ---------- Enum CodeGeneratorResponse_Feature ----------
 data CodeGeneratorResponse_Feature
   = CodeGeneratorResponse_Feature_FEATURE_NONE
   | CodeGeneratorResponse_Feature_FEATURE_PROTO3_OPTIONAL

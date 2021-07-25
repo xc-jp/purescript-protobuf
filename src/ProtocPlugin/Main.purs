@@ -1251,7 +1251,9 @@ genFile proto_file ( FileDescriptorProto
       in
         map (String.joinWith "\n")
           $ sequence
-              [ Right $ "\ntype " <> tname <> "Row ="
+              [ Right $ "\n-- ---------- Message " <> tname <> " ----------"
+              , Right $ "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
+              , Right $ "type " <> tname <> "Row ="
               , Right "  ( "
                   <> ( map (String.joinWith "\n  , ")
                         $ ( (catMaybes <$> traverse (genFieldRecord nameSpace) fields_singular)
@@ -1261,7 +1263,6 @@ genFile proto_file ( FileDescriptorProto
                     )
               , Right "  )"
               , Right $ "type " <> tname <> "R = Record " <> tname <> "Row"
-              , Right $ "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
               , Right $ "derive instance generic" <> tname <> " :: Prelude.Generic " <> tname <> " _"
               , Right $ "derive instance newtype" <> tname <> " :: Prelude.Newtype " <> tname <> " _"
               , Right $ "derive instance eq" <> tname <> " :: Prelude.Eq " <> tname
@@ -1423,7 +1424,8 @@ import Protobuf.Internal.Prelude as Prelude
     enumTo <- traverse genEnumTo value
     enumFrom <- traverse genEnumFrom value
     Right $ String.joinWith "\n"
-      $ [ "\ndata " <> tname
+      $ [ "\n-- ---------- Enum " <> tname <> " ----------"
+        , "data " <> tname
         , "  = " <> String.joinWith "\n  | " enumConstruct
         , "derive instance generic" <> tname <> " :: Prelude.Generic " <> tname <> " _"
         , "derive instance eq" <> tname <> " :: Prelude.Eq " <> tname
