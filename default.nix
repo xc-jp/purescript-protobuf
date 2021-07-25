@@ -40,11 +40,12 @@ pkgs.stdenv.mkDerivation {
     cp $src/spago.dhall .
     cp $src/packages.dhall .
     cp -r $src/src .
+    cp -r $src/plugin .
     cp -r ${protobufNixNode.nodeDependencies}/lib/node_modules .
     install-spago-style
     '';
   buildPhase = ''
-    build-spago-style "./src/**/*.purs"
+    build-spago-style "./src/**/*.purs" "./plugin/**/*.purs"
     '';
   installPhase = ''
     mkdir -p $out/bin

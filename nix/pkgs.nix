@@ -15,8 +15,10 @@ let
 
 
   spago2nix = import (builtins.fetchGit {
-    url = "https://github.com/xc-jp/spago2nix.git";
-    rev = "898798204fa8f53837bbcf71e30aeb425deb0906";
+    url = "https://github.com/justinwoo/spago2nix.git";
+    # rev = "898798204fa8f53837bbcf71e30aeb425deb0906";
+    ref = "spago-pass-args";
+    rev = "3bf9161ba1bf329e682108405daf8f3073990515";
   }) { inherit pkgs; };
 
   node2nix = import (builtins.fetchGit {
