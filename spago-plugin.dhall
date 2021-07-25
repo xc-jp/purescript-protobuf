@@ -5,15 +5,13 @@
 --
 -- Usage:
 --
---     spago -x spago-protoc.dhall build
+--     spago -x spago-plugin.dhall build
 --
 
 let conf = ./spago.dhall
 
 in conf //
-  -- don't include conformance/generated/*.purs in sources because it will conflict
-  -- with test/generated/*.purs
-  { sources = [ "src/**/*.purs" ]
+  { sources = [ "src/**/*.purs", "plugin/**/*.purs" ]
   , dependencies = conf.dependencies #
     [ "assert"
     , "psci-support"

@@ -55,7 +55,7 @@ purs 0.14.3
 To build the protoc compiler plugin, run:
 
     npm install
-    spago -x spago-protoc.dhall build
+    spago -x spago-plugin.dhall build
 
 To generate PureScript .purs files from .proto files, run:
 

@@ -4,7 +4,7 @@ To test purescript-protobuf, run `nix-shell` from the top level directory
 of the repo, then:
 
     npm install
-    spago -x spago-protoc.dhall build
+    spago -x spago-plugin.dhall build
     protoc --purescript_out=./test/generated test/*.proto
     spago -x spago-test.dhall test
 

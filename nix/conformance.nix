@@ -25,7 +25,7 @@ pkgs.mkShell {
     # echo "    run"
     # echo ""
     # set -e
-    spago -x spago-protoc.dhall build
+    spago -x spago-plugin.dhall build
     protoc --purescript_out=./conformance/generated --proto_path=${pkgs.protobuf}/src --proto_path=${pkgs.protobuf}/conformance ${pkgs.protobuf}/conformance/conformance.proto
     protoc --purescript_out=./conformance/generated --proto_path=${pkgs.protobuf}/src --proto_path=${pkgs.protobuf}/conformance ${pkgs.protobuf}/src/google/protobuf/test_messages_proto3.proto
     spago -x spago-conformance.dhall build
