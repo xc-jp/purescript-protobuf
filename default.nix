@@ -1,4 +1,8 @@
-# Derivation which provides `protoc-gen-purescript` on the PATH
+# Derivation which provides `protoc-gen-purescript` on the PATH.
+#
+# To try it out, `nix-shell ./nix/demo.nix`, then
+#
+#     protoc --purescript_out=path_to_output file.proto
 #
 { pkgs ? import ./nix/pkgs.nix {} }:
 

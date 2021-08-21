@@ -1,5 +1,8 @@
 # Demonstration of how to import a derivation of the purescript-protobuf
-# compiler plugin protoc-gen-purescript.
+# compiler plugin protoc-gen-purescript. In this shell we can run:
+#
+#    protoc --purescript_out=path_to_output file.proto
+#
 { pkgs ? import ./pkgs.nix {} }:
 let
   protoc-gen-purescript = import ../default.nix { inherit pkgs; };
