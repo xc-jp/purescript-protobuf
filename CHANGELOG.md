@@ -1,3 +1,9 @@
+# v2.1.2 2021-09-10
+
+Now the codegen
+[Nix derivation](https://github.com/xc-jp/purescript-protobuf#nix-derivation)
+is working properly.
+
 # v2.1.0 2021-07-25
 
 Reorganized the `spago` files so that programs which import generated code
