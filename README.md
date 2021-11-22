@@ -252,6 +252,7 @@ in our implementation.
 #### When deserializing
 
 A message field will always be `Just` when the field is present on the wire.
+
 A message field will always be `Nothing` when the field is not present on the wire, even if
 it’s a *no presence* field.
 If we want to interpret a missing *no presence* field as a
