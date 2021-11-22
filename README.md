@@ -251,20 +251,20 @@ in our implementation.
 
 #### When deserializing
 
-A message field will always be `Just` when a field is present on the wire.
-A message field will always be `Nothing` when a field is not present on the wire, even if
+A message field will always be `Just` when the field is present on the wire.
+A message field will always be `Nothing` when the field is not present on the wire, even if
 it’s a *no presence* field.
-If we want interpret a missing *no presence* field as a
+If we want to interpret a missing *no presence* field as a
 [default value](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default) then
 we have the `Protobuf.Library.toDefault` function for that.
 
 #### When serializing
 
-The *no presence* fields will not be serialized when they are `Nothing` or `Just` their
+A *no presence* field will not be serialized on the wire when it is `Nothing`, or `Just` the
 default value.
 
-The *explicit presence* (`optional`) fields will not be serialized when they are `Nothing`.
-They will be serialized when they are `Just` their default value.
+An *explicit presence* (`optional`) field will not be serialized on the wire when it is `Nothing`.
+It will be serialized when it is `Just` the default value.
 
 ### Interpreting invalid encoding parse failures
 
