@@ -323,4 +323,5 @@ Pull requests welcome.
 
 ## Other References
 
-* [Third-Party Add-ons for Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/master/docs/third_party.md)
+* [Third-Party Add-ons for Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/master/docs/third_party.md) Google’s list of Protocol Buffers language implementations.
+* [A vision for data interchange in Elm](https://gist.github.com/evancz/1c5f2cf34939336ecb79b97bb89d9da6) short review of data interchange techniques by Evan Czaplicki.
