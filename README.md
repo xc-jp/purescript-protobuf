@@ -13,7 +13,7 @@ and in browser environments.
 
 ## Features
 
-We aim to support binary-encoded (not JSON-encoded)
+We aim to support binary-encoded protobuf for
 `syntax = "proto3";` descriptor files.
 
 Many `syntax = "proto2";` descriptor files will
@@ -26,6 +26,9 @@ We do not support
 
 We do not support
 [services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
+
+We do not support
+[JSON encoding](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
 ### Conformance and Testing
 
