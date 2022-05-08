@@ -23,7 +23,6 @@ pkgs.mkShell {
   echo ""
   echo "To build the protoc compiler plugin, run:"
   echo ""
-  echo "    npm install"
   echo "    spago -x spago-plugin.dhall build"
   echo ""
   echo "To generate PureScript .purs files from .proto files, run:"

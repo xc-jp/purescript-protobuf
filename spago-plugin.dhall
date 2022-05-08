@@ -17,6 +17,5 @@ in conf //
     , "node-path"
     , "node-process"
     , "node-streams"
-    , "debug"
     ]
   }

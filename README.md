@@ -214,8 +214,13 @@ package.
 The generated code depends on packages which are all in
 [__package-sets__](https://github.com/purescript/package-sets).
 
-The generated code also depends on the Javascript package
-[__long__](https://www.npmjs.com/package/long).
+If the runtime environment is *Node.js*, then it must be at least *v11*,
+because that is the version in which
+[`TextDecoder`](https://nodejs.org/docs/latest-v11.x/api/globals.html#globals_textdecoder)
+ and
+[`TextEncoder`](https://nodejs.org/docs/latest-v11.x/api/globals.html#globals_textencoder)
+were added to `Globals`.
+
 
 ### Generated message instances
 

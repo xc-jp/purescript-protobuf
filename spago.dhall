@@ -3,34 +3,33 @@
 -- See:
 -- https://github.com/purescript/spago#devdependencies-testdependencies-or-in-general-a-situation-with-many-configurations
 --
-
 { name = "protobuf"
 , dependencies =
   [ "arraybuffer"
   , "arraybuffer-builder"
   , "arraybuffer-types"
-  , "longs"
-  , "parsing"
-  , "parsing-dataview"
-  , "text-encoding"
-  , "uint"
   , "arrays"
   , "control"
   , "effect"
+  , "either"
   , "enums"
+  , "exceptions"
   , "float32"
   , "foldable-traversable"
+  , "functions"
+  , "int64"
   , "maybe"
   , "newtype"
-  , "partial"
+  , "parsing"
+  , "parsing-dataview"
   , "prelude"
   , "record"
   , "strings"
   , "tailrec"
   , "transformers"
   , "tuples"
-  , "either"
-  , "quickcheck" -- needed by longs v0.1.1
+  , "uint"
+  , "web-encoding"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/Protobuf/**/*.purs" ]

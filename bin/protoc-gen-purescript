@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-node -e "require('./output/ProtocPlugin.Main/index.js').main()"
+node --input-type=module -e "import {main} from './output/ProtocPlugin.Main/index.js'; main();"

@@ -46,13 +46,16 @@ import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as AT
 import Data.Enum (fromEnum)
 import Data.Float32 (Float32)
-import Data.Long as Long
-import Data.Long.Internal (Long, Unsigned, Signed)
-import Data.Long.Internal as Long.Internal
-import Data.TextEncoding (encodeUtf8)
+import Data.Int64 (Int64)
+import Data.Int64 as Int64
+import Data.UInt64 (UInt64)
+import Data.UInt64 as UInt64
+import Data.Int64.Internal as Int64.Internal
+import Web.Encoding.TextEncoder as TextEncoder
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
+import Effect.Unsafe (unsafePerformEffect)
 import Protobuf.Internal.Common (FieldNumber, WireType(..), Bytes(..))
 
 encodeDoubleField :: forall m. MonadEffect m => FieldNumber -> Number -> Builder.PutM m Unit
@@ -94,9 +97,9 @@ encodeInt32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
 -- varint is always ten bytes long”
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
 encodeInt32 n = do
-  encodeVarint64 $ Long.Internal.signedToUnsigned $ Long.Internal.signedLongFromInt n
+  encodeVarint64 $ Int64.toUnsigned $ Int64.fromInt n
 
-encodeInt64Field :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
+encodeInt64Field :: forall m. MonadEffect m => FieldNumber -> Int64 -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
@@ -106,12 +109,12 @@ encodeInt64Field fieldNumber n = do
 
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-encodeInt64 :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+encodeInt64 :: forall m. MonadEffect m => Int64 -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
 -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
 encodeInt64 n = do
-  encodeVarint64 $ Long.toUnsigned n
+  encodeVarint64 $ Int64.toUnsigned n
 
 encodeUint32Field :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
 encodeUint32Field fieldNumber n = do
@@ -124,14 +127,14 @@ encodeUint32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
 encodeUint32 n = do
   encodeVarint32 n
 
-encodeUint64Field :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
+encodeUint64Field :: forall m. MonadEffect m => FieldNumber -> UInt64 -> Builder.PutM m Unit
 encodeUint64Field fieldNumber n = do
   encodeTag32 fieldNumber VarInt
   encodeUint64 n
 
 -- | __uint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-encodeUint64 :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+encodeUint64 :: forall m. MonadEffect m => UInt64 -> Builder.PutM m Unit
 encodeUint64 n = do
   encodeVarint64 n
 
@@ -146,14 +149,14 @@ encodeSint32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
 encodeSint32 n = do
   encodeVarint32 $ encodeZigzag32 n
 
-encodeSint64Field :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
+encodeSint64Field :: forall m. MonadEffect m => FieldNumber -> Int64 -> Builder.PutM m Unit
 encodeSint64Field fieldNumber n = do
   encodeTag32 fieldNumber VarInt
   encodeSint64 n
 
 -- | __sint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-encodeSint64 :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+encodeSint64 :: forall m. MonadEffect m => Int64 -> Builder.PutM m Unit
 encodeSint64 n = do
   encodeVarint64 $ encodeZigzag64 n
 
@@ -170,17 +173,17 @@ encodeFixed32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
 encodeFixed32 n = do
   Builder.putUint32le n
 
-encodeFixed64Field :: forall m. MonadEffect m => FieldNumber -> Long Unsigned -> Builder.PutM m Unit
+encodeFixed64Field :: forall m. MonadEffect m => FieldNumber -> UInt64 -> Builder.PutM m Unit
 encodeFixed64Field fieldNumber n = do
   encodeTag32 fieldNumber Bits64
   encodeFixed64 n
 
 -- | __fixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-encodeFixed64 :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+encodeFixed64 :: forall m. MonadEffect m => UInt64 -> Builder.PutM m Unit
 encodeFixed64 n = do
-  Builder.putInt32le $ Long.Internal.lowBits n
-  Builder.putInt32le $ Long.Internal.highBits n
+  Builder.putInt32le $ UInt64.lowBits n
+  Builder.putInt32le $ UInt64.highBits n
 
 encodeSfixed32Field :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
 encodeSfixed32Field fieldNumber n = do
@@ -193,17 +196,17 @@ encodeSfixed32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
 encodeSfixed32 n = do
   Builder.putInt32le n
 
-encodeSfixed64Field :: forall m. MonadEffect m => FieldNumber -> Long Signed -> Builder.PutM m Unit
+encodeSfixed64Field :: forall m. MonadEffect m => FieldNumber -> Int64 -> Builder.PutM m Unit
 encodeSfixed64Field fieldNumber n = do
   encodeTag32 fieldNumber Bits64
   encodeSfixed64 n
 
 -- | __sfixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-encodeSfixed64 :: forall m. MonadEffect m => Long Signed -> Builder.PutM m Unit
+encodeSfixed64 :: forall m. MonadEffect m => Int64 -> Builder.PutM m Unit
 encodeSfixed64 n = do
-  Builder.putInt32le $ Long.lowBits n
-  Builder.putInt32le $ Long.highBits n
+  Builder.putInt32le $ Int64.lowBits n
+  Builder.putInt32le $ Int64.highBits n
 
 encodeBoolField :: forall m. MonadEffect m => FieldNumber -> Boolean -> Builder.PutM m Unit
 encodeBoolField fieldNumber n = do
@@ -223,9 +226,12 @@ encodeStringField :: forall m. MonadEffect m => FieldNumber -> String -> Builder
 encodeStringField fieldNumber s = do
   encodeTag32 fieldNumber LenDel
   let
-    stringbuf = AT.buffer $ encodeUtf8 s
+    stringbuf = AT.buffer $ TextEncoder.encode s textEncoder
   encodeVarint32 $ UInt.fromInt $ AB.byteLength stringbuf
   Builder.putArrayBuffer stringbuf
+
+textEncoder :: TextEncoder.TextEncoder
+textEncoder = unsafePerformEffect TextEncoder.new
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -256,7 +262,7 @@ encodeTag32 fieldNumber wireType = encodeVarint32 $ (fieldNumber `UInt.shl` (UIn
 -- | larger than 32 bits, such as in field numbers.
 -- | We think this is worth the risk because `UInt` is
 -- | represented as a native Javascript Number whereas
--- | `Long` is a composite library type, so we expect the
+-- | `UInt64` is a composite library type, so we expect the
 -- | performance difference to be significant.
 -- |
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
@@ -305,15 +311,15 @@ encodeVarint32 n_0 = do
   u0x80 = UInt.fromInt 0x80
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
-encodeZigzag64 :: Long Signed -> Long Unsigned
-encodeZigzag64 n = Long.toUnsigned $ (n `Long.Internal.shl` (Long.Internal.unsafeFromInt 1)) `Long.Internal.xor` (n `Long.Internal.shr` (Long.Internal.unsafeFromInt 63))
+encodeZigzag64 :: Int64 -> UInt64
+encodeZigzag64 n = Int64.toUnsigned $ (n `Int64.shl` (Int64.fromInt 1)) `Int64.xor` (n `Int64.shr` (Int64.fromInt 63))
 
-encodeVarint64 :: forall m. MonadEffect m => Long Unsigned -> Builder.PutM m Unit
+encodeVarint64 :: forall m. MonadEffect m => UInt64 -> Builder.PutM m Unit
 encodeVarint64 n_0 = do
   let
     group_0 = takeGroup n_0
 
-    n_1 = n_0 `Long.Internal.zshr` u7
+    n_1 = n_0 `UInt64.zshr` u7
   if n_1 == u0 then
     Builder.putUint8 group_0
   else do
@@ -321,7 +327,7 @@ encodeVarint64 n_0 = do
     let
       group_1 = takeGroup n_1
 
-      n_2 = n_1 `Long.Internal.zshr` u7
+      n_2 = n_1 `UInt64.zshr` u7
     if n_2 == u0 then
       Builder.putUint8 group_1
     else do
@@ -329,7 +335,7 @@ encodeVarint64 n_0 = do
       let
         group_2 = takeGroup n_2
 
-        n_3 = n_2 `Long.Internal.zshr` u7
+        n_3 = n_2 `UInt64.zshr` u7
       if n_3 == u0 then
         Builder.putUint8 group_2
       else do
@@ -337,7 +343,7 @@ encodeVarint64 n_0 = do
         let
           group_3 = takeGroup n_3
 
-          n_4 = n_3 `Long.Internal.zshr` u7
+          n_4 = n_3 `UInt64.zshr` u7
         if n_4 == u0 then
           Builder.putUint8 group_3
         else do
@@ -345,7 +351,7 @@ encodeVarint64 n_0 = do
           let
             group_4 = takeGroup n_4
 
-            n_5 = n_4 `Long.Internal.zshr` u7
+            n_5 = n_4 `UInt64.zshr` u7
           if n_5 == u0 then
             Builder.putUint8 group_4
           else do
@@ -353,7 +359,7 @@ encodeVarint64 n_0 = do
             let
               group_5 = takeGroup n_5
 
-              n_6 = n_5 `Long.Internal.zshr` u7
+              n_6 = n_5 `UInt64.zshr` u7
             if n_6 == u0 then
               Builder.putUint8 group_5
             else do
@@ -361,7 +367,7 @@ encodeVarint64 n_0 = do
               let
                 group_6 = takeGroup n_6
 
-                n_7 = n_6 `Long.Internal.zshr` u7
+                n_7 = n_6 `UInt64.zshr` u7
               if n_7 == u0 then
                 Builder.putUint8 group_6
               else do
@@ -369,7 +375,7 @@ encodeVarint64 n_0 = do
                 let
                   group_7 = takeGroup n_7
 
-                  n_8 = n_7 `Long.Internal.zshr` u7
+                  n_8 = n_7 `UInt64.zshr` u7
                 if n_8 == u0 then
                   Builder.putUint8 group_7
                 else do
@@ -377,24 +383,24 @@ encodeVarint64 n_0 = do
                   let
                     group_8 = takeGroup n_8
 
-                    n_9 = n_8 `Long.Internal.zshr` u7
+                    n_9 = n_8 `UInt64.zshr` u7
                   if n_9 == u0 then
                     Builder.putUint8 group_8
                   else do
                     Builder.putUint8 $ contGroup group_8
                     Builder.putUint8 $ takeGroup n_9
   where
-  -- copy the low seven bits group from a Long
-  takeGroup :: Long Unsigned -> UInt
-  takeGroup n = (UInt.fromInt $ Long.Internal.lowBits n) `UInt.and` u0x7F
+  -- copy the low seven bits group from a UInt64
+  takeGroup :: UInt64 -> UInt
+  takeGroup n = (UInt.fromInt $ UInt64.lowBits n) `UInt.and` u0x7F
 
   -- Set the high eigth continuation bit of a group
   contGroup :: UInt -> UInt
   contGroup n = u0x80 `UInt.or` n
 
-  u0 = Long.Internal.unsafeFromInt 0 :: Long Unsigned
+  u0 = Int64.Internal.unsafeFromInt 0 :: UInt64
 
-  u7 = Long.Internal.unsafeFromInt 7 :: Long Unsigned
+  u7 = Int64.Internal.unsafeFromInt 7 :: UInt64
 
   u0x7F = UInt.fromInt 0x7F
 

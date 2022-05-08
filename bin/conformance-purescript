@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-exec node -e "require('./output/Conformance.Main/index.js').main()"
+node --input-type=module -e "import {main} from './output/Conformance.Main/index.js'; main();"

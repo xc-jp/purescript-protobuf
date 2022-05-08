@@ -1,35 +1,53 @@
-exports._decodeArray = function(f) {
-  return function(n) {
-    return function () {
-      var a = new Array(n);
-      var l = a.length;
-      var i;
-      for (i=0;i<l;i+=1) {
-        a[i] = f(i)();
+export const unsafeCopyFloat32le = function(dv) {
+  return function (n) {
+    let result = new Array(n);
+    for (let i=0;i<n;i=i+1) {
+      result[i] = dv.getFloat32(i*4, true);
+    }
+    return result;
+  };
+};
+
+export const unsafeCopyFloat64le = function(dv) {
+  return function (n) {
+    let result = new Array(n);
+    for (let i=0;i<n;i=i+1) {
+      result[i] = dv.getFloat64(i*8, true);
+    }
+    return result;
+  };
+};
+
+export const unsafeCopyInt32le = function(dv) {
+  return function (n) {
+    let result = new Array(n);
+    for (let i=0;i<n;i=i+1) {
+      result[i] = dv.getInt32(i*4, true);
+    }
+    return result;
+  };
+};
+
+export const unsafeCopyUInt32le = function(dv) {
+  return function (n) {
+    let result = new Array(n);
+    for (let i=0;i<n;i=i+1) {
+      result[i] = dv.getUint32(i*4, true);
+    }
+    return result;
+  };
+};
+
+export const unsafeCopyInt64le = function(lowHighConstructor) {
+  return function(dv) {
+    return function (n) {
+      let result = new Array(n);
+      for (let i=0;i<n;i=i+1) {
+        let low = dv.getInt32(i*4, true);
+        let high = dv.getInt32((i+1)*4, true);
+        result[i] = lowHighConstructor(low, high);
       }
-      return a;
+      return result;
     };
   };
-}
-
-// Check whether the number 1 updates the first or last byte in a 4 byte array.
-// This determines endianness.
-//
-// The function memoizes the result so that subsequent calls don't need to
-// perform the check again
-exports._isBigEndian = function () {
-  var computed = false;
-  var bigEndian;
-  return function() {
-    if(computed === true) {
-      return bigEndian;
-    } else {
-      const array = new Uint8Array(4);
-      const view = new Uint32Array(array.buffer);
-      bigEndian = !((view[0] = 1) & array[0]);
-      computed = true;
-    }
-    return bigEndian;
-  }
-}
-
+};

@@ -30,240 +30,64 @@ module Protobuf.Internal.Decode
 
 import Prelude
 
-import Control.Apply (lift2)
-import Control.Monad.Except (ExceptT(..))
-import Control.Monad.State (StateT(..))
 import Control.Monad.Trans.Class (lift)
-import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (DataBuff(..))
-import Data.ArrayBuffer.DataView (getFloat32le, getFloat64le, getInt32le, getUint32le)
-import Data.ArrayBuffer.DataView as DV
-import Data.ArrayBuffer.Typed (class TypedArray)
-import Data.ArrayBuffer.Typed as AT
-import Data.ArrayBuffer.Types (ArrayView, ArrayViewType, ByteLength, ByteOffset, DataView)
-import Data.ArrayBuffer.Types as ArrayTypes
-import Data.ArrayBuffer.ValueMapping (class BinaryValue, class BytesPerType, class ShowArrayViewType, byteWidth)
+import Data.ArrayBuffer.Types (ByteLength, DataView)
 import Data.Either (Either(..))
 import Data.Enum (toEnum)
 import Data.Float32 (Float32)
-import Data.Long.Internal (Long, Unsigned, Signed)
-import Data.Long.Internal as Long.Internal
-import Data.Maybe (Maybe(..), fromJust)
-import Data.String (joinWith)
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
-import Data.TextDecoding (decodeUtf8)
+import Data.Int64 (Int64)
+import Data.Int64 as Int64
+import Data.UInt64 (UInt64)
+import Data.UInt64 as UInt64
+import Data.Int64.Internal as Int64.Internal
+import Data.Maybe (Maybe(..))
+import Effect.Exception (catchException, message)
+import Web.Encoding.TextDecoder as TextDecoder
+import Web.Encoding.UtfLabel as UtfLabel
+import Data.Function.Uncurried (Fn2, mkFn2)
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
-import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Unsafe (unsafePerformEffect)
-import Partial.Unsafe (unsafePartial)
-import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType, mkUint8Array)
-import Text.Parsing.Parser (ParseError(..), ParseState(..), ParserT(..), fail)
-import Text.Parsing.Parser.DataView as Parse
-import Text.Parsing.Parser.Pos (Position(..))
-import Type.Proxy (Proxy(..))
+import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType, label, mkUint8Array)
+import Parsing (ParserT, fail)
+import Parsing.DataView as Parse
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 decodeDouble :: forall m. MonadEffect m => ParserT DataView m Number
 decodeDouble = Parse.anyFloat64le
 
+-- | repeated packed __double__
+-- |
+-- | Equivalent to `manyLength decodeDouble`, but specialized so it’s faster.
+decodeDoubleArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Number)
+decodeDoubleArray len = label "decodeDoubleArray / " do
+  when ((len `mod` 8) /= 0) $ fail "Cannot consume a byteLength indivisible by 8."
+  dv <- Parse.takeN len
+  pure $ unsafeCopyFloat64le dv (len `div` 8)
+
+-- | Copy *N* little-endian `Number`s from the `DataView` into a new `Array`.
+foreign import unsafeCopyFloat64le :: DataView -> Int -> Array Number
+
 -- | __float__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 decodeFloat :: forall m. MonadEffect m => ParserT DataView m Float32
 decodeFloat = Parse.anyFloat32le
 
--- | True if we are running in a JavaScript environment in which `TypedArray` is big-endian.
-isBigEndian :: Effect Boolean
-isBigEndian = unsafePerformEffect _isBigEndian
-
-decodeArray ::
-  forall a m t name.
-  BinaryValue a t =>
-  BytesPerType a =>
-  ShowArrayViewType a name =>
-  IsSymbol name =>
-  TypedArray a t =>
-  MonadEffect m =>
-  Proxy a ->
-  (DataView -> ByteOffset -> Effect (Maybe t)) ->
-  ByteLength -> ParserT DataView m (Array t)
-decodeArray a p n = do
-  big <- lift (liftEffect isBigEndian)
-  if big then
-    packedArray a p n
-  else
-    typedArray a n >>= lift <<< liftEffect <<< AT.toArray
-
 -- | repeated packed __float__
+-- |
+-- | Equivalent to `manyLength decodeFloat`, but specialized so it’s faster.
 decodeFloatArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Float32)
-decodeFloatArray = decodeArray (Proxy :: Proxy ArrayTypes.Float32) getFloat32le
+decodeFloatArray len = label "decodeFloatArray / " do
+  when ((len `mod` 4) /= 0) $ fail "Cannot consume a byteLength indivisible by 4."
+  dv <- Parse.takeN len
+  pure $ unsafeCopyFloat32le dv (len `div` 4)
 
--- | repeated packed __double__
-decodeDoubleArray :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Number)
-decodeDoubleArray = decodeArray (Proxy :: Proxy ArrayTypes.Float64) getFloat64le
-
--- | repeated packed __sfixed32__
-decodeSfixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Int)
-decodeSfixed32Array = decodeArray (Proxy :: Proxy ArrayTypes.Int32) getInt32le
-
-foreign import data BigInt64 :: ArrayViewType
-
-instance bytesPerValueBigInt64 :: BytesPerType BigInt64
- where
-  byteWidth _ = 8
-
-instance binaryValueBigInt64 :: BinaryValue BigInt64 (Long Signed)
-
-instance showArrayViewBigInt64 :: ShowArrayViewType BigInt64 "long signed"
-
-getLongle :: DataView -> Int -> Effect (Maybe (Long Signed))
-getLongle dv idx = do
-  lo <- getInt32le dv idx
-  hi <- getInt32le dv (idx + 4)
-  pure $ lift2 Long.Internal.fromLowHighBits lo hi
-
--- | repeated packed __sfixed64__
-decodeSfixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Signed))
-decodeSfixed64Array = packedArray (Proxy :: Proxy BigInt64) getLongle
-
-foreign import data BigUInt64 :: ArrayViewType
-
-instance bytesPerValueBigUInt64 :: BytesPerType BigUInt64
- where
-  byteWidth _ = 8
-
-instance binaryValueBigUInt64 :: BinaryValue BigUInt64 (Long Unsigned)
-
-instance showArrayViewBigUInt64 :: ShowArrayViewType BigUInt64 "long unsigned"
-
-getULongle :: DataView -> Int -> Effect (Maybe (Long Unsigned))
-getULongle dv idx = do
-  lo <- getInt32le dv idx
-  hi <- getInt32le dv (idx + 4)
-  pure $ lift2 Long.Internal.fromLowHighBits lo hi
-
--- | repeated packed __fixed32__
-decodeFixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array UInt)
-decodeFixed32Array = decodeArray (Proxy :: Proxy ArrayTypes.Uint32) getUint32le
-
--- | repeated packed __fixed64__
-decodeFixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array (Long Unsigned))
-decodeFixed64Array = packedArray (Proxy :: Proxy BigUInt64) getULongle
-
-foreign import _decodeArray ::
-  forall t. (ByteOffset -> Effect t) -> Int -> Effect (Array t)
-
-foreign import _isBigEndian :: Effect (Effect Boolean)
-
--- | Parse a slice of the DataView to an Array given a parser for the
--- | individual elements.
-packedArray ::
-  forall a m t name.
-  BinaryValue a t =>
-  BytesPerType a =>
-  ShowArrayViewType a name =>
-  IsSymbol name =>
-  MonadEffect m =>
-  Proxy a ->
-  (DataView -> ByteOffset -> Effect (Maybe t)) ->
-  ByteLength ->
-  ParserT DataView m (Array t)
-packedArray _ decodeValue n =
-  let
-    byteSize = byteWidth (Proxy :: Proxy a)
-
-    name = reflectSymbol (SProxy :: SProxy name)
-  in
-    do
-      unless
-        (n `mod` byteSize == 0)
-        ( pure unit
-            >>= \_ ->
-                fail
-                  $ joinWith " "
-                      [ "byte length not a multiple of"
-                      , show byteSize
-                      , "when parsing"
-                      , name
-                      , "array"
-                      ]
-        )
-      ParserT $ ExceptT
-        $ StateT \state@(ParseState s (Position { line, column }) _) ->
-            let
-              pos' = Position { line, column: column + n }
-
-              -- we assume all indexing into the dataview will be valid given the
-              -- check against the byteLength
-              unsafeDecodeValue i =
-                unsafePartial
-                  $ map fromJust
-                  $ decodeValue s ((i * byteSize) + column - 1)
-            in
-              if column + n - 1 > DV.byteLength s then
-                pure (Tuple (Left (ParseError "packedArray index out of bounds" pos')) state)
-              else do
-                x <- liftEffect (_decodeArray unsafeDecodeValue (n `div` byteSize))
-                pure (Tuple (pure x) (ParseState s pos' true))
-
--- | Parse a slice of the DataView by casting the slice to a TypedArray
-typedArray ::
-  forall a m t name.
-  BinaryValue a t =>
-  BytesPerType a =>
-  ShowArrayViewType a name =>
-  TypedArray a t =>
-  IsSymbol name =>
-  MonadEffect m =>
-  Proxy a ->
-  ByteLength ->
-  ParserT DataView m (ArrayView a)
-typedArray _ n =
-  let
-    byteSize = byteWidth (Proxy :: Proxy a)
-
-    name = reflectSymbol (SProxy :: SProxy name)
-  in
-    do
-      unless
-        (n `mod` byteSize == 0)
-        ( pure unit
-            >>= \_ ->
-                fail
-                  $ joinWith " "
-                      [ "byte length not a multiple of"
-                      , show byteSize
-                      , "when parsing"
-                      , name
-                      , "array"
-                      ]
-        )
-      ParserT $ ExceptT
-        $ StateT \state@(ParseState s (Position { line, column }) _) ->
-            let
-              pos' = Position { line, column: column + n }
-
-              backing = DV.buffer s
-
-              start = DV.byteOffset s + column - 1
-
-              end = start + n
-
-              isAligned = start `mod` byteSize == 0
-            in
-              if end > start + DV.byteLength s then
-                pure (Tuple (Left (ParseError "typedArray index out of bounds" pos')) state)
-              else do
-                x <-
-                  liftEffect
-                    $ if isAligned then
-                        AT.part backing (start `div` byteSize) (n `div` byteSize)
-                      else
-                        AT.whole (AB.slice start end backing)
-                pure (Tuple (pure x) (ParseState s pos' true))
+-- | Copy *N* little-endian `Float32`s from the `DataView` into a new `Array`.
+foreign import unsafeCopyFloat32le :: DataView -> Int -> Array Float32
 
 -- | __int32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -283,26 +107,26 @@ decodeInt32 = do
   -- the hight bits. So that's what we'll do.
   --
   -- conformance checker hates this:
-  --   case Long.toInt n of
+  --   case Int64.toInt n of
   --     Nothing -> fail "int32 value out of range."
   --     Just x -> pure x
-  pure $ Long.Internal.lowBits n
+  pure $ UInt64.lowBits n
 
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-decodeInt64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
-decodeInt64 = Long.Internal.unsignedToSigned <$> decodeVarint64
+decodeInt64 :: forall m. MonadEffect m => ParserT DataView m Int64
+decodeInt64 = UInt64.toSigned <$> decodeVarint64
 
 -- | __uint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 decodeUint32 :: forall m. MonadEffect m => ParserT DataView m UInt
 decodeUint32 = do
   n <- decodeVarint64
-  pure $ UInt.fromInt $ Long.Internal.lowBits n
+  pure $ UInt.fromInt $ UInt64.lowBits n
 
 -- | __uint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-decodeUint64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
+decodeUint64 :: forall m. MonadEffect m => ParserT DataView m UInt64
 decodeUint64 = decodeVarint64
 
 -- | __sint32__
@@ -314,7 +138,7 @@ decodeSint32 = do
 
 -- | __sint64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-decodeSint64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
+decodeSint64 :: forall m. MonadEffect m => ParserT DataView m Int64
 decodeSint64 = decodeZigzag64 <$> decodeVarint64
 
 -- | __fixed32__
@@ -322,27 +146,77 @@ decodeSint64 = decodeZigzag64 <$> decodeVarint64
 decodeFixed32 :: forall m. MonadEffect m => ParserT DataView m UInt
 decodeFixed32 = Parse.anyUint32le
 
+-- | repeated packed __fixed32__
+-- |
+-- | Equivalent to `manyLength decodeFixed32`, but specialized so it’s faster.
+decodeFixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array UInt)
+-- | repeated packed __float__
+decodeFixed32Array len = label "decodeFixed32Array / " do
+  when ((len `mod` 4) /= 0) $ fail "Cannot consume a byteLength indivisible by 4."
+  dv <- Parse.takeN len
+  pure $ unsafeCopyUInt32le dv (len `div` 4)
+
+-- | Copy *N* little-endian `UInt`s from the `DataView` into a new `Array`.
+foreign import unsafeCopyUInt32le :: DataView -> Int -> Array UInt
+
 -- | __fixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-decodeFixed64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
-decodeFixed64 = Long.Internal.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
+decodeFixed64 :: forall m. MonadEffect m => ParserT DataView m UInt64
+decodeFixed64 = UInt64.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
+
+-- | repeated packed __fixed64__
+-- |
+-- | Equivalent to `manyLength decodeFixed64`, but specialized so it’s faster.
+decodeFixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array UInt64)
+-- | repeated packed __float__
+decodeFixed64Array len = label "decodeFixed64Array / " do
+  when ((len `mod` 8) /= 0) $ fail "Cannot consume a byteLength indivisible by 8."
+  dv <- Parse.takeN len
+  pure $ unsafeCopyInt64le (mkFn2 UInt64.fromLowHighBits) dv (len `div` 8)
+
+-- | Copy *N* little-endian `Int64`s or `UInt64`s from the `DataView` into a new `Array`.
+-- | Takes a `fromLowHighBits` constructor.
+foreign import unsafeCopyInt64le :: forall a. (Fn2 Int Int a) -> DataView -> Int -> Array a
 
 -- | __sfixed32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 decodeSfixed32 :: forall m. MonadEffect m => ParserT DataView m Int
 decodeSfixed32 = Parse.anyInt32le
 
+-- | repeated packed __sfixed32__
+-- |
+-- | Equivalent to `manyLength decodeSfixed32`, but specialized so it’s faster.
+decodeSfixed32Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Int)
+-- | repeated packed __float__
+decodeSfixed32Array len = label "decodeSfixed32Array / " do
+  when ((len `mod` 4) /= 0) $ fail "Cannot consume a byteLength indivisible by 4."
+  dv <- Parse.takeN len
+  pure $ unsafeCopyInt32le dv (len `div` 4)
+
+-- | Copy *N* little-endian `Int`s from the `DataView` into a new `Array`.
+foreign import unsafeCopyInt32le :: DataView -> Int -> Array Int
+
 -- | __sfixed64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
-decodeSfixed64 :: forall m. MonadEffect m => ParserT DataView m (Long Signed)
-decodeSfixed64 = Long.Internal.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
+decodeSfixed64 :: forall m. MonadEffect m => ParserT DataView m Int64
+decodeSfixed64 = Int64.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
+
+-- | repeated packed __sfixed64__
+-- |
+-- | Equivalent to `manyLength decodeSfixed64`, but specialized so it’s faster.
+decodeSfixed64Array :: forall m. MonadEffect m => ByteLength -> ParserT DataView m (Array Int64)
+-- | repeated packed __float__
+decodeSfixed64Array len = label "decodeSfixed64Array / " do
+  when ((len `mod` 8) /= 0) $ fail "Cannot consume a byteLength indivisible by 8."
+  dv <- Parse.takeN len
+  pure $ unsafeCopyInt64le (mkFn2 Int64.fromLowHighBits) dv (len `div` 8)
 
 -- | __bool__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 decodeBool :: forall m. MonadEffect m => ParserT DataView m Boolean
 decodeBool = do
   x <- decodeVarint64
-  if Long.Internal.lowBits x == 0 && Long.Internal.highBits x == 0 then
+  if UInt64.lowBits x == 0 && UInt64.highBits x == 0 then
     pure false
   else
     pure true
@@ -353,9 +227,15 @@ decodeString :: forall m. MonadEffect m => ParserT DataView m String
 decodeString = do
   stringview <- decodeVarint32 >>= UInt.toInt >>> Parse.takeN
   stringarray <- lift $ liftEffect $ mkUint8Array stringview
-  case decodeUtf8 stringarray of
-    Left err -> fail $ "string decodeUtf8 failed. " <> show err
-    Right s -> pure s
+  result <- lift $ liftEffect $ catchException
+    (\error -> pure $ Left $ message error)
+    (Right <$> TextDecoder.decode stringarray textDecoder)
+  case result of
+    Left msg -> fail $ "decodeString failed " <> msg
+    Right x -> pure x
+
+textDecoder :: TextDecoder.TextDecoder
+textDecoder = unsafePerformEffect $ TextDecoder.new UtfLabel.utf8
 
 -- | __bytes__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -389,7 +269,7 @@ decodeTag32 = do
 -- | larger than 32 bits, such as in field numbers.
 -- | We think this is worth the risk because `UInt` is
 -- | represented as a native Javascript Number whereas
--- | `Long` is a composite library type, so we expect the
+-- | `UInt64` is a composite library type, so we expect the
 -- | performance difference to be significant.
 -- |
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
@@ -439,99 +319,97 @@ decodeVarint32 = do
   u0x80 = UInt.fromInt 0x80
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
-decodeZigzag64 :: Long Unsigned -> Long Signed
-decodeZigzag64 n = let n' = Long.Internal.unsignedToSigned n in (n' `Long.Internal.zshr` u1) `Long.Internal.xor` (lnegate (n' `Long.Internal.and` u1))
+decodeZigzag64 :: UInt64 -> Int64
+decodeZigzag64 n = let n' = UInt64.toSigned n in (n' `Int64.zshr` one) `Int64.xor` (lnegate (n' `Int64.and` one))
   where
-  lnegate x = Long.Internal.complement x + u1
-
-  u1 = Long.Internal.unsafeFromInt 1
+  lnegate x = Int64.complement x + one
 
 -- | https://developers.google.com/protocol-buffers/docs/encoding#varints
-decodeVarint64 :: forall m. MonadEffect m => ParserT DataView m (Long Unsigned)
+decodeVarint64 :: forall m. MonadEffect m => ParserT DataView m UInt64
 decodeVarint64 = do
   n_0 <- fromInt <$> Parse.anyUint8
   if n_0 < u0x80 then
     pure n_0
   else do
     let
-      acc_0 = n_0 `Long.Internal.and` u0x7F
+      acc_0 = n_0 `UInt64.and` u0x7F
     n_1 <- fromInt <$> Parse.anyUint8
     if n_1 < u0x80 then
-      pure $ acc_0 `Long.Internal.or` (n_1 `Long.Internal.shl` u7)
+      pure $ acc_0 `UInt64.or` (n_1 `UInt64.shl` u7)
     else do
       let
-        acc_1 = ((n_1 `Long.Internal.and` u0x7F) `Long.Internal.shl` u7) `Long.Internal.or` acc_0
+        acc_1 = ((n_1 `UInt64.and` u0x7F) `UInt64.shl` u7) `UInt64.or` acc_0
       n_2 <- fromInt <$> Parse.anyUint8
       if n_2 < u0x80 then
-        pure $ acc_1 `Long.Internal.or` (n_2 `Long.Internal.shl` u14)
+        pure $ acc_1 `UInt64.or` (n_2 `UInt64.shl` u14)
       else do
         let
-          acc_2 = ((n_2 `Long.Internal.and` u0x7F) `Long.Internal.shl` u14) `Long.Internal.or` acc_1
+          acc_2 = ((n_2 `UInt64.and` u0x7F) `UInt64.shl` u14) `UInt64.or` acc_1
         n_3 <- fromInt <$> Parse.anyUint8
         if n_3 < u0x80 then
-          pure $ acc_2 `Long.Internal.or` (n_3 `Long.Internal.shl` u21)
+          pure $ acc_2 `UInt64.or` (n_3 `UInt64.shl` u21)
         else do
           let
-            acc_3 = ((n_3 `Long.Internal.and` u0x7F) `Long.Internal.shl` u21) `Long.Internal.or` acc_2
+            acc_3 = ((n_3 `UInt64.and` u0x7F) `UInt64.shl` u21) `UInt64.or` acc_2
           n_4 <- fromInt <$> Parse.anyUint8
           if n_4 < u0x80 then
-            pure $ acc_3 `Long.Internal.or` (n_4 `Long.Internal.shl` u28)
+            pure $ acc_3 `UInt64.or` (n_4 `UInt64.shl` u28)
           else do
             let
-              acc_4 = ((n_4 `Long.Internal.and` u0x7F) `Long.Internal.shl` u28) `Long.Internal.or` acc_3
+              acc_4 = ((n_4 `UInt64.and` u0x7F) `UInt64.shl` u28) `UInt64.or` acc_3
             n_5 <- fromInt <$> Parse.anyUint8
             if n_5 < u0x80 then
-              pure $ acc_4 `Long.Internal.or` (n_5 `Long.Internal.shl` u35)
+              pure $ acc_4 `UInt64.or` (n_5 `UInt64.shl` u35)
             else do
               let
-                acc_5 = ((n_5 `Long.Internal.and` u0x7F) `Long.Internal.shl` u35) `Long.Internal.or` acc_4
+                acc_5 = ((n_5 `UInt64.and` u0x7F) `UInt64.shl` u35) `UInt64.or` acc_4
               n_6 <- fromInt <$> Parse.anyUint8
               if n_6 < u0x80 then
-                pure $ acc_5 `Long.Internal.or` (n_6 `Long.Internal.shl` u42)
+                pure $ acc_5 `UInt64.or` (n_6 `UInt64.shl` u42)
               else do
                 let
-                  acc_6 = ((n_6 `Long.Internal.and` u0x7F) `Long.Internal.shl` u42) `Long.Internal.or` acc_5
+                  acc_6 = ((n_6 `UInt64.and` u0x7F) `UInt64.shl` u42) `UInt64.or` acc_5
                 n_7 <- fromInt <$> Parse.anyUint8
                 if n_7 < u0x80 then
-                  pure $ acc_6 `Long.Internal.or` (n_7 `Long.Internal.shl` u49)
+                  pure $ acc_6 `UInt64.or` (n_7 `UInt64.shl` u49)
                 else do
                   let
-                    acc_7 = ((n_7 `Long.Internal.and` u0x7F) `Long.Internal.shl` u49) `Long.Internal.or` acc_6
+                    acc_7 = ((n_7 `UInt64.and` u0x7F) `UInt64.shl` u49) `UInt64.or` acc_6
                   n_8 <- fromInt <$> Parse.anyUint8
                   if n_8 < u0x80 then
-                    pure $ acc_7 `Long.Internal.or` (n_8 `Long.Internal.shl` u56)
+                    pure $ acc_7 `UInt64.or` (n_8 `UInt64.shl` u56)
                   else do
                     let
-                      acc_8 = ((n_8 `Long.Internal.and` u0x7F) `Long.Internal.shl` u56) `Long.Internal.or` acc_7
+                      acc_8 = ((n_8 `UInt64.and` u0x7F) `UInt64.shl` u56) `UInt64.or` acc_7
                     n_9 <- fromInt <$> Parse.anyUint8
                     if n_9 < u0x02 then
-                      pure $ acc_8 `Long.Internal.or` (n_9 `Long.Internal.shl` u63)
+                      pure $ acc_8 `UInt64.or` (n_9 `UInt64.shl` u63)
                     else
                       fail "varint64 overflow. Possibly there is an encoding error in the input stream."
   where
-  fromInt :: UInt -> Long Unsigned
-  fromInt = Long.Internal.signedToUnsigned <<< Long.Internal.signedLongFromInt <<< UInt.toInt
+  fromInt :: UInt -> UInt64
+  fromInt = Int64.toUnsigned <<< Int64.fromInt <<< UInt.toInt
 
-  u7 = Long.Internal.unsafeFromInt 7
+  u7 = Int64.Internal.unsafeFromInt 7 :: UInt64
 
-  u14 = Long.Internal.unsafeFromInt 14
+  u14 = Int64.Internal.unsafeFromInt 14 :: UInt64
 
-  u21 = Long.Internal.unsafeFromInt 21
+  u21 = Int64.Internal.unsafeFromInt 21 :: UInt64
 
-  u28 = Long.Internal.unsafeFromInt 28
+  u28 = Int64.Internal.unsafeFromInt 28 :: UInt64
 
-  u35 = Long.Internal.unsafeFromInt 35
+  u35 = Int64.Internal.unsafeFromInt 35 :: UInt64
 
-  u42 = Long.Internal.unsafeFromInt 42
+  u42 = Int64.Internal.unsafeFromInt 42 :: UInt64
 
-  u49 = Long.Internal.unsafeFromInt 49
+  u49 = Int64.Internal.unsafeFromInt 49 :: UInt64
 
-  u56 = Long.Internal.unsafeFromInt 56
+  u56 = Int64.Internal.unsafeFromInt 56 :: UInt64
 
-  u63 = Long.Internal.unsafeFromInt 63
+  u63 = Int64.Internal.unsafeFromInt 63 :: UInt64
 
-  u0x02 = Long.Internal.unsafeFromInt 2
+  u0x02 = Int64.Internal.unsafeFromInt 2 :: UInt64
 
-  u0x7F = Long.Internal.unsafeFromInt 0x7F
+  u0x7F = Int64.Internal.unsafeFromInt 0x7F :: UInt64
 
-  u0x80 = Long.Internal.unsafeFromInt 0x80
+  u0x80 = Int64.Internal.unsafeFromInt 0x80 :: UInt64
