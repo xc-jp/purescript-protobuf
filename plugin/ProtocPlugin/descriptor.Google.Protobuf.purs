@@ -35,9 +35,7 @@ module Google.Protobuf.Descriptor
 , MethodOptions_IdempotencyLevel(..)
 )
 where
-
 import Protobuf.Internal.Prelude
-
 import Protobuf.Internal.Prelude as Prelude
 
 
@@ -1250,6 +1248,7 @@ type FieldOptionsRow =
   , packed :: Prelude.Maybe Boolean
   , jstype :: Prelude.Maybe FieldOptions_JSType
   , lazy :: Prelude.Maybe Boolean
+  , unverified_lazy :: Prelude.Maybe Boolean
   , deprecated :: Prelude.Maybe Boolean
   , weak :: Prelude.Maybe Boolean
   , uninterpreted_option :: Array UninterpretedOption
@@ -1267,6 +1266,7 @@ putFieldOptions (FieldOptions r) = do
   Prelude.putOptional 2 r.packed Prelude.isDefault Prelude.encodeBoolField
   Prelude.putOptional 6 r.jstype Prelude.isDefault Prelude.putEnumField
   Prelude.putOptional 5 r.lazy Prelude.isDefault Prelude.encodeBoolField
+  Prelude.putOptional 15 r.unverified_lazy Prelude.isDefault Prelude.encodeBoolField
   Prelude.putOptional 3 r.deprecated Prelude.isDefault Prelude.encodeBoolField
   Prelude.putOptional 10 r.weak Prelude.isDefault Prelude.encodeBoolField
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
@@ -1292,6 +1292,9 @@ parseFieldOptions length = Prelude.label "FieldOptions / " $
   parseField 5 Prelude.VarInt = Prelude.label "lazy / " $ do
     x <- Prelude.decodeBool
     pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "lazy") $ \_ -> Prelude.Just x
+  parseField 15 Prelude.VarInt = Prelude.label "unverified_lazy / " $ do
+    x <- Prelude.decodeBool
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "unverified_lazy") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
     pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
@@ -1309,6 +1312,7 @@ defaultFieldOptions =
   , packed: Prelude.Nothing
   , jstype: Prelude.Nothing
   , lazy: Prelude.Nothing
+  , unverified_lazy: Prelude.Nothing
   , deprecated: Prelude.Nothing
   , weak: Prelude.Nothing
   , uninterpreted_option: []
@@ -1324,6 +1328,7 @@ mergeFieldOptions (FieldOptions l) (FieldOptions r) = FieldOptions
   , packed: Prelude.alt l.packed r.packed
   , jstype: Prelude.alt l.jstype r.jstype
   , lazy: Prelude.alt l.lazy r.lazy
+  , unverified_lazy: Prelude.alt l.unverified_lazy r.unverified_lazy
   , deprecated: Prelude.alt l.deprecated r.deprecated
   , weak: Prelude.alt l.weak r.weak
   , uninterpreted_option: r.uninterpreted_option <> l.uninterpreted_option
@@ -1608,8 +1613,8 @@ newtype UninterpretedOption = UninterpretedOption UninterpretedOptionR
 type UninterpretedOptionRow =
   ( name :: Array UninterpretedOption_NamePart
   , identifier_value :: Prelude.Maybe String
-  , positive_int_value :: Prelude.Maybe UInt64
-  , negative_int_value :: Prelude.Maybe Int64
+  , positive_int_value :: Prelude.Maybe Prelude.UInt64
+  , negative_int_value :: Prelude.Maybe Prelude.Int64
   , double_value :: Prelude.Maybe Number
   , string_value :: Prelude.Maybe Prelude.Bytes
   , aggregate_value :: Prelude.Maybe String
@@ -2058,7 +2063,7 @@ instance boundedenumFieldDescriptorProto_Type :: Prelude.BoundedEnum FieldDescri
   fromEnum FieldDescriptorProto_Type_TYPE_SFIXED64 = (16)
   fromEnum FieldDescriptorProto_Type_TYPE_SINT32 = (17)
   fromEnum FieldDescriptorProto_Type_TYPE_SINT64 = (18)
-instance Prelude.Default FieldDescriptorProto_Type
+instance defaultFieldDescriptorProto_Type :: Prelude.Default FieldDescriptorProto_Type
  where
   default = FieldDescriptorProto_Type_TYPE_DOUBLE
   isDefault = eq FieldDescriptorProto_Type_TYPE_DOUBLE
@@ -2090,7 +2095,7 @@ instance boundedenumFieldDescriptorProto_Label :: Prelude.BoundedEnum FieldDescr
   fromEnum FieldDescriptorProto_Label_LABEL_OPTIONAL = (1)
   fromEnum FieldDescriptorProto_Label_LABEL_REQUIRED = (2)
   fromEnum FieldDescriptorProto_Label_LABEL_REPEATED = (3)
-instance Prelude.Default FieldDescriptorProto_Label
+instance defaultFieldDescriptorProto_Label :: Prelude.Default FieldDescriptorProto_Label
  where
   default = FieldDescriptorProto_Label_LABEL_OPTIONAL
   isDefault = eq FieldDescriptorProto_Label_LABEL_OPTIONAL
@@ -2122,7 +2127,7 @@ instance boundedenumFileOptions_OptimizeMode :: Prelude.BoundedEnum FileOptions_
   fromEnum FileOptions_OptimizeMode_SPEED = (1)
   fromEnum FileOptions_OptimizeMode_CODE_SIZE = (2)
   fromEnum FileOptions_OptimizeMode_LITE_RUNTIME = (3)
-instance Prelude.Default FileOptions_OptimizeMode
+instance defaultFileOptions_OptimizeMode :: Prelude.Default FileOptions_OptimizeMode
  where
   default = FileOptions_OptimizeMode_SPEED
   isDefault = eq FileOptions_OptimizeMode_SPEED
@@ -2154,7 +2159,7 @@ instance boundedenumFieldOptions_CType :: Prelude.BoundedEnum FieldOptions_CType
   fromEnum FieldOptions_CType_STRING = (0)
   fromEnum FieldOptions_CType_CORD = (1)
   fromEnum FieldOptions_CType_STRING_PIECE = (2)
-instance Prelude.Default FieldOptions_CType
+instance defaultFieldOptions_CType :: Prelude.Default FieldOptions_CType
  where
   default = FieldOptions_CType_STRING
   isDefault = eq FieldOptions_CType_STRING
@@ -2186,7 +2191,7 @@ instance boundedenumFieldOptions_JSType :: Prelude.BoundedEnum FieldOptions_JSTy
   fromEnum FieldOptions_JSType_JS_NORMAL = (0)
   fromEnum FieldOptions_JSType_JS_STRING = (1)
   fromEnum FieldOptions_JSType_JS_NUMBER = (2)
-instance Prelude.Default FieldOptions_JSType
+instance defaultFieldOptions_JSType :: Prelude.Default FieldOptions_JSType
  where
   default = FieldOptions_JSType_JS_NORMAL
   isDefault = eq FieldOptions_JSType_JS_NORMAL
@@ -2196,7 +2201,7 @@ data MethodOptions_IdempotencyLevel
   = MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
   | MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS
   | MethodOptions_IdempotencyLevel_IDEMPOTENT
-derive instance Prelude.Generic MethodOptions_IdempotencyLevel _
+derive instance genericMethodOptions_IdempotencyLevel :: Prelude.Generic MethodOptions_IdempotencyLevel _
 derive instance eqMethodOptions_IdempotencyLevel :: Prelude.Eq MethodOptions_IdempotencyLevel
 instance showMethodOptions_IdempotencyLevel :: Prelude.Show MethodOptions_IdempotencyLevel where show = Prelude.genericShow
 instance ordMethodOptions_IdempotencyLevel :: Prelude.Ord MethodOptions_IdempotencyLevel where compare = Prelude.genericCompare
@@ -2218,7 +2223,8 @@ instance boundedenumMethodOptions_IdempotencyLevel :: Prelude.BoundedEnum Method
   fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN = (0)
   fromEnum MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS = (1)
   fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENT = (2)
-instance Prelude.Default MethodOptions_IdempotencyLevel
+instance defaultMethodOptions_IdempotencyLevel :: Prelude.Default MethodOptions_IdempotencyLevel
  where
   default = MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
   isDefault = eq MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
+

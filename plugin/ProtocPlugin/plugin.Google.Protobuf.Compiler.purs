@@ -299,7 +299,8 @@ instance boundedenumCodeGeneratorResponse_Feature :: Prelude.BoundedEnum CodeGen
   toEnum _ = Prelude.Nothing
   fromEnum CodeGeneratorResponse_Feature_FEATURE_NONE = (0)
   fromEnum CodeGeneratorResponse_Feature_FEATURE_PROTO3_OPTIONAL = (1)
-instance Prelude.Default CodeGeneratorResponse_Feature
+instance defaultCodeGeneratorResponse_Feature :: Prelude.Default CodeGeneratorResponse_Feature
  where
   default = CodeGeneratorResponse_Feature_FEATURE_NONE
   isDefault = eq CodeGeneratorResponse_Feature_FEATURE_NONE
+
