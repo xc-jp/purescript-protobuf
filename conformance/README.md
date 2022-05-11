@@ -5,7 +5,6 @@
 From the top directory of this repo, run
 
 ```
-nix-shell --command 'npm install'
 nix-shell nix/conformance.nix
 ```
 

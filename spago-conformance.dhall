@@ -14,7 +14,9 @@ in conf //
   { sources = [ "conformance/**/*.purs", "src/**/*.purs" ]
   , dependencies = conf.dependencies #
     [ "node-buffer"
-    , "node-process"
-    , "node-streams"
+    , "node-fs"
+    , "aff"
+    , "node-fs-aff"
+    , "tailrec"
     ]
   }
