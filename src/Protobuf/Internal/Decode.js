@@ -43,8 +43,8 @@ export const unsafeCopyInt64le = function(lowHighConstructor) {
     return function (n) {
       let result = new Array(n);
       for (let i=0;i<n;i=i+1) {
-        let low = dv.getInt32(i*4, true);
-        let high = dv.getInt32((i+1)*4, true);
+        let low = dv.getInt32(i*8, true);
+        let high = dv.getInt32((i*8)+4, true);
         result[i] = lowHighConstructor(low, high);
       }
       return result;

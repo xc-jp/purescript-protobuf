@@ -25,6 +25,7 @@ import Data.Array as Array
 import Data.ArrayBuffer.Builder (execPut)
 import Data.ArrayBuffer.DataView as DV
 import Data.Either (Either(..))
+import Data.Int64.Internal as Int64.Internal
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
 import Data.String as String
@@ -33,7 +34,7 @@ import Data.String.Regex as String.Regex
 import Data.String.Regex.Flags as String.Regex.Flags
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..))
-import Data.UInt64 as UInt64
+import Data.UInt64 (UInt64)
 import Effect (Effect)
 import Google.Protobuf.Compiler.Plugin (CodeGeneratorRequest(..), CodeGeneratorResponse, CodeGeneratorResponse_File(..), mkCodeGeneratorResponse, parseCodeGeneratorRequest, putCodeGeneratorResponse)
 import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FieldOptions(..), FileDescriptorProto(..), OneofDescriptorProto(..))
@@ -74,16 +75,17 @@ generate (CodeGeneratorRequest { proto_file }) = do
       mkCodeGeneratorResponse
         { error: Nothing
         , file: file
-        , supported_features: Just $ UInt64.fromLowHighBits feature_proto3_optional 0
+        , supported_features: Just $ feature_proto3_optional
         }
     Left err ->
       mkCodeGeneratorResponse
         { error: Just err
-        , supported_features: Just $ UInt64.fromLowHighBits feature_proto3_optional 0
+        , supported_features: Just feature_proto3_optional
         }
   where
+  -- https://github.com/protocolbuffers/protobuf/blob/main/docs/implementing_proto3_presence.md#signaling-that-your-code-generator-supports-proto3-optional
   -- https://github.com/protocolbuffers/protobuf/blob/3f5fc4df1de8e12b2235c3006593e22d6993c3f5/src/google/protobuf/compiler/plugin.proto#L115
-  feature_proto3_optional = 1
+  feature_proto3_optional = Int64.Internal.unsafeFromInt 1 :: UInt64
 
 -- | Names of parent messages for a message or enum.
 type NameSpace

@@ -30,30 +30,32 @@ module Protobuf.Internal.Decode
 
 import Prelude
 
+import Control.Alt ((<|>))
+import Control.Lazy (defer)
 import Control.Monad.Trans.Class (lift)
 import Data.ArrayBuffer.Builder (DataBuff(..))
 import Data.ArrayBuffer.Types (ByteLength, DataView)
 import Data.Either (Either(..))
 import Data.Enum (toEnum)
 import Data.Float32 (Float32)
+import Data.Function.Uncurried (Fn2, mkFn2)
 import Data.Int64 (Int64)
 import Data.Int64 as Int64
-import Data.UInt64 (UInt64)
-import Data.UInt64 as UInt64
 import Data.Int64.Internal as Int64.Internal
 import Data.Maybe (Maybe(..))
-import Effect.Exception (catchException, message)
-import Web.Encoding.TextDecoder as TextDecoder
-import Web.Encoding.UtfLabel as UtfLabel
-import Data.Function.Uncurried (Fn2, mkFn2)
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
+import Data.UInt64 (UInt64)
+import Data.UInt64 as UInt64
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Exception (catchException, message)
 import Effect.Unsafe (unsafePerformEffect)
-import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType, label, mkUint8Array)
 import Parsing (ParserT, fail)
 import Parsing.DataView as Parse
+import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType, label, mkUint8Array)
+import Web.Encoding.TextDecoder as TextDecoder
+import Web.Encoding.UtfLabel as UtfLabel
 
 -- | __double__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -225,13 +227,17 @@ decodeBool = do
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 decodeString :: forall m. MonadEffect m => ParserT DataView m String
 decodeString = do
-  stringview <- decodeVarint32 >>= UInt.toInt >>> Parse.takeN
+  stringlen <- decodeVarint32
+  stringview <-
+    (Parse.takeN $ UInt.toInt stringlen)
+    <|>
+    (defer \_ -> fail $ "decodeString expected string of length " <> show stringlen)
   stringarray <- lift $ liftEffect $ mkUint8Array stringview
   result <- lift $ liftEffect $ catchException
     (\error -> pure $ Left $ message error)
     (Right <$> TextDecoder.decode stringarray textDecoder)
   case result of
-    Left msg -> fail $ "decodeString failed " <> msg
+    Left msg -> defer \_ -> fail $ "decodeString decode failed " <> msg
     Right x -> pure x
 
 textDecoder :: TextDecoder.TextDecoder
