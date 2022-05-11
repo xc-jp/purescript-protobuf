@@ -109,3 +109,19 @@ let upstream =
         sha256:d4c1a03606efdbb7bb7745a9d3aa908cb1ba5611921373659a4c7bf1c41c106c
 
 in  upstream
+  with parsing-dataview =
+    { dependencies =
+      [ "arraybuffer"
+      , "arraybuffer-types"
+      , "effect"
+      , "float32"
+      , "maybe"
+      , "parsing"
+      , "prelude"
+      , "transformers"
+      , "tuples"
+      , "uint"
+      ]
+    , repo = "https://github.com/jamesdbrock/purescript-parsing-dataview.git"
+    , version = "v3.1.0"
+    }

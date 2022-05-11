@@ -18,21 +18,21 @@ import Node.Process (stdin, stdout, stderr, exit)
 import Node.Stream (onReadable, read, write, writeString)
 import Protobuf.Library (Bytes(..))
 import ProtobufTestMessages.Proto3.TestMessagesProto3 as T3
-import Text.Parsing.Parser (runParserT)
-import Text.Parsing.Parser.DataView (anyInt32le)
+import Parsing (runParserT)
+import Parsing.DataView (anyInt32le)
 
 bailOutMaybe :: forall a. String -> Effect (Maybe a) -> Effect a
 bailOutMaybe err thing =
   thing >>= case _ of
     Nothing -> do
-      void $ writeString stderr UTF8 err (pure unit)
+      void $ writeString stderr UTF8 err (\_ -> pure unit)
       exit 1
     Just x -> pure x
 
 bailOutEither :: forall a l. Show l => Effect (Either l a) -> Effect a
 bailOutEither thing = thing >>= case _ of
     Left err -> do
-      void $ writeString stderr UTF8 (show err) (pure unit)
+      void $ writeString stderr UTF8 (show err) (\_ -> pure unit)
       exit 1
     Right x -> pure x
 
@@ -53,7 +53,7 @@ main = do
        tell responsesub
 
     responsebuffer <- fromArrayBuffer responseab
-    void $ write stdout responsebuffer (pure unit)
+    void $ write stdout responsebuffer (\_ -> pure unit)
 
 reply :: ConformanceRequest -> Effect ConformanceResponse
 

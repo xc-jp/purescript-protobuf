@@ -16,7 +16,6 @@ in conf //
     , "psci-support"
     , "minibench"
     , "console"
-    , "math"
     , "unfoldable"
     , "node-buffer"
     , "node-path"
