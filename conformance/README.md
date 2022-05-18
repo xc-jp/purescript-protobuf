@@ -2,11 +2,11 @@
 
 ## Running the conformance test
 
-From the top directory of this repo, run
+From the top directory of this repo,
 
 ```
-nix-shell --command 'npm install'
 nix-shell nix/conformance.nix
+run
 ```
 
 ## About the conformance test runner

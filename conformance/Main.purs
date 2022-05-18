@@ -1,61 +1,71 @@
--- | Entry point for the conformance test runner.
+-- | Entry point for the conformance test program.
 module Conformance.Main (main) where
 
 import Prelude
 
 import Conformance.Conformance (ConformanceRequest(..), ConformanceResponse, ConformanceResponse_Result(..), mkConformanceResponse, parseConformanceRequest, putConformanceResponse)
 import Conformance.Conformance as C
+import Control.Monad.Rec.Class (class MonadRec, untilJust)
 import Control.Monad.Writer (tell)
-import Data.ArrayBuffer.Builder (DataBuff(..), execPut, putInt32le, subBuilder, toView)
+import Data.ArrayBuffer.Types (ArrayBuffer)
+import Data.ArrayBuffer.Builder (DataBuff(..), execPutM, putInt32le, subBuilder, toView)
 import Data.ArrayBuffer.Builder as Builder
 import Data.ArrayBuffer.DataView as DV
-import Data.Either (Either(..))
+import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Node.Buffer (toArrayBuffer, fromArrayBuffer)
-import Node.Encoding (Encoding(..))
-import Node.Process (stdin, stdout, stderr, exit)
-import Node.Stream (onReadable, read, write, writeString)
-import Protobuf.Library (Bytes(..))
-import ProtobufTestMessages.Proto3.TestMessagesProto3 as T3
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Aff (runAff_, throwError, error)
+import Node.Buffer (Buffer, concat, fromArrayBuffer, toArrayBuffer)
+import Node.Process (stdin, stdout)
+import Node.Stream.Aff(readN, write)
 import Parsing (runParserT)
 import Parsing.DataView (anyInt32le)
+import Protobuf.Library (Bytes(..))
+import ProtobufTestMessages.Proto3.TestMessagesProto3 as T3
+import Effect.Console as Console
+import Unsafe.Coerce (unsafeCoerce)
 
-bailOutMaybe :: forall a. String -> Effect (Maybe a) -> Effect a
-bailOutMaybe err thing =
-  thing >>= case _ of
-    Nothing -> do
-      void $ writeString stderr UTF8 err (\_ -> pure unit)
-      exit 1
-    Just x -> pure x
 
-bailOutEither :: forall a l. Show l => Effect (Either l a) -> Effect a
-bailOutEither thing = thing >>= case _ of
-    Left err -> do
-      void $ writeString stderr UTF8 (show err) (\_ -> pure unit)
-      exit 1
-    Right x -> pure x
+-- https://github.com/protocolbuffers/protobuf/blob/5e7b709564403f1fe22476f7efa1eeff61e995cb/conformance/conformance_test_runner.cc#L48-L54
+--
+-- Every test consists of a ConformanceRequest/ConformanceResponse
+-- request/reply pair.  The protocol on the pipe is simply:
+--
+--   1. tester sends 4-byte length N (little endian)
+--   2. tester sends N bytes representing a ConformanceRequest proto
+--   3. testee sends 4-byte length M (little endian)
+--   4. testee sends M bytes representing a ConformanceResponse proto
 
--- https://github.com/protocolbuffers/protobuf/blob/master/conformance/conformance_test_runner.cc
 main :: Effect Unit
-main = do
-  onReadable stdin $ do
+main = runAff_ (either (unsafeCoerce >>> Console.error) (\_ -> pure unit)) $ untilJust do
+  Tuple msgLenBuf readagain1 <- readN stdin 4
+  msgLenAB :: ArrayBuffer <- liftEffect $ toArrayBuffer =<< concat msgLenBuf
+  if AB.byteLength msgLenAB == 0 || not readagain1 then
+    pure (Just unit)
+  else do
+    runParserT (DV.whole msgLenAB) anyInt32le >>= case _ of
+      Left err -> throwError $ unsafeCoerce err
+      Right msgLen | msgLen < 0 || msgLen > 1000000000 -> do
+        throwError $ error $ "Error msgLen " <> show msgLen
+      Right msgLen -> do
+        Tuple msgBuf _ <- readN stdin msgLen
+        msgAB <- liftEffect $ toArrayBuffer =<< concat msgBuf
+        runParserT (DV.whole msgAB) (parseConformanceRequest msgLen) >>= case _ of
+          Left err -> throwError $ unsafeCoerce err
+          Right request -> do
+            response <- reply request
+            responseAB :: ArrayBuffer <- execPutM $ do
+              responsesub <- subBuilder $ putConformanceResponse response
+              putInt32le $ Builder.length responsesub
+              tell responsesub
+            responseBuf :: Buffer <- liftEffect $ fromArrayBuffer responseAB
+            write stdout [responseBuf]
+    pure Nothing
 
-    msglendv <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No message length" $ read stdin (Just 4))
-    msglen <- bailOutEither $ runParserT msglendv $ anyInt32le
-    stdinview <- map DV.whole $ toArrayBuffer =<< (bailOutMaybe "No stdin" $ read stdin (Just msglen))
-    request <- bailOutEither $ runParserT stdinview $ parseConformanceRequest $ DV.byteLength stdinview
-    response <- reply request
-
-    responseab <- execPut $ do
-       responsesub <- subBuilder $ putConformanceResponse response
-       putInt32le $ Builder.length responsesub
-       tell responsesub
-
-    responsebuffer <- fromArrayBuffer responseab
-    void $ write stdout responsebuffer (\_ -> pure unit)
-
-reply :: ConformanceRequest -> Effect ConformanceResponse
+reply :: forall m. MonadEffect m => MonadRec m => ConformanceRequest -> m ConformanceResponse
 
 reply (ConformanceRequest
   { requested_output_format: _ -- :: Maybe.Maybe WireFormat
@@ -84,7 +94,7 @@ reply (ConformanceRequest
           { result: Just $ ConformanceResponse_Result_Parse_error $ show err
           }
       Right x -> do
-        reply_payload <- execPut $ T3.putTestAllTypesProto3 x
+        reply_payload <- execPutM $ T3.putTestAllTypesProto3 x
         pure $ mkConformanceResponse
           { result: Just $ ConformanceResponse_Result_Protobuf_payload (Bytes $ Buff reply_payload)
           }

@@ -15,6 +15,9 @@ in conf //
   , dependencies = conf.dependencies #
     [ "node-buffer"
     , "node-process"
-    , "node-streams"
+    , "node-streams-aff"
+    , "aff"
+    , "console"
+    , "unsafe-coerce"
     ]
   }

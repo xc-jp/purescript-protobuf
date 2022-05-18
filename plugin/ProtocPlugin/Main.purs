@@ -20,11 +20,13 @@ module ProtocPlugin.Main (main) where
 
 import Prelude
 
+import Control.Monad.Rec.Class (tailRecM, Step(..))
 import Data.Array (catMaybes, concatMap, fold)
 import Data.Array as Array
-import Data.ArrayBuffer.Builder (execPut)
+import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView as DV
-import Data.Either (Either(..))
+import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.Either (Either(..), either)
 import Data.Int64.Internal as Int64.Internal
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
@@ -36,37 +38,47 @@ import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..))
 import Data.UInt64 (UInt64)
 import Effect (Effect)
+import Effect.Aff (runAff_, throwError, error)
+import Effect.Class (liftEffect)
+import Effect.Console as Console
 import Google.Protobuf.Compiler.Plugin (CodeGeneratorRequest(..), CodeGeneratorResponse, CodeGeneratorResponse_File(..), mkCodeGeneratorResponse, parseCodeGeneratorRequest, putCodeGeneratorResponse)
 import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FieldOptions(..), FileDescriptorProto(..), OneofDescriptorProto(..))
-import Node.Buffer (toArrayBuffer, fromArrayBuffer)
-import Node.Encoding (Encoding(..))
+import Node.Buffer (Buffer, toArrayBuffer, fromArrayBuffer)
+import Node.Buffer as Buffer
 import Node.Path (basenameWithoutExt)
-import Node.Process (stdin, stdout, stderr)
-import Node.Stream (read, write, writeString, onReadable)
+import Node.Process (stdin, stdout)
+import Node.Stream.Aff (readSome, write)
 import Parsing (runParserT)
+import Unsafe.Coerce (unsafeCoerce)
+
 
 main :: Effect Unit
-main = do
-  onReadable stdin
-    $ do
-        stdinbufMay <- read stdin Nothing
-        case stdinbufMay of
-          Nothing -> pure unit
-          Just stdinbuf -> do
-            stdinab <- toArrayBuffer stdinbuf
-            let
-              stdinview = DV.whole stdinab
-            requestParsed <- runParserT stdinview $ parseCodeGeneratorRequest $ DV.byteLength stdinview
-            case requestParsed of
-              Left err -> void $ writeString stderr UTF8 (show err) (\_ -> pure unit)
-              Right request -> do
-                -- Uncomment this line to write the parsed declarations to stderr.
-                -- void $ writeString stderr UTF8 (show request) (pure unit)
-                let
-                  response = generate request
-                responseab <- execPut $ putCodeGeneratorResponse response
-                responsebuffer <- fromArrayBuffer responseab
-                void $ write stdout responsebuffer (\_ -> pure unit)
+main = runAff_ (either (unsafeCoerce >>> Console.error) (\_ -> pure unit)) do
+  -- There is a race condition here.
+  -- Protoc just assumes that when it writes the request, we get the whole
+  -- request on our read of stdin. Protoc doesn't tell us how to determine
+  -- that we have read the whole request.
+  -- So we read and parse in a loop until we have enough bytes that the
+  -- parse succeeds.
+  flip tailRecM [] \bs -> do
+    Tuple b readagain <- readSome stdin
+    let bs' = bs <> b
+    ab <- liftEffect $ toArrayBuffer =<< Buffer.concat bs'
+    runParserT (DV.whole ab) (parseCodeGeneratorRequest (AB.byteLength ab)) >>= case _ of
+      Left err -> do
+        if not readagain then do
+          void $ throwError $ error "stdin is not readable."
+          pure (Done unit)
+        else if (Array.length bs') < 20 then do
+          pure (Loop bs')
+        else do
+          void $ throwError $ error $ unsafeCoerce err
+          pure (Done unit)
+      Right request -> do
+        responseBuf <- execPutM $ putCodeGeneratorResponse (generate request)
+        buf :: Buffer <- liftEffect $ fromArrayBuffer responseBuf
+        write stdout [buf]
+        pure (Done unit)
 
 generate :: CodeGeneratorRequest -> CodeGeneratorResponse
 generate (CodeGeneratorRequest { proto_file }) = do

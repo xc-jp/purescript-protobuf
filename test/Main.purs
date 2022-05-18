@@ -50,13 +50,13 @@ main = do
   textEncoder <- TextEncoder.new
   let somebytes = TA.buffer $ TextEncoder.encode "some bytes" textEncoder
 
-  let msgxx = Pack1.mkMsg1 { f1: Just 1.0 }
+  let _ = Pack1.mkMsg1 { f1: Just 1.0 }
 
-  let msg4 = (Pack4.mkMsg2 -- this is just a compile test
+  let _ = (Pack4.mkMsg2 -- this is just a compile test
     { f1: Just $ Pack4.mkMsg1_Msg2 { nested: Just "nested" }
     })
 
-  let msg6 = (Pack5.mkMsg2 -- this is just a compile test
+  let _ = (Pack5.mkMsg2 -- this is just a compile test
     { sum1: Just $ Pack5.Msg2_Sum1_F1 $ Pack5.mkMsg1
       { sum1: Just $ Pack5.Msg1_Sum1_F3 billion'
       }
@@ -134,6 +134,6 @@ main = do
   let almostEqual a b = sum (zipWith (\x y -> abs (toNumber x - toNumber y)) a b) < 1.0e-5
   case parseResult5 of
        Left err -> assert' ("floatArray unaligned " <> show err) false
-       Right x@(Tuple a b) -> assert' "floatArray unaligned roundtrip" $
+       Right (Tuple a b) -> assert' "floatArray unaligned roundtrip" $
           almostEqual a (mapMaybe fromNumber [8.828180325246348e-44,2.0])
           && almostEqual b (mapMaybe fromNumber [-8.96831017167883e-44])

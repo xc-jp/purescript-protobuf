@@ -120,48 +120,53 @@ class Default a where
   default :: a
   isDefault :: a -> Boolean
 
--- We use instance chains
--- https://github.com/purescript/documentation/blob/master/language/Type-Classes.md#instance-chains
--- so that we can define instance defaultBoundedEnum without overlapping.
--- Discussion: https://github.com/purescript/purescript/issues/3596
 instance defaultString :: Default String where
   default = ""
   isDefault = String.null
-else instance defaultInt :: Default Int where
+
+instance defaultInt :: Default Int where
   default = 0
   isDefault x = x == 0
-else instance defaultNumber :: Default Number where
+
+instance defaultNumber :: Default Number where
   default = 0.0
   isDefault x = x == 0.0
-else instance defaultInt64 :: Default Int64 where
+
+instance defaultInt64 :: Default Int64 where
   default = zero
   isDefault x = x == default
-else instance defaultUInt64 :: Default UInt64 where
+
+instance defaultUInt64 :: Default UInt64 where
   default = zero
   isDefault x = x == default
-else instance defaultFloat32 :: Default Float32 where
+
+instance defaultFloat32 :: Default Float32 where
   default = Float32.fromNumber' 0.0
   isDefault x = x == default
-else instance defaultBoolean :: Default Boolean where
+
+instance defaultBoolean :: Default Boolean where
   default = false
   isDefault x = not x
-else instance defaultUInt :: Default UInt where
+
+instance defaultUInt :: Default UInt where
   default = UInt.fromInt 0
   isDefault x = x == default
-else instance defaultBytes :: Default Bytes where
+
+instance defaultBytes :: Default Bytes where
   default = Bytes $ Buff $ unsafePerformEffect $ AB.empty 0
   isDefault (Bytes buf) = DV.byteLength (toView buf) == 0
 
--- | Turns a `default` value into `Nothing`.
+-- | Turns a “default” (zero) value into `Nothing`.
 fromDefault :: forall a. Default a => Eq a => a -> Maybe a
 fromDefault x = if x == default then Nothing else Just x
 
--- | Turns `Nothing` into a `default` value.
+-- | Turns `Nothing` into a “default” (zero) value.
 -- |
 -- | The Protobuf spec requires that a *no presence* field set
 -- | to its “default” (zero) value must not be serialized to the wire.
--- | We can use this function to interpret
--- | a missing field as a “default” value.
+-- |
+-- | When receiving messages we can use this function to interpret
+-- | a missing *no presence* field as a “default” value.
 toDefault :: forall a. Default a => Maybe a -> a
 toDefault Nothing = default
 toDefault (Just x) = x

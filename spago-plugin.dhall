@@ -13,9 +13,13 @@ let conf = ./spago.dhall
 in conf //
   { sources = [ "src/**/*.purs", "plugin/**/*.purs" ]
   , dependencies = conf.dependencies #
-    [ "node-buffer"
+  	[ "aff"
+    , "node-buffer"
     , "node-path"
     , "node-process"
-    , "node-streams"
+    -- , "node-streams"
+    , "node-streams-aff"
+    , "console"
+    , "unsafe-coerce"
     ]
   }
