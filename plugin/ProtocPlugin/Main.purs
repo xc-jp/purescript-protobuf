@@ -360,30 +360,6 @@ genFile proto_file ( FileDescriptorProto
 
     genTypeOneof _ _ = Left $ "Failed genTypeOneof missing OneofDescriptorProto name\n"
   let
-    genIsDefaultOneof ::
-      NameSpace ->
-      (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) ->
-      Resp String
-    genIsDefaultOneof nameSpace (Tuple (OneofDescriptorProto { name: Just oname }) pfields) = do
-      fields <- catMaybes <$> traverse go pfields
-      Right
-        $ String.joinWith "\n"
-            [ "isDefault" <> cname <> " :: " <> cname <> " -> Boolean"
-            , String.joinWith "\n" fields
-            , ""
-            ]
-      where
-      cname = String.joinWith "_" $ map capitalize $ nameSpace <> [ oname ]
-
-      go :: FieldDescriptorProto -> Resp (Maybe String)
-      go (FieldDescriptorProto { name: Just fname, type: Just FieldDescriptorProto_Type_TYPE_MESSAGE }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " _) = false"
-
-      go (FieldDescriptorProto { name: Just fname, type: _ }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " x) = Prelude.isDefault x"
-
-      go _ = Right Nothing
-
-    genIsDefaultOneof _ _ = Left $ "Failed genIsDefaultOneof missing OneofDescriptorProto name\n"
-  let
     genOneofPut :: NameSpace -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) -> Resp String
     genOneofPut nameSpace (Tuple (OneofDescriptorProto { name: Just oname }) myfields) =
       map (String.joinWith "\n") $ sequence
@@ -1319,7 +1295,6 @@ genFile proto_file ( FileDescriptorProto
               , Right $ "mk" <> tname <> " r = " <> tname <> " $ Prelude.merge r default" <> tname
               , map (String.joinWith "\n")
                   $ (sequence $ map (genTypeOneof (nameSpace <> [ msgName ])) oneof_decl_fields)
-                  <> (sequence $ map (genIsDefaultOneof (nameSpace <> [ msgName ])) oneof_decl_fields)
                   <> (sequence $ map (genOneofMerge (nameSpace <> [ msgName ])) oneof_decl_fields)
               , Right $ "merge" <> tname <> " :: " <> tname <> " -> " <> tname <> " -> " <> tname
               , Right $ "merge" <> tname <> " (" <> tname <> " l) (" <> tname <> " r) = " <> tname
