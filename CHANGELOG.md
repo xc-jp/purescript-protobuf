@@ -1,4 +1,4 @@
-# v3.0.0 Unreleased
+# v3.0.0 2022-05-27
 
 - PureScript v0.15.0
 - Protobuf v3.21.0
