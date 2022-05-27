@@ -24,8 +24,8 @@ https://github.com/purescript/spago/issues/547
 
 ```
 nix-shell
+cd nix
 spago2nix generate
-mv spago-packages.nix nix/
 ```
 
 ## Publish
