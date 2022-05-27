@@ -104,22 +104,8 @@ in  upstream
       }
 -------------------------------
 -}
-
 let upstream =
-https://github.com/purescript/package-sets/releases/download/psc-0.14.3-20210722/packages.dhall sha256:1ceb43aa59436bf5601bac45f6f3781c4e1f0e4c2b8458105b018e5ed8c30f8c
-in  upstream
-with longs =
-    { dependencies =
-      [ "effect"
-      , "console"
-      , "prelude"
-      , "strings"
-      , "foreign"
-      , "nullable"
-      , "functions"
-      , "quickcheck"
-      ]
-    , repo = "https://github.com/zapph/purescript-longs.git"
-    , version = "v0.1.1"
-    }
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.0-20220526/packages.dhall
+        sha256:a75179fbe1f10b1baf9999dcde9ac0b50a5bc524e6430be88afb768a23a9b668
 
+in  upstream

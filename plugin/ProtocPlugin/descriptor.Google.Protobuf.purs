@@ -68,7 +68,7 @@ parseFileDescriptorSet length = Prelude.label "FileDescriptorSet / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder FileDescriptorSetR FileDescriptorSetR)
   parseField 1 Prelude.LenDel = Prelude.label "file / " $ do
     x <- Prelude.parseLenDel parseFileDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "file") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "file") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultFileDescriptorSet :: FileDescriptorSetR
@@ -136,46 +136,46 @@ parseFileDescriptorProto length = Prelude.label "FileDescriptorProto / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder FileDescriptorProtoR FileDescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "package / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "package") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "package") $ \_ -> Prelude.Just x
   parseField 3 Prelude.LenDel = Prelude.label "dependency / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "dependency") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "dependency") $ Prelude.flip Prelude.snoc x
   parseField 10 Prelude.VarInt = Prelude.label "public_dependency / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "public_dependency") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "public_dependency") $ Prelude.flip Prelude.snoc x
   parseField 10 Prelude.LenDel = Prelude.label "public_dependency / " $ do
     x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "public_dependency") $ Prelude.flip Prelude.append x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "public_dependency") $ Prelude.flip Prelude.append x
   parseField 11 Prelude.VarInt = Prelude.label "weak_dependency / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "weak_dependency") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "weak_dependency") $ Prelude.flip Prelude.snoc x
   parseField 11 Prelude.LenDel = Prelude.label "weak_dependency / " $ do
     x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "weak_dependency") $ Prelude.flip Prelude.append x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "weak_dependency") $ Prelude.flip Prelude.append x
   parseField 4 Prelude.LenDel = Prelude.label "message_type / " $ do
     x <- Prelude.parseLenDel parseDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "message_type") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "message_type") $ Prelude.flip Prelude.snoc x
   parseField 5 Prelude.LenDel = Prelude.label "enum_type / " $ do
     x <- Prelude.parseLenDel parseEnumDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "enum_type") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "enum_type") $ Prelude.flip Prelude.snoc x
   parseField 6 Prelude.LenDel = Prelude.label "service / " $ do
     x <- Prelude.parseLenDel parseServiceDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "service") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "service") $ Prelude.flip Prelude.snoc x
   parseField 7 Prelude.LenDel = Prelude.label "extension / " $ do
     x <- Prelude.parseLenDel parseFieldDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "extension") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "extension") $ Prelude.flip Prelude.snoc x
   parseField 8 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseFileOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeFileOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeFileOptions x)
   parseField 9 Prelude.LenDel = Prelude.label "source_code_info / " $ do
     x <- Prelude.parseLenDel parseSourceCodeInfo
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "source_code_info") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeSourceCodeInfo x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "source_code_info") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeSourceCodeInfo x)
   parseField 12 Prelude.LenDel = Prelude.label "syntax / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "syntax") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "syntax") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultFileDescriptorProto :: FileDescriptorProtoR
@@ -261,34 +261,34 @@ parseDescriptorProto length = Prelude.label "DescriptorProto / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder DescriptorProtoR DescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "field / " $ do
     x <- Prelude.parseLenDel parseFieldDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "field") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "field") $ Prelude.flip Prelude.snoc x
   parseField 6 Prelude.LenDel = Prelude.label "extension / " $ do
     x <- Prelude.parseLenDel parseFieldDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "extension") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "extension") $ Prelude.flip Prelude.snoc x
   parseField 3 Prelude.LenDel = Prelude.label "nested_type / " $ do
     x <- Prelude.parseLenDel parseDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "nested_type") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "nested_type") $ Prelude.flip Prelude.snoc x
   parseField 4 Prelude.LenDel = Prelude.label "enum_type / " $ do
     x <- Prelude.parseLenDel parseEnumDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "enum_type") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "enum_type") $ Prelude.flip Prelude.snoc x
   parseField 5 Prelude.LenDel = Prelude.label "extension_range / " $ do
     x <- Prelude.parseLenDel parseDescriptorProto_ExtensionRange
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "extension_range") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "extension_range") $ Prelude.flip Prelude.snoc x
   parseField 8 Prelude.LenDel = Prelude.label "oneof_decl / " $ do
     x <- Prelude.parseLenDel parseOneofDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "oneof_decl") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "oneof_decl") $ Prelude.flip Prelude.snoc x
   parseField 7 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseMessageOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeMessageOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeMessageOptions x)
   parseField 9 Prelude.LenDel = Prelude.label "reserved_range / " $ do
     x <- Prelude.parseLenDel parseDescriptorProto_ReservedRange
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "reserved_range") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "reserved_range") $ Prelude.flip Prelude.snoc x
   parseField 10 Prelude.LenDel = Prelude.label "reserved_name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "reserved_name") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "reserved_name") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultDescriptorProto :: DescriptorProtoR
@@ -356,13 +356,13 @@ parseDescriptorProto_ExtensionRange length = Prelude.label "ExtensionRange / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder DescriptorProto_ExtensionRangeR DescriptorProto_ExtensionRangeR)
   parseField 1 Prelude.VarInt = Prelude.label "start / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "start") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "start") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "end / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "end") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "end") $ \_ -> Prelude.Just x
   parseField 3 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseExtensionRangeOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeExtensionRangeOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeExtensionRangeOptions x)
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultDescriptorProto_ExtensionRange :: DescriptorProto_ExtensionRangeR
@@ -414,10 +414,10 @@ parseDescriptorProto_ReservedRange length = Prelude.label "ReservedRange / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder DescriptorProto_ReservedRangeR DescriptorProto_ReservedRangeR)
   parseField 1 Prelude.VarInt = Prelude.label "start / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "start") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "start") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "end / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "end") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "end") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultDescriptorProto_ReservedRange :: DescriptorProto_ReservedRangeR
@@ -465,7 +465,7 @@ parseExtensionRangeOptions length = Prelude.label "ExtensionRangeOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder ExtensionRangeOptionsR ExtensionRangeOptionsR)
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultExtensionRangeOptions :: ExtensionRangeOptionsR
@@ -531,37 +531,37 @@ parseFieldDescriptorProto length = Prelude.label "FieldDescriptorProto / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder FieldDescriptorProtoR FieldDescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "number / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "number") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "number") $ \_ -> Prelude.Just x
   parseField 4 Prelude.VarInt = Prelude.label "label / " $ do
     x <- Prelude.parseEnum
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "label") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "label") $ \_ -> Prelude.Just x
   parseField 5 Prelude.VarInt = Prelude.label "type / " $ do
     x <- Prelude.parseEnum
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "type") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "type") $ \_ -> Prelude.Just x
   parseField 6 Prelude.LenDel = Prelude.label "type_name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "type_name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "type_name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "extendee / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "extendee") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "extendee") $ \_ -> Prelude.Just x
   parseField 7 Prelude.LenDel = Prelude.label "default_value / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "default_value") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "default_value") $ \_ -> Prelude.Just x
   parseField 9 Prelude.VarInt = Prelude.label "oneof_index / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "oneof_index") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "oneof_index") $ \_ -> Prelude.Just x
   parseField 10 Prelude.LenDel = Prelude.label "json_name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "json_name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "json_name") $ \_ -> Prelude.Just x
   parseField 8 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseFieldOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeFieldOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeFieldOptions x)
   parseField 17 Prelude.VarInt = Prelude.label "proto3_optional / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "proto3_optional") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "proto3_optional") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultFieldDescriptorProto :: FieldDescriptorProtoR
@@ -629,10 +629,10 @@ parseOneofDescriptorProto length = Prelude.label "OneofDescriptorProto / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder OneofDescriptorProtoR OneofDescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseOneofOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeOneofOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeOneofOptions x)
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultOneofDescriptorProto :: OneofDescriptorProtoR
@@ -688,19 +688,19 @@ parseEnumDescriptorProto length = Prelude.label "EnumDescriptorProto / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder EnumDescriptorProtoR EnumDescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "value / " $ do
     x <- Prelude.parseLenDel parseEnumValueDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "value") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "value") $ Prelude.flip Prelude.snoc x
   parseField 3 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseEnumOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeEnumOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeEnumOptions x)
   parseField 4 Prelude.LenDel = Prelude.label "reserved_range / " $ do
     x <- Prelude.parseLenDel parseEnumDescriptorProto_EnumReservedRange
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "reserved_range") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "reserved_range") $ Prelude.flip Prelude.snoc x
   parseField 5 Prelude.LenDel = Prelude.label "reserved_name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "reserved_name") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "reserved_name") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultEnumDescriptorProto :: EnumDescriptorProtoR
@@ -756,10 +756,10 @@ parseEnumDescriptorProto_EnumReservedRange length = Prelude.label "EnumReservedR
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder EnumDescriptorProto_EnumReservedRangeR EnumDescriptorProto_EnumReservedRangeR)
   parseField 1 Prelude.VarInt = Prelude.label "start / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "start") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "start") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "end / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "end") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "end") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultEnumDescriptorProto_EnumReservedRange :: EnumDescriptorProto_EnumReservedRangeR
@@ -811,13 +811,13 @@ parseEnumValueDescriptorProto length = Prelude.label "EnumValueDescriptorProto /
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder EnumValueDescriptorProtoR EnumValueDescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "number / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "number") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "number") $ \_ -> Prelude.Just x
   parseField 3 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseEnumValueOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeEnumValueOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeEnumValueOptions x)
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultEnumValueDescriptorProto :: EnumValueDescriptorProtoR
@@ -871,13 +871,13 @@ parseServiceDescriptorProto length = Prelude.label "ServiceDescriptorProto / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder ServiceDescriptorProtoR ServiceDescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "method / " $ do
     x <- Prelude.parseLenDel parseMethodDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "method") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "method") $ Prelude.flip Prelude.snoc x
   parseField 3 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseServiceOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeServiceOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeServiceOptions x)
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultServiceDescriptorProto :: ServiceDescriptorProtoR
@@ -937,22 +937,22 @@ parseMethodDescriptorProto length = Prelude.label "MethodDescriptorProto / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder MethodDescriptorProtoR MethodDescriptorProtoR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "input_type / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "input_type") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "input_type") $ \_ -> Prelude.Just x
   parseField 3 Prelude.LenDel = Prelude.label "output_type / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "output_type") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "output_type") $ \_ -> Prelude.Just x
   parseField 4 Prelude.LenDel = Prelude.label "options / " $ do
     x <- Prelude.parseLenDel parseMethodOptions
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeMethodOptions x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "options") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeMethodOptions x)
   parseField 5 Prelude.VarInt = Prelude.label "client_streaming / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "client_streaming") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "client_streaming") $ \_ -> Prelude.Just x
   parseField 6 Prelude.VarInt = Prelude.label "server_streaming / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "server_streaming") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "server_streaming") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultMethodDescriptorProto :: MethodDescriptorProtoR
@@ -1048,67 +1048,67 @@ parseFileOptions length = Prelude.label "FileOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder FileOptionsR FileOptionsR)
   parseField 1 Prelude.LenDel = Prelude.label "java_package / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "java_package") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "java_package") $ \_ -> Prelude.Just x
   parseField 8 Prelude.LenDel = Prelude.label "java_outer_classname / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "java_outer_classname") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "java_outer_classname") $ \_ -> Prelude.Just x
   parseField 10 Prelude.VarInt = Prelude.label "java_multiple_files / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "java_multiple_files") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "java_multiple_files") $ \_ -> Prelude.Just x
   parseField 20 Prelude.VarInt = Prelude.label "java_generate_equals_and_hash / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "java_generate_equals_and_hash") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "java_generate_equals_and_hash") $ \_ -> Prelude.Just x
   parseField 27 Prelude.VarInt = Prelude.label "java_string_check_utf8 / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "java_string_check_utf8") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "java_string_check_utf8") $ \_ -> Prelude.Just x
   parseField 9 Prelude.VarInt = Prelude.label "optimize_for / " $ do
     x <- Prelude.parseEnum
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "optimize_for") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "optimize_for") $ \_ -> Prelude.Just x
   parseField 11 Prelude.LenDel = Prelude.label "go_package / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "go_package") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "go_package") $ \_ -> Prelude.Just x
   parseField 16 Prelude.VarInt = Prelude.label "cc_generic_services / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "cc_generic_services") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "cc_generic_services") $ \_ -> Prelude.Just x
   parseField 17 Prelude.VarInt = Prelude.label "java_generic_services / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "java_generic_services") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "java_generic_services") $ \_ -> Prelude.Just x
   parseField 18 Prelude.VarInt = Prelude.label "py_generic_services / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "py_generic_services") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "py_generic_services") $ \_ -> Prelude.Just x
   parseField 42 Prelude.VarInt = Prelude.label "php_generic_services / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "php_generic_services") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "php_generic_services") $ \_ -> Prelude.Just x
   parseField 23 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "deprecated") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
   parseField 31 Prelude.VarInt = Prelude.label "cc_enable_arenas / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "cc_enable_arenas") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "cc_enable_arenas") $ \_ -> Prelude.Just x
   parseField 36 Prelude.LenDel = Prelude.label "objc_class_prefix / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "objc_class_prefix") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "objc_class_prefix") $ \_ -> Prelude.Just x
   parseField 37 Prelude.LenDel = Prelude.label "csharp_namespace / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "csharp_namespace") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "csharp_namespace") $ \_ -> Prelude.Just x
   parseField 39 Prelude.LenDel = Prelude.label "swift_prefix / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "swift_prefix") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "swift_prefix") $ \_ -> Prelude.Just x
   parseField 40 Prelude.LenDel = Prelude.label "php_class_prefix / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "php_class_prefix") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "php_class_prefix") $ \_ -> Prelude.Just x
   parseField 41 Prelude.LenDel = Prelude.label "php_namespace / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "php_namespace") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "php_namespace") $ \_ -> Prelude.Just x
   parseField 44 Prelude.LenDel = Prelude.label "php_metadata_namespace / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "php_metadata_namespace") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "php_metadata_namespace") $ \_ -> Prelude.Just x
   parseField 45 Prelude.LenDel = Prelude.label "ruby_package / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "ruby_package") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "ruby_package") $ \_ -> Prelude.Just x
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultFileOptions :: FileOptionsR
@@ -1202,19 +1202,19 @@ parseMessageOptions length = Prelude.label "MessageOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder MessageOptionsR MessageOptionsR)
   parseField 1 Prelude.VarInt = Prelude.label "message_set_wire_format / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "message_set_wire_format") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "message_set_wire_format") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "no_standard_descriptor_accessor / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "no_standard_descriptor_accessor") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "no_standard_descriptor_accessor") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "deprecated") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
   parseField 7 Prelude.VarInt = Prelude.label "map_entry / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "map_entry") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "map_entry") $ \_ -> Prelude.Just x
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultMessageOptions :: MessageOptionsR
@@ -1248,6 +1248,7 @@ type FieldOptionsRow =
   , packed :: Prelude.Maybe Boolean
   , jstype :: Prelude.Maybe FieldOptions_JSType
   , lazy :: Prelude.Maybe Boolean
+  , unverified_lazy :: Prelude.Maybe Boolean
   , deprecated :: Prelude.Maybe Boolean
   , weak :: Prelude.Maybe Boolean
   , uninterpreted_option :: Array UninterpretedOption
@@ -1265,6 +1266,7 @@ putFieldOptions (FieldOptions r) = do
   Prelude.putOptional 2 r.packed Prelude.isDefault Prelude.encodeBoolField
   Prelude.putOptional 6 r.jstype Prelude.isDefault Prelude.putEnumField
   Prelude.putOptional 5 r.lazy Prelude.isDefault Prelude.encodeBoolField
+  Prelude.putOptional 15 r.unverified_lazy Prelude.isDefault Prelude.encodeBoolField
   Prelude.putOptional 3 r.deprecated Prelude.isDefault Prelude.encodeBoolField
   Prelude.putOptional 10 r.weak Prelude.isDefault Prelude.encodeBoolField
   Prelude.putRepeated 999 r.uninterpreted_option $ Prelude.putLenDel putUninterpretedOption
@@ -1280,25 +1282,28 @@ parseFieldOptions length = Prelude.label "FieldOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder FieldOptionsR FieldOptionsR)
   parseField 1 Prelude.VarInt = Prelude.label "ctype / " $ do
     x <- Prelude.parseEnum
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "ctype") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "ctype") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "packed / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "packed") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "packed") $ \_ -> Prelude.Just x
   parseField 6 Prelude.VarInt = Prelude.label "jstype / " $ do
     x <- Prelude.parseEnum
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "jstype") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "jstype") $ \_ -> Prelude.Just x
   parseField 5 Prelude.VarInt = Prelude.label "lazy / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "lazy") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "lazy") $ \_ -> Prelude.Just x
+  parseField 15 Prelude.VarInt = Prelude.label "unverified_lazy / " $ do
+    x <- Prelude.decodeBool
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "unverified_lazy") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "deprecated") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
   parseField 10 Prelude.VarInt = Prelude.label "weak / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "weak") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "weak") $ \_ -> Prelude.Just x
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultFieldOptions :: FieldOptionsR
@@ -1307,6 +1312,7 @@ defaultFieldOptions =
   , packed: Prelude.Nothing
   , jstype: Prelude.Nothing
   , lazy: Prelude.Nothing
+  , unverified_lazy: Prelude.Nothing
   , deprecated: Prelude.Nothing
   , weak: Prelude.Nothing
   , uninterpreted_option: []
@@ -1322,6 +1328,7 @@ mergeFieldOptions (FieldOptions l) (FieldOptions r) = FieldOptions
   , packed: Prelude.alt l.packed r.packed
   , jstype: Prelude.alt l.jstype r.jstype
   , lazy: Prelude.alt l.lazy r.lazy
+  , unverified_lazy: Prelude.alt l.unverified_lazy r.unverified_lazy
   , deprecated: Prelude.alt l.deprecated r.deprecated
   , weak: Prelude.alt l.weak r.weak
   , uninterpreted_option: r.uninterpreted_option <> l.uninterpreted_option
@@ -1356,7 +1363,7 @@ parseOneofOptions length = Prelude.label "OneofOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder OneofOptionsR OneofOptionsR)
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultOneofOptions :: OneofOptionsR
@@ -1406,13 +1413,13 @@ parseEnumOptions length = Prelude.label "EnumOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder EnumOptionsR EnumOptionsR)
   parseField 2 Prelude.VarInt = Prelude.label "allow_alias / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "allow_alias") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "allow_alias") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "deprecated") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultEnumOptions :: EnumOptionsR
@@ -1464,10 +1471,10 @@ parseEnumValueOptions length = Prelude.label "EnumValueOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder EnumValueOptionsR EnumValueOptionsR)
   parseField 1 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "deprecated") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultEnumValueOptions :: EnumValueOptionsR
@@ -1517,10 +1524,10 @@ parseServiceOptions length = Prelude.label "ServiceOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder ServiceOptionsR ServiceOptionsR)
   parseField 33 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "deprecated") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultServiceOptions :: ServiceOptionsR
@@ -1572,13 +1579,13 @@ parseMethodOptions length = Prelude.label "MethodOptions / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder MethodOptionsR MethodOptionsR)
   parseField 33 Prelude.VarInt = Prelude.label "deprecated / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "deprecated") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "deprecated") $ \_ -> Prelude.Just x
   parseField 34 Prelude.VarInt = Prelude.label "idempotency_level / " $ do
     x <- Prelude.parseEnum
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "idempotency_level") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "idempotency_level") $ \_ -> Prelude.Just x
   parseField 999 Prelude.LenDel = Prelude.label "uninterpreted_option / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "uninterpreted_option") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultMethodOptions :: MethodOptionsR
@@ -1606,8 +1613,8 @@ newtype UninterpretedOption = UninterpretedOption UninterpretedOptionR
 type UninterpretedOptionRow =
   ( name :: Array UninterpretedOption_NamePart
   , identifier_value :: Prelude.Maybe String
-  , positive_int_value :: Prelude.Maybe (Prelude.Long Prelude.Unsigned)
-  , negative_int_value :: Prelude.Maybe (Prelude.Long Prelude.Signed)
+  , positive_int_value :: Prelude.Maybe Prelude.UInt64
+  , negative_int_value :: Prelude.Maybe Prelude.Int64
   , double_value :: Prelude.Maybe Number
   , string_value :: Prelude.Maybe Prelude.Bytes
   , aggregate_value :: Prelude.Maybe String
@@ -1640,25 +1647,25 @@ parseUninterpretedOption length = Prelude.label "UninterpretedOption / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder UninterpretedOptionR UninterpretedOptionR)
   parseField 2 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.parseLenDel parseUninterpretedOption_NamePart
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ Prelude.flip Prelude.snoc x
   parseField 3 Prelude.LenDel = Prelude.label "identifier_value / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "identifier_value") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "identifier_value") $ \_ -> Prelude.Just x
   parseField 4 Prelude.VarInt = Prelude.label "positive_int_value / " $ do
     x <- Prelude.decodeUint64
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "positive_int_value") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "positive_int_value") $ \_ -> Prelude.Just x
   parseField 5 Prelude.VarInt = Prelude.label "negative_int_value / " $ do
     x <- Prelude.decodeInt64
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "negative_int_value") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "negative_int_value") $ \_ -> Prelude.Just x
   parseField 6 Prelude.Bits64 = Prelude.label "double_value / " $ do
     x <- Prelude.decodeDouble
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "double_value") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "double_value") $ \_ -> Prelude.Just x
   parseField 7 Prelude.LenDel = Prelude.label "string_value / " $ do
     x <- Prelude.decodeBytes
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "string_value") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "string_value") $ \_ -> Prelude.Just x
   parseField 8 Prelude.LenDel = Prelude.label "aggregate_value / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "aggregate_value") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "aggregate_value") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultUninterpretedOption :: UninterpretedOptionR
@@ -1718,10 +1725,10 @@ parseUninterpretedOption_NamePart length = Prelude.label "NamePart / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder UninterpretedOption_NamePartR UninterpretedOption_NamePartR)
   parseField 1 Prelude.LenDel = Prelude.label "name_part / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name_part") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name_part") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "is_extension / " $ do
     x <- Prelude.decodeBool
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "is_extension") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "is_extension") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultUninterpretedOption_NamePart :: UninterpretedOption_NamePartR
@@ -1769,7 +1776,7 @@ parseSourceCodeInfo length = Prelude.label "SourceCodeInfo / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder SourceCodeInfoR SourceCodeInfoR)
   parseField 1 Prelude.LenDel = Prelude.label "location / " $ do
     x <- Prelude.parseLenDel parseSourceCodeInfo_Location
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "location") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "location") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultSourceCodeInfo :: SourceCodeInfoR
@@ -1823,25 +1830,25 @@ parseSourceCodeInfo_Location length = Prelude.label "Location / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder SourceCodeInfo_LocationR SourceCodeInfo_LocationR)
   parseField 1 Prelude.VarInt = Prelude.label "path / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "path") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "path") $ Prelude.flip Prelude.snoc x
   parseField 1 Prelude.LenDel = Prelude.label "path / " $ do
     x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "path") $ Prelude.flip Prelude.append x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "path") $ Prelude.flip Prelude.append x
   parseField 2 Prelude.VarInt = Prelude.label "span / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "span") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "span") $ Prelude.flip Prelude.snoc x
   parseField 2 Prelude.LenDel = Prelude.label "span / " $ do
     x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "span") $ Prelude.flip Prelude.append x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "span") $ Prelude.flip Prelude.append x
   parseField 3 Prelude.LenDel = Prelude.label "leading_comments / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "leading_comments") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "leading_comments") $ \_ -> Prelude.Just x
   parseField 4 Prelude.LenDel = Prelude.label "trailing_comments / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "trailing_comments") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "trailing_comments") $ \_ -> Prelude.Just x
   parseField 6 Prelude.LenDel = Prelude.label "leading_detached_comments / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "leading_detached_comments") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "leading_detached_comments") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultSourceCodeInfo_Location :: SourceCodeInfo_LocationR
@@ -1895,7 +1902,7 @@ parseGeneratedCodeInfo length = Prelude.label "GeneratedCodeInfo / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder GeneratedCodeInfoR GeneratedCodeInfoR)
   parseField 1 Prelude.LenDel = Prelude.label "annotation / " $ do
     x <- Prelude.parseLenDel parseGeneratedCodeInfo_Annotation
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "annotation") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "annotation") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultGeneratedCodeInfo :: GeneratedCodeInfoR
@@ -1947,19 +1954,19 @@ parseGeneratedCodeInfo_Annotation length = Prelude.label "Annotation / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder GeneratedCodeInfo_AnnotationR GeneratedCodeInfo_AnnotationR)
   parseField 1 Prelude.VarInt = Prelude.label "path / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "path") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "path") $ Prelude.flip Prelude.snoc x
   parseField 1 Prelude.LenDel = Prelude.label "path / " $ do
     x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "path") $ Prelude.flip Prelude.append x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "path") $ Prelude.flip Prelude.append x
   parseField 2 Prelude.LenDel = Prelude.label "source_file / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "source_file") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "source_file") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "begin / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "begin") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "begin") $ \_ -> Prelude.Just x
   parseField 4 Prelude.VarInt = Prelude.label "end / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "end") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "end") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultGeneratedCodeInfo_Annotation :: GeneratedCodeInfo_AnnotationR
@@ -2056,6 +2063,10 @@ instance boundedenumFieldDescriptorProto_Type :: Prelude.BoundedEnum FieldDescri
   fromEnum FieldDescriptorProto_Type_TYPE_SFIXED64 = (16)
   fromEnum FieldDescriptorProto_Type_TYPE_SINT32 = (17)
   fromEnum FieldDescriptorProto_Type_TYPE_SINT64 = (18)
+instance defaultFieldDescriptorProto_Type :: Prelude.Default FieldDescriptorProto_Type
+ where
+  default = FieldDescriptorProto_Type_TYPE_DOUBLE
+  isDefault = eq FieldDescriptorProto_Type_TYPE_DOUBLE
 
 -- ---------- Enum FieldDescriptorProto_Label ----------
 data FieldDescriptorProto_Label
@@ -2084,6 +2095,10 @@ instance boundedenumFieldDescriptorProto_Label :: Prelude.BoundedEnum FieldDescr
   fromEnum FieldDescriptorProto_Label_LABEL_OPTIONAL = (1)
   fromEnum FieldDescriptorProto_Label_LABEL_REQUIRED = (2)
   fromEnum FieldDescriptorProto_Label_LABEL_REPEATED = (3)
+instance defaultFieldDescriptorProto_Label :: Prelude.Default FieldDescriptorProto_Label
+ where
+  default = FieldDescriptorProto_Label_LABEL_OPTIONAL
+  isDefault = eq FieldDescriptorProto_Label_LABEL_OPTIONAL
 
 -- ---------- Enum FileOptions_OptimizeMode ----------
 data FileOptions_OptimizeMode
@@ -2112,6 +2127,10 @@ instance boundedenumFileOptions_OptimizeMode :: Prelude.BoundedEnum FileOptions_
   fromEnum FileOptions_OptimizeMode_SPEED = (1)
   fromEnum FileOptions_OptimizeMode_CODE_SIZE = (2)
   fromEnum FileOptions_OptimizeMode_LITE_RUNTIME = (3)
+instance defaultFileOptions_OptimizeMode :: Prelude.Default FileOptions_OptimizeMode
+ where
+  default = FileOptions_OptimizeMode_SPEED
+  isDefault = eq FileOptions_OptimizeMode_SPEED
 
 -- ---------- Enum FieldOptions_CType ----------
 data FieldOptions_CType
@@ -2140,6 +2159,10 @@ instance boundedenumFieldOptions_CType :: Prelude.BoundedEnum FieldOptions_CType
   fromEnum FieldOptions_CType_STRING = (0)
   fromEnum FieldOptions_CType_CORD = (1)
   fromEnum FieldOptions_CType_STRING_PIECE = (2)
+instance defaultFieldOptions_CType :: Prelude.Default FieldOptions_CType
+ where
+  default = FieldOptions_CType_STRING
+  isDefault = eq FieldOptions_CType_STRING
 
 -- ---------- Enum FieldOptions_JSType ----------
 data FieldOptions_JSType
@@ -2168,6 +2191,10 @@ instance boundedenumFieldOptions_JSType :: Prelude.BoundedEnum FieldOptions_JSTy
   fromEnum FieldOptions_JSType_JS_NORMAL = (0)
   fromEnum FieldOptions_JSType_JS_STRING = (1)
   fromEnum FieldOptions_JSType_JS_NUMBER = (2)
+instance defaultFieldOptions_JSType :: Prelude.Default FieldOptions_JSType
+ where
+  default = FieldOptions_JSType_JS_NORMAL
+  isDefault = eq FieldOptions_JSType_JS_NORMAL
 
 -- ---------- Enum MethodOptions_IdempotencyLevel ----------
 data MethodOptions_IdempotencyLevel
@@ -2196,4 +2223,8 @@ instance boundedenumMethodOptions_IdempotencyLevel :: Prelude.BoundedEnum Method
   fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN = (0)
   fromEnum MethodOptions_IdempotencyLevel_NO_SIDE_EFFECTS = (1)
   fromEnum MethodOptions_IdempotencyLevel_IDEMPOTENT = (2)
+instance defaultMethodOptions_IdempotencyLevel :: Prelude.Default MethodOptions_IdempotencyLevel
+ where
+  default = MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
+  isDefault = eq MethodOptions_IdempotencyLevel_IDEMPOTENCY_UNKNOWN
 

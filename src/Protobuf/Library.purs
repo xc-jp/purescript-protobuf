@@ -12,9 +12,9 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Protobuf.Internal.Common (Bytes(..), class Default, toDefault)
-import Protobuf.Internal.Runtime (label, manyLength)
-import Text.Parsing.Parser (ParserT, fail)
+import Protobuf.Internal.Common (Bytes(..), class Default, toDefault, label)
+import Protobuf.Internal.Runtime (manyLength)
+import Parsing (ParserT, fail)
 
 -- | Lift an `ExceptT String m` computation into a `ParserT`.
 -- |

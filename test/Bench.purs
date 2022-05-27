@@ -17,7 +17,7 @@ import Performance.Minibench (bench, benchWith)
 import Protobuf.Internal.Decode as Decode
 import Protobuf.Internal.Encode as Encode
 import Protobuf.Library (manyLength)
-import Text.Parsing.Parser (runParserT)
+import Parsing (runParserT)
 
 main :: Effect Unit
 main = do

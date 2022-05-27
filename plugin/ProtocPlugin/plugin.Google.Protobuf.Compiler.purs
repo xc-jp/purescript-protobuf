@@ -47,16 +47,16 @@ parseVersion length = Prelude.label "Version / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder VersionR VersionR)
   parseField 1 Prelude.VarInt = Prelude.label "major / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "major") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "major") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "minor / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "minor") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "minor") $ \_ -> Prelude.Just x
   parseField 3 Prelude.VarInt = Prelude.label "patch / " $ do
     x <- Prelude.decodeInt32
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "patch") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "patch") $ \_ -> Prelude.Just x
   parseField 4 Prelude.LenDel = Prelude.label "suffix / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "suffix") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "suffix") $ \_ -> Prelude.Just x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultVersion :: VersionR
@@ -114,16 +114,16 @@ parseCodeGeneratorRequest length = Prelude.label "CodeGeneratorRequest / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder CodeGeneratorRequestR CodeGeneratorRequestR)
   parseField 1 Prelude.LenDel = Prelude.label "file_to_generate / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "file_to_generate") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "file_to_generate") $ Prelude.flip Prelude.snoc x
   parseField 2 Prelude.LenDel = Prelude.label "parameter / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "parameter") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "parameter") $ \_ -> Prelude.Just x
   parseField 15 Prelude.LenDel = Prelude.label "proto_file / " $ do
     x <- Prelude.parseLenDel Google.Protobuf.parseFileDescriptorProto
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "proto_file") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "proto_file") $ Prelude.flip Prelude.snoc x
   parseField 3 Prelude.LenDel = Prelude.label "compiler_version / " $ do
     x <- Prelude.parseLenDel parseVersion
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "compiler_version") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeVersion x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "compiler_version") $ Prelude.Just Prelude.<<< Prelude.maybe x (mergeVersion x)
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultCodeGeneratorRequest :: CodeGeneratorRequestR
@@ -152,7 +152,7 @@ mergeCodeGeneratorRequest (CodeGeneratorRequest l) (CodeGeneratorRequest r) = Co
 newtype CodeGeneratorResponse = CodeGeneratorResponse CodeGeneratorResponseR
 type CodeGeneratorResponseRow =
   ( error :: Prelude.Maybe String
-  , supported_features :: Prelude.Maybe (Prelude.Long Prelude.Unsigned)
+  , supported_features :: Prelude.Maybe Prelude.UInt64
   , file :: Array CodeGeneratorResponse_File
   , __unknown_fields :: Array Prelude.UnknownField
   )
@@ -179,13 +179,13 @@ parseCodeGeneratorResponse length = Prelude.label "CodeGeneratorResponse / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder CodeGeneratorResponseR CodeGeneratorResponseR)
   parseField 1 Prelude.LenDel = Prelude.label "error / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "error") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "error") $ \_ -> Prelude.Just x
   parseField 2 Prelude.VarInt = Prelude.label "supported_features / " $ do
     x <- Prelude.decodeUint64
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "supported_features") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "supported_features") $ \_ -> Prelude.Just x
   parseField 15 Prelude.LenDel = Prelude.label "file / " $ do
     x <- Prelude.parseLenDel parseCodeGeneratorResponse_File
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "file") $ Prelude.flip Prelude.snoc x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "file") $ Prelude.flip Prelude.snoc x
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultCodeGeneratorResponse :: CodeGeneratorResponseR
@@ -241,16 +241,16 @@ parseCodeGeneratorResponse_File length = Prelude.label "File / " $
     -> Prelude.ParserT Prelude.DataView m (Prelude.Builder CodeGeneratorResponse_FileR CodeGeneratorResponse_FileR)
   parseField 1 Prelude.LenDel = Prelude.label "name / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "name") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "name") $ \_ -> Prelude.Just x
   parseField 2 Prelude.LenDel = Prelude.label "insertion_point / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "insertion_point") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "insertion_point") $ \_ -> Prelude.Just x
   parseField 15 Prelude.LenDel = Prelude.label "content / " $ do
     x <- Prelude.decodeString
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "content") $ \_ -> Prelude.Just x
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "content") $ \_ -> Prelude.Just x
   parseField 16 Prelude.LenDel = Prelude.label "generated_code_info / " $ do
     x <- Prelude.parseLenDel Google.Protobuf.parseGeneratedCodeInfo
-    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy "generated_code_info") $ Prelude.Just Prelude.<<< Prelude.maybe x (Google.Protobuf.mergeGeneratedCodeInfo x)
+    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy "generated_code_info") $ Prelude.Just Prelude.<<< Prelude.maybe x (Google.Protobuf.mergeGeneratedCodeInfo x)
   parseField fieldNumber wireType = Prelude.parseFieldUnknown fieldNumber wireType
 
 defaultCodeGeneratorResponse_File :: CodeGeneratorResponse_FileR
@@ -299,4 +299,8 @@ instance boundedenumCodeGeneratorResponse_Feature :: Prelude.BoundedEnum CodeGen
   toEnum _ = Prelude.Nothing
   fromEnum CodeGeneratorResponse_Feature_FEATURE_NONE = (0)
   fromEnum CodeGeneratorResponse_Feature_FEATURE_PROTO3_OPTIONAL = (1)
+instance defaultCodeGeneratorResponse_Feature :: Prelude.Default CodeGeneratorResponse_Feature
+ where
+  default = CodeGeneratorResponse_Feature_FEATURE_NONE
+  isDefault = eq CodeGeneratorResponse_Feature_FEATURE_NONE
 

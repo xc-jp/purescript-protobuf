@@ -16,13 +16,11 @@ module Protobuf.Internal.Runtime
   , putEnumField
   , putEnum
   , parseEnum
-  , label
   , mergeWith
   ) where
 
 import Prelude
 
-import Control.Monad.Error.Class (throwError, catchError)
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.Trans.Class (lift)
 import Data.Array (snoc)
@@ -31,23 +29,23 @@ import Data.ArrayBuffer.Types (DataView, ByteLength)
 import Data.Enum (class BoundedEnum, fromEnum, toEnum)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
-import Data.Long.Internal (Long, Signed, Unsigned, fromLowHighBits, highBits, lowBits, signedLongFromInt)
-import Data.Long.Unsigned as Long.Unsigned
+import Data.Int64 as Int64
+import Data.UInt64 (UInt64)
+import Data.UInt64 as UInt64
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
-import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
-import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType(..))
+import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType(..), label)
 import Protobuf.Internal.Decode as Decode
 import Protobuf.Internal.Encode as Encode
 import Record.Builder (build, modify)
 import Record.Builder as RecordB
-import Text.Parsing.Parser (ParserT, fail, position, ParseError(..))
-import Text.Parsing.Parser.DataView (takeN)
-import Text.Parsing.Parser.Pos (Position(..))
+import Parsing (ParserT, Position(..), fail, position)
+import Parsing.DataView (takeN)
+import Type.Proxy(Proxy(..))
 
 -- | The parseField argument is a parser which returns a Record builder which,
 -- | when applied to a Record, will modify the Record to add the parsed field.
@@ -84,8 +82,8 @@ type FieldNumberInt
 -- | Zero-based position in the parser.
 positionZero :: forall s m. Monad m => ParserT s m Pos
 positionZero = do
-  Position { column } <- position
-  pure $ column - 1
+  Position { index } <- position
+  pure index
 
 -- | Call a parser repeatedly until exactly *N* bytes have been consumed.
 -- | Will fail if too many bytes are consumed.
@@ -131,8 +129,8 @@ manyLength p len = do
 foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
 
 data UnknownField
-  = UnknownVarInt FieldNumber (Long Unsigned)
-  | UnknownBits64 FieldNumber (Long Unsigned)
+  = UnknownVarInt FieldNumber UInt64
+  | UnknownBits64 FieldNumber UInt64
   | UnknownLenDel FieldNumber Bytes
   | UnknownBits32 FieldNumber UInt
 
@@ -155,25 +153,25 @@ parseFieldUnknown fieldNumberInt wireType =
     $ case wireType of
         VarInt -> do
           x <- Decode.decodeUint64
-          pure $ modify (SProxy :: SProxy "__unknown_fields")
+          pure $ modify (Proxy :: Proxy "__unknown_fields")
             $ flip snoc
             $ UnknownVarInt fieldNumber x
         Bits64 -> do
           x <- Decode.decodeFixed64
-          pure $ modify (SProxy :: SProxy "__unknown_fields")
+          pure $ modify (Proxy :: Proxy "__unknown_fields")
             $ flip snoc
             $ UnknownBits64 fieldNumber x
         LenDel -> do
-          len <- Long.Unsigned.toInt <$> Decode.decodeVarint64
+          len <- UInt64.toInt <$> Decode.decodeVarint64
           case len of
             Nothing -> fail $ "Length-delimited value of unknown field " <> show fieldNumber <> " was too long."
             Just l -> do
               dv <- takeN l
-              pure $ modify (SProxy :: SProxy "__unknown_fields")
+              pure $ modify (Proxy :: Proxy "__unknown_fields")
                 $ flip snoc $ UnknownLenDel fieldNumber $ Bytes $ View dv
         Bits32 -> do
           x <- Decode.decodeFixed32
-          pure $ modify (SProxy :: SProxy "__unknown_fields")
+          pure $ modify (Proxy :: Proxy "__unknown_fields")
             $ flip snoc
             $ UnknownBits32 fieldNumber x
   where
@@ -254,15 +252,15 @@ putEnumField fieldNumber x = do
   putEnum x
 
 putEnum :: forall m a. MonadEffect m => BoundedEnum a => a -> PutM m Unit
-putEnum x = Encode.encodeVarint64 (fromLowHighBits x_low x_high :: Long Unsigned)
+putEnum x = Encode.encodeVarint64 (UInt64.fromLowHighBits x_low x_high :: UInt64)
   where
   x_int = fromEnum x
 
-  x_slong = signedLongFromInt x_int :: Long Signed
+  x_slong = Int64.fromInt x_int
 
-  x_high = highBits x_slong
+  x_high = Int64.highBits x_slong
 
-  x_low = lowBits x_slong
+  x_low = Int64.lowBits x_slong
 
 parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
 parseEnum = do
@@ -270,18 +268,9 @@ parseEnum = do
   -- Protobuf Enums can be negative.
   -- https://developers.google.com/protocol-buffers/docs/proto3#enum
   x <- Decode.decodeVarint64
-  case toEnum (Long.Unsigned.lowBits x) of
+  case toEnum (UInt64.lowBits x) of
     Nothing -> fail $ "Enum " <> show x <> " out of bounds."
     Just e -> pure e
-
--- | If parsing fails inside this labelled context, then prepend the `String`
--- | to the error `String` in the `ParseError`. Use this to establish
--- | context for parsing failure error messages.
-label :: forall m s a. Monad m => String -> ParserT s m a -> ParserT s m a
-label messagePrefix p =
-  catchError p
-    $ \(ParseError message pos) ->
-        throwError $ ParseError (messagePrefix <> message) pos
 
 -- | Merge the new left with the old right.
 mergeWith :: forall a. (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a

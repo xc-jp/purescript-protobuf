@@ -1,3 +1,12 @@
+# v3.0.0 Unreleased
+
+- PureScript v0.15.0
+- Protobuf v3.21.0
+- Replace __text-encoding__ dependency with __web-encoding__. Consequently we require *Node.js ≥ v11*.
+- Replace __longs__ dependency with __int64__.
+- Remove the only NPM dependency: __longs.js__.
+- Rework the async I/O in the protoc plugin.
+
 # v2.1.2 2021-09-10
 
 Now the codegen

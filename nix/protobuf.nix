@@ -42,6 +42,22 @@ let
       ref = "refs/tags/${ref}";
     };
   };
+  protobuf_repo_v3_20_1 = rec {
+    ref = "v3.20.1";
+    src = builtins.fetchGit {
+      url = "https://github.com/protocolbuffers/protobuf";
+      rev = "21027a27c4c2ec1000859ccbcfff46d83b16e1ed";
+      ref = "refs/tags/${ref}";
+    };
+  };
+  protobuf_repo_v3_21_0 = rec {
+    ref = "v3.21.0";
+    src = builtins.fetchGit {
+      url = "https://github.com/protocolbuffers/protobuf";
+      rev = "7062d0a2d0075d5e7d5c294fd3984df67a976da3";
+      ref = "refs/tags/${ref}";
+    };
+  };
 
   # Builds `protoc`, plus the conformance test runners, and also copies
   # in the .proto files for the conformance test protocol,
@@ -51,12 +67,11 @@ let
   #
   # See the Travis test runner script
   # https://github.com/protocolbuffers/protobuf/blob/master/tests.sh
-  #
-  # https://laptrinhx.com/an-elixir-library-for-protocol-buffers-2920413944/#conformance
   mkProtobuf = repo: pkgs.stdenv.mkDerivation {
     name = "protobuf-${repo.ref}";
     nativeBuildInputs = with pkgs; [ autogen automake autoconf libtool rsync ];
     src = repo.src;
+    # https://github.com/protocolbuffers/protobuf/blob/main/src/README.md#c-installation---unix
     configurePhase = ''
       ./autogen.sh
       ./configure --prefix=$out
@@ -86,9 +101,13 @@ in
   inherit protobuf_repo_v3_9_2;
   inherit protobuf_repo_v3_14_0;
   inherit protobuf_repo_v3_15_8;
+  inherit protobuf_repo_v3_20_1;
+  inherit protobuf_repo_v3_21_0;
   protobuf_v3_9_2 = mkProtobuf protobuf_repo_v3_9_2;
   protobuf_v3_14_0 = mkProtobuf protobuf_repo_v3_14_0;
   protobuf_v3_15_8 = mkProtobuf protobuf_repo_v3_15_8;
+  protobuf_v3_20_1 = mkProtobuf protobuf_repo_v3_20_1;
+  protobuf_v3_21_0 = mkProtobuf protobuf_repo_v3_21_0;
 }
 
 

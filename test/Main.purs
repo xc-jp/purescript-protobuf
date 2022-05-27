@@ -14,45 +14,49 @@ import Data.Either (Either(..))
 import Data.Float32 (fromNumber, toNumber)
 import Data.Float32 as Float32
 import Data.Foldable (sum)
-import Data.Long.Internal as Long
+import Data.Int64 (Int64)
+import Data.Int64 as Int64
 import Data.Maybe (Maybe(..))
-import Data.TextEncoding (encodeUtf8)
+import Data.Number (abs)
 import Data.Tuple (Tuple(..))
 import Data.UInt as UInt
+import Data.UInt64 (UInt64)
+import Data.UInt64 as UInt64
 import Data.Unfoldable (replicate)
 import Effect (Effect)
-import Math (abs)
+import Protobuf.Internal.Decode as Decode
+import Protobuf.Library (Bytes(..))
+import Test.Assert (assert')
+import Parsing (runParserT)
+import Web.Encoding.TextEncoder as TextEncoder
 import Pack.Msg1 as Pack1
 import Pack.Msg2 as Pack2
 import Pack3.Msg3 as Pack3
 import Pack4.Msg4 as Pack4
 import Pack5.Msg5 as Pack5
-import Protobuf.Library (Bytes(..))
-import Protobuf.Internal.Decode as Decode
-import Test.Assert (assert')
-import Text.Parsing.Parser (runParserT)
 
 billion' :: Int
 billion' = -1000000000
 billion :: UInt.UInt
 billion = UInt.fromInt 1000000000
-billion2' :: Long.Long Long.Signed
-billion2' = Long.fromLowHighBits billion' billion'
-billion2 :: Long.Long Long.Unsigned
-billion2 = Long.fromLowHighBits 1000000000 1000000000
+billion2' :: Int64
+billion2' = Int64.fromLowHighBits billion' billion'
+billion2 :: UInt64
+billion2 = UInt64.fromLowHighBits 1000000000 1000000000
 
 main :: Effect Unit
 main = do
 
-  let somebytes = TA.buffer $ encodeUtf8 "some bytes"
+  textEncoder <- TextEncoder.new
+  let somebytes = TA.buffer $ TextEncoder.encode "some bytes" textEncoder
 
-  let msgxx = Pack1.mkMsg1 { f1: Just 1.0 }
+  let _ = Pack1.mkMsg1 { f1: Just 1.0 }
 
-  let msg4 = (Pack4.mkMsg2 -- this is just a compile test
+  let _ = (Pack4.mkMsg2 -- this is just a compile test
     { f1: Just $ Pack4.mkMsg1_Msg2 { nested: Just "nested" }
     })
 
-  let msg6 = (Pack5.mkMsg2 -- this is just a compile test
+  let _ = (Pack5.mkMsg2 -- this is just a compile test
     { sum1: Just $ Pack5.Msg2_Sum1_F1 $ Pack5.mkMsg1
       { sum1: Just $ Pack5.Msg1_Sum1_F3 billion'
       }
@@ -130,6 +134,6 @@ main = do
   let almostEqual a b = sum (zipWith (\x y -> abs (toNumber x - toNumber y)) a b) < 1.0e-5
   case parseResult5 of
        Left err -> assert' ("floatArray unaligned " <> show err) false
-       Right x@(Tuple a b) -> assert' "floatArray unaligned roundtrip" $
+       Right (Tuple a b) -> assert' "floatArray unaligned roundtrip" $
           almostEqual a (mapMaybe fromNumber [8.828180325246348e-44,2.0])
           && almostEqual b (mapMaybe fromNumber [-8.96831017167883e-44])

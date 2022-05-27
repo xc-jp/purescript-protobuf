@@ -10,7 +10,8 @@
 -- | Then we can delete the hand-written code and generate code to replace it
 -- | with this command.
 -- |
--- |     protoc --purescript_out=./src/ProtocPlugin google/protobuf/compiler/plugin.proto
+-- |     spago -x spago-plugin.dhall build
+-- |     protoc --purescript_out=./plugin/ProtocPlugin google/protobuf/compiler/plugin.proto
 -- |
 -- | See
 -- | * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
@@ -18,51 +19,66 @@
 module ProtocPlugin.Main (main) where
 
 import Prelude
+
+import Control.Monad.Rec.Class (tailRecM, Step(..))
 import Data.Array (catMaybes, concatMap, fold)
 import Data.Array as Array
-import Data.ArrayBuffer.Builder (execPut)
+import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView as DV
-import Data.Either (Either(..))
-import Data.Long.Internal (fromLowHighBits)
+import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.Either (Either(..), either)
+import Data.Int64.Internal as Int64.Internal
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Newtype (unwrap)
 import Data.String as String
 import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
 import Data.String.Regex.Flags as String.Regex.Flags
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..))
+import Data.UInt64 (UInt64)
 import Effect (Effect)
+import Effect.Aff (runAff_, throwError, error)
+import Effect.Class (liftEffect)
+import Effect.Console as Console
 import Google.Protobuf.Compiler.Plugin (CodeGeneratorRequest(..), CodeGeneratorResponse, CodeGeneratorResponse_File(..), mkCodeGeneratorResponse, parseCodeGeneratorRequest, putCodeGeneratorResponse)
 import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FieldOptions(..), FileDescriptorProto(..), OneofDescriptorProto(..))
-import Node.Buffer (toArrayBuffer, fromArrayBuffer)
-import Node.Encoding (Encoding(..))
+import Node.Buffer (Buffer, toArrayBuffer, fromArrayBuffer)
+import Node.Buffer as Buffer
 import Node.Path (basenameWithoutExt)
-import Node.Process (stdin, stdout, stderr)
-import Node.Stream (read, write, writeString, onReadable)
-import Text.Parsing.Parser (runParserT)
+import Node.Process (stdin, stdout)
+import Node.Stream.Aff (readSome, write)
+import Parsing (runParserT)
+import Unsafe.Coerce (unsafeCoerce)
+
 
 main :: Effect Unit
-main = do
-  onReadable stdin
-    $ do
-        stdinbufMay <- read stdin Nothing
-        case stdinbufMay of
-          Nothing -> pure unit
-          Just stdinbuf -> do
-            stdinab <- toArrayBuffer stdinbuf
-            let
-              stdinview = DV.whole stdinab
-            requestParsed <- runParserT stdinview $ parseCodeGeneratorRequest $ DV.byteLength stdinview
-            case requestParsed of
-              Left err -> void $ writeString stderr UTF8 (show err) (pure unit)
-              Right request -> do
-                -- Uncomment this line to write the parsed declarations to stderr.
-                -- void $ writeString stderr UTF8 (show request) (pure unit)
-                let
-                  response = generate request
-                responseab <- execPut $ putCodeGeneratorResponse response
-                responsebuffer <- fromArrayBuffer responseab
-                void $ write stdout responsebuffer (pure unit)
+main = runAff_ (either (unsafeCoerce >>> Console.error) (\_ -> pure unit)) do
+  -- There is a race condition here.
+  -- Protoc just assumes that when it writes the request, we get the whole
+  -- request on our read of stdin. Protoc doesn't tell us how to determine
+  -- that we have read the whole request.
+  -- So we read and parse in a loop until we have enough bytes that the
+  -- parse succeeds.
+  flip tailRecM [] \bs -> do
+    Tuple b readagain <- readSome stdin
+    let bs' = bs <> b
+    ab <- liftEffect $ toArrayBuffer =<< Buffer.concat bs'
+    runParserT (DV.whole ab) (parseCodeGeneratorRequest (AB.byteLength ab)) >>= case _ of
+      Left err -> do
+        if not readagain then do
+          void $ throwError $ error "stdin is not readable."
+          pure (Done unit)
+        else if (Array.length bs') < 20 then do
+          pure (Loop bs')
+        else do
+          void $ throwError $ error $ unsafeCoerce err
+          pure (Done unit)
+      Right request -> do
+        responseBuf <- execPutM $ putCodeGeneratorResponse (generate request)
+        buf :: Buffer <- liftEffect $ fromArrayBuffer responseBuf
+        write stdout [buf]
+        pure (Done unit)
 
 generate :: CodeGeneratorRequest -> CodeGeneratorResponse
 generate (CodeGeneratorRequest { proto_file }) = do
@@ -71,16 +87,17 @@ generate (CodeGeneratorRequest { proto_file }) = do
       mkCodeGeneratorResponse
         { error: Nothing
         , file: file
-        , supported_features: Just $ fromLowHighBits feature_proto3_optional 0
+        , supported_features: Just $ feature_proto3_optional
         }
     Left err ->
       mkCodeGeneratorResponse
         { error: Just err
-        , supported_features: Just $ fromLowHighBits feature_proto3_optional 0
+        , supported_features: Just feature_proto3_optional
         }
   where
+  -- https://github.com/protocolbuffers/protobuf/blob/main/docs/implementing_proto3_presence.md#signaling-that-your-code-generator-supports-proto3-optional
   -- https://github.com/protocolbuffers/protobuf/blob/3f5fc4df1de8e12b2235c3006593e22d6993c3f5/src/google/protobuf/compiler/plugin.proto#L115
-  feature_proto3_optional = 1
+  feature_proto3_optional = Int64.Internal.unsafeFromInt 1 :: UInt64
 
 -- | Names of parent messages for a message or enum.
 type NameSpace
@@ -303,13 +320,13 @@ genFile proto_file ( FileDescriptorProto
 
         genFieldType FieldDescriptorProto_Type_TYPE_FLOAT _ = Right "Prelude.Float32"
 
-        genFieldType FieldDescriptorProto_Type_TYPE_INT64 _ = Right "(Prelude.Long Prelude.Signed)"
+        genFieldType FieldDescriptorProto_Type_TYPE_INT64 _ = Right "Prelude.Int64"
 
-        genFieldType FieldDescriptorProto_Type_TYPE_UINT64 _ = Right "(Prelude.Long Prelude.Unsigned)"
+        genFieldType FieldDescriptorProto_Type_TYPE_UINT64 _ = Right "Prelude.UInt64"
 
         genFieldType FieldDescriptorProto_Type_TYPE_INT32 _ = Right "Int"
 
-        genFieldType FieldDescriptorProto_Type_TYPE_FIXED64 _ = Right "(Prelude.Long Prelude.Unsigned)"
+        genFieldType FieldDescriptorProto_Type_TYPE_FIXED64 _ = Right "Prelude.UInt64"
 
         genFieldType FieldDescriptorProto_Type_TYPE_FIXED32 _ = Right "Prelude.UInt"
 
@@ -331,41 +348,17 @@ genFile proto_file ( FileDescriptorProto
 
         genFieldType FieldDescriptorProto_Type_TYPE_SFIXED32 _ = Right "Int"
 
-        genFieldType FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Right "(Prelude.Long Prelude.Signed)"
+        genFieldType FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Right "Prelude.Int64"
 
         genFieldType FieldDescriptorProto_Type_TYPE_SINT32 _ = Right "Int"
 
-        genFieldType FieldDescriptorProto_Type_TYPE_SINT64 _ = Right "(Prelude.Long Prelude.Signed)"
+        genFieldType FieldDescriptorProto_Type_TYPE_SINT64 _ = Right "Prelude.Int64"
 
         genFieldType FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genTypeOneof GROUP not supported."
 
       go _ = Right Nothing
 
     genTypeOneof _ _ = Left $ "Failed genTypeOneof missing OneofDescriptorProto name\n"
-  let
-    genIsDefaultOneof ::
-      NameSpace ->
-      (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) ->
-      Resp String
-    genIsDefaultOneof nameSpace (Tuple (OneofDescriptorProto { name: Just oname }) pfields) = do
-      fields <- catMaybes <$> traverse go pfields
-      Right
-        $ String.joinWith "\n"
-            [ "isDefault" <> cname <> " :: " <> cname <> " -> Boolean"
-            , String.joinWith "\n" fields
-            , ""
-            ]
-      where
-      cname = String.joinWith "_" $ map capitalize $ nameSpace <> [ oname ]
-
-      go :: FieldDescriptorProto -> Resp (Maybe String)
-      go (FieldDescriptorProto { name: Just fname, type: Just FieldDescriptorProto_Type_TYPE_MESSAGE }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " _) = false"
-
-      go (FieldDescriptorProto { name: Just fname, type: _ }) = Right $ Just $ "isDefault" <> cname <> " (" <> (String.joinWith "_" $ map capitalize [ cname, fname ]) <> " x) = Prelude.isDefault x"
-
-      go _ = Right Nothing
-
-    genIsDefaultOneof _ _ = Left $ "Failed genIsDefaultOneof missing OneofDescriptorProto name\n"
   let
     genOneofPut :: NameSpace -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) -> Resp String
     genOneofPut nameSpace (Tuple (OneofDescriptorProto { name: Just oname }) myfields) =
@@ -649,10 +642,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeDouble"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.decodeDoubleArray"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ =
@@ -660,10 +653,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFloat"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.decodeFloatArray"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ =
@@ -671,10 +664,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeInt64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeInt64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ =
@@ -682,10 +675,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeUint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeUint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ =
@@ -693,10 +686,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeInt32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeInt32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ =
@@ -704,10 +697,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFixed64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.decodeFixed64Array"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ =
@@ -715,10 +708,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFixed32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.decodeFixed32Array"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BOOL _ =
@@ -726,10 +719,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeBool"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeBool"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_STRING _ =
@@ -737,7 +730,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeString"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
@@ -745,7 +738,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel " <> mkFieldType "parse" tname
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_BYTES _ =
@@ -753,7 +746,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeBytes"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT32 _ =
@@ -761,10 +754,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeUint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeUint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_ENUM _ =
@@ -772,10 +765,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseEnum"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.parseEnum"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
@@ -783,10 +776,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSfixed32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.decodeSfixed32Array"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
@@ -794,10 +787,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSfixed64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.decodeSfixed64Array"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ =
@@ -805,10 +798,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeSint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ =
@@ -816,10 +809,10 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.snoc x"
               , "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel $ Prelude.manyLength Prelude.decodeSint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.flip Prelude.append x"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_DOUBLE _ =
@@ -827,7 +820,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeDouble"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_FLOAT _ =
@@ -835,7 +828,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFloat"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_INT64 _ =
@@ -843,7 +836,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeInt64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_UINT64 _ =
@@ -851,7 +844,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeUint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_INT32 _ =
@@ -859,7 +852,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeInt32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_FIXED64 _ =
@@ -867,7 +860,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFixed64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ ->  Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ ->  Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_FIXED32 _ =
@@ -875,7 +868,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFixed32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_BOOL _ =
@@ -883,7 +876,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeBool"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_STRING _ =
@@ -891,7 +884,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeString"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
@@ -899,7 +892,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel " <> mkFieldType "parse" tname
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ " <> mkFieldType "merge" cname <> " (Prelude.Just (" <> mkConstructor oname <> " x))"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ " <> mkFieldType "merge" cname <> " (Prelude.Just (" <> mkConstructor oname <> " x))"
               ]
         where
         cname = String.joinWith "_" $ map capitalize $ nameSpace <> [ oname ]
@@ -909,7 +902,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeBytes"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_UINT32 _ =
@@ -917,7 +910,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeUint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_ENUM _ =
@@ -925,7 +918,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseEnum"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
@@ -933,7 +926,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSfixed32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
@@ -941,7 +934,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSfixed64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_SINT32 _ =
@@ -949,7 +942,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go (Just oname) _ FieldDescriptorProto_Type_TYPE_SINT64 _ =
@@ -957,7 +950,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> decapitalize oname <> "\") $ \\_ -> Prelude.Just (" <> mkConstructor oname <> " x)"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_DOUBLE _ =
@@ -965,7 +958,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeDouble"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_FLOAT _ =
@@ -973,7 +966,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFloat"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_INT64 _ =
@@ -981,7 +974,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeInt64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_UINT64 _ =
@@ -989,7 +982,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeUint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_INT32 _ =
@@ -997,7 +990,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeInt32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_FIXED64 _ =
@@ -1005,7 +998,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFixed64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_FIXED32 _ =
@@ -1013,7 +1006,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeFixed32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_BOOL _ =
@@ -1021,7 +1014,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeBool"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_STRING _ =
@@ -1029,7 +1022,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeString"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_MESSAGE (Just tname) =
@@ -1040,7 +1033,7 @@ genFile proto_file ( FileDescriptorProto
               -- https://developers.google.com/protocol-buffers/docs/encoding#optional
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel " <> mkFieldType "parse" tname
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ Prelude.Just Prelude.<<< Prelude.maybe x (" <> mkFieldType "merge" tname <> " x)"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.Just Prelude.<<< Prelude.maybe x (" <> mkFieldType "merge" tname <> " x)"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_MESSAGE _ = Left "Failed genFieldParser missing FieldDescriptorProto type_name"
@@ -1050,7 +1043,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeBytes"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_UINT32 _ =
@@ -1058,7 +1051,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeUint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_ENUM _ =
@@ -1066,7 +1059,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseEnum"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ =
@@ -1074,7 +1067,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits32 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSfixed32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ =
@@ -1082,7 +1075,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.Bits64 = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSfixed64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_SINT32 _ =
@@ -1090,7 +1083,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSint32"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_SINT64 _ =
@@ -1098,7 +1091,7 @@ genFile proto_file ( FileDescriptorProto
           $ String.joinWith "\n"
               [ "  parseField " <> show fnumber <> " Prelude.VarInt = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.decodeSint64"
-              , "    pure $ Prelude.modify (Prelude.SProxy :: Prelude.SProxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
+              , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ \\_ -> Prelude.Just x"
               ]
 
       go _ _ FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genFieldParser GROUP not supported"
@@ -1122,13 +1115,13 @@ genFile proto_file ( FileDescriptorProto
 
       ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FLOAT _ = Right $ Just "Array Prelude.Float32"
 
-      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = Right $ Just "Array (Prelude.Long Prelude.Signed)"
+      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT64 _ = Right $ Just "Array Prelude.Int64"
 
-      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ = Right $ Just "Array (Prelude.Long Prelude.Unsigned)"
+      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_UINT64 _ = Right $ Just "Array Prelude.UInt64"
 
       ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_INT32 _ = Right $ Just "Array Int"
 
-      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ = Right $ Just "Array (Prelude.Long Prelude.Unsigned)"
+      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED64 _ = Right $ Just "Array Prelude.UInt64"
 
       ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_FIXED32 _ = Right $ Just "Array Prelude.UInt"
 
@@ -1150,23 +1143,23 @@ genFile proto_file ( FileDescriptorProto
 
       ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED32 _ = Right $ Just "Array Int"
 
-      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Right $ Just "Array (Prelude.Long Prelude.Signed)"
+      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Right $ Just "Array Prelude.Int64"
 
       ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT32 _ = Right $ Just "Array Int"
 
-      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ = Right $ Just "Array (Prelude.Long Prelude.Signed)"
+      ptype FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_SINT64 _ = Right $ Just "Array Prelude.Int64"
 
       ptype _ FieldDescriptorProto_Type_TYPE_DOUBLE _ = Right $ Just "Prelude.Maybe Number"
 
       ptype _ FieldDescriptorProto_Type_TYPE_FLOAT _ = Right $ Just "Prelude.Maybe Prelude.Float32"
 
-      ptype _ FieldDescriptorProto_Type_TYPE_INT64 _ = Right $ Just "Prelude.Maybe (Prelude.Long Prelude.Signed)"
+      ptype _ FieldDescriptorProto_Type_TYPE_INT64 _ = Right $ Just "Prelude.Maybe Prelude.Int64"
 
-      ptype _ FieldDescriptorProto_Type_TYPE_UINT64 _ = Right $ Just "Prelude.Maybe (Prelude.Long Prelude.Unsigned)"
+      ptype _ FieldDescriptorProto_Type_TYPE_UINT64 _ = Right $ Just "Prelude.Maybe Prelude.UInt64"
 
       ptype _ FieldDescriptorProto_Type_TYPE_INT32 _ = Right $ Just "Prelude.Maybe Int"
 
-      ptype _ FieldDescriptorProto_Type_TYPE_FIXED64 _ = Right $ Just "Prelude.Maybe (Prelude.Long Prelude.Unsigned)"
+      ptype _ FieldDescriptorProto_Type_TYPE_FIXED64 _ = Right $ Just "Prelude.Maybe Prelude.UInt64"
 
       ptype _ FieldDescriptorProto_Type_TYPE_FIXED32 _ = Right $ Just "Prelude.Maybe Prelude.UInt"
 
@@ -1188,11 +1181,11 @@ genFile proto_file ( FileDescriptorProto
 
       ptype _ FieldDescriptorProto_Type_TYPE_SFIXED32 _ = Right $ Just "Prelude.Maybe Int"
 
-      ptype _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Right $ Just "Prelude.Maybe (Prelude.Long Prelude.Signed)"
+      ptype _ FieldDescriptorProto_Type_TYPE_SFIXED64 _ = Right $ Just "Prelude.Maybe Prelude.Int64"
 
       ptype _ FieldDescriptorProto_Type_TYPE_SINT32 _ = Right $ Just "Prelude.Maybe Int"
 
-      ptype _ FieldDescriptorProto_Type_TYPE_SINT64 _ = Right $ Just "Prelude.Maybe (Prelude.Long Prelude.Signed)"
+      ptype _ FieldDescriptorProto_Type_TYPE_SINT64 _ = Right $ Just "Prelude.Maybe Prelude.Int64"
 
       ptype _ FieldDescriptorProto_Type_TYPE_GROUP _ = Left "Failed genFieldRecord GROUP not supported"
 
@@ -1302,7 +1295,6 @@ genFile proto_file ( FileDescriptorProto
               , Right $ "mk" <> tname <> " r = " <> tname <> " $ Prelude.merge r default" <> tname
               , map (String.joinWith "\n")
                   $ (sequence $ map (genTypeOneof (nameSpace <> [ msgName ])) oneof_decl_fields)
-                  <> (sequence $ map (genIsDefaultOneof (nameSpace <> [ msgName ])) oneof_decl_fields)
                   <> (sequence $ map (genOneofMerge (nameSpace <> [ msgName ])) oneof_decl_fields)
               , Right $ "merge" <> tname <> " :: " <> tname <> " -> " <> tname <> " -> " <> tname
               , Right $ "merge" <> tname <> " (" <> tname <> " l) (" <> tname <> " r) = " <> tname
@@ -1423,6 +1415,15 @@ import Protobuf.Internal.Prelude as Prelude
     enumConstruct <- traverse genEnumConstruct value
     enumTo <- traverse genEnumTo value
     enumFrom <- traverse genEnumFrom value
+    -- Protobuf Enumerations “There must be a zero value, so that we can use 0 as a numeric default value.”
+    -- https://developers.google.com/protocol-buffers/docs/proto3#enum
+    -- But that isn't actually true?
+    -- If there is no enum value with number=0, then we just take the first enum value.
+    valueZero <- case Array.find (\x -> maybe false (eq 0) (unwrap x).number) value of
+      Just (EnumValueDescriptorProto {name: Just name}) -> Right $ mkEnumName name
+      _ -> case Array.head value of
+        Just (EnumValueDescriptorProto {name: Just name}) -> Right $ mkEnumName name
+        _ -> Left $ "No enum valueZero\n" <> show eName
     Right $ String.joinWith "\n"
       $ [ "\n-- ---------- Enum " <> tname <> " ----------"
         , "data " <> tname
@@ -1446,7 +1447,14 @@ import Protobuf.Internal.Prelude as Prelude
       <> enumTo
       <> [ "  toEnum _ = Prelude.Nothing" ]
       <> enumFrom
+      <>
+        [ "instance default" <> tname <> " :: Prelude.Default " <> tname
+        , " where"
+        , "  default = " <> valueZero
+        , "  isDefault = eq " <> valueZero
+        ]
     where
+
     genEnumConstruct (EnumValueDescriptorProto { name: Just name }) = Right $ mkEnumName name
 
     genEnumConstruct arg = Left $ "Failed genEnumConstruct\n" <> show arg
