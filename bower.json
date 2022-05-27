@@ -1,0 +1,43 @@
+{
+    "name": "purescript-protobuf",
+    "license": [
+        "BSD-3-Clause"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/xc-jp/purescript-protobuf"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-arraybuffer": "^v13.0.0",
+        "purescript-arraybuffer-builder": "https://github.com/jamesdbrock/purescript-arraybuffer-builder.git#v3.0.1",
+        "purescript-arraybuffer-types": "^v3.0.2",
+        "purescript-arrays": "^v7.0.0",
+        "purescript-control": "^v6.0.0",
+        "purescript-effect": "^v4.0.0",
+        "purescript-either": "^v6.0.0",
+        "purescript-enums": "^v6.0.0",
+        "purescript-exceptions": "^v6.0.0",
+        "purescript-float32": "^v2.0.0",
+        "purescript-foldable-traversable": "^v6.0.0",
+        "purescript-functions": "^v6.0.0",
+        "purescript-int64": "https://github.com/purescript-contrib/purescript-int64.git#v1.0.0",
+        "purescript-maybe": "^v6.0.0",
+        "purescript-newtype": "^v5.0.0",
+        "purescript-parsing": "^v9.0.0",
+        "purescript-parsing-dataview": "https://github.com/jamesdbrock/purescript-parsing-dataview.git#v3.1.0",
+        "purescript-prelude": "^v6.0.0",
+        "purescript-record": "^v4.0.0",
+        "purescript-strings": "^v6.0.0",
+        "purescript-tailrec": "^v6.0.0",
+        "purescript-transformers": "^v6.0.0",
+        "purescript-tuples": "^v7.0.0",
+        "purescript-uint": "^v7.0.0",
+        "purescript-web-encoding": "https://github.com/purescript-web/purescript-web-encoding.git#v3.0.0"
+    }
+}
