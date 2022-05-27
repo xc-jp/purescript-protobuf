@@ -1,3 +1,7 @@
+# Unreleased
+
+- Change the values of `UnknownBits64` and `UnknownBits32` to `Bytes`.
+
 # v3.0.0 2022-05-27
 
 - PureScript v0.15.0

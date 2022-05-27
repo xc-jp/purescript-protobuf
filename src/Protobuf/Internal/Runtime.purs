@@ -35,7 +35,6 @@ import Data.UInt64 as UInt64
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
-import Data.UInt (UInt)
 import Data.UInt as UInt
 import Effect.Class (class MonadEffect)
 import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType(..), label)
@@ -128,11 +127,18 @@ manyLength p len = do
 -- | with this?
 foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
 
+-- | Invariants:
+-- |
+-- | - `UnknownBits64` must hold `Bytes` of length 8.
+-- | - `UnknownBits32` must hold `Bytes` of length 4.
+-- |
+-- | We can produce `Bytes` values with
+-- | functions in the __Protobuf.Internal.Encode__ module.
 data UnknownField
   = UnknownVarInt FieldNumber UInt64
-  | UnknownBits64 FieldNumber UInt64
+  | UnknownBits64 FieldNumber Bytes
   | UnknownLenDel FieldNumber Bytes
-  | UnknownBits32 FieldNumber UInt
+  | UnknownBits32 FieldNumber Bytes
 
 derive instance eqUnknownField :: Eq UnknownField
 
@@ -157,10 +163,10 @@ parseFieldUnknown fieldNumberInt wireType =
             $ flip snoc
             $ UnknownVarInt fieldNumber x
         Bits64 -> do
-          x <- Decode.decodeFixed64
+          x <- takeN 8
           pure $ modify (Proxy :: Proxy "__unknown_fields")
             $ flip snoc
-            $ UnknownBits64 fieldNumber x
+            $ UnknownBits64 fieldNumber $ Bytes $ View x
         LenDel -> do
           len <- UInt64.toInt <$> Decode.decodeVarint64
           case len of
@@ -170,10 +176,10 @@ parseFieldUnknown fieldNumberInt wireType =
               pure $ modify (Proxy :: Proxy "__unknown_fields")
                 $ flip snoc $ UnknownLenDel fieldNumber $ Bytes $ View dv
         Bits32 -> do
-          x <- Decode.decodeFixed32
+          x <- takeN 4
           pure $ modify (Proxy :: Proxy "__unknown_fields")
             $ flip snoc
-            $ UnknownBits32 fieldNumber x
+            $ UnknownBits32 fieldNumber $ Bytes $ View x
   where
   fieldNumber = UInt.fromInt fieldNumberInt
 
@@ -182,13 +188,13 @@ putFieldUnknown ::
   MonadEffect m =>
   UnknownField ->
   PutM m Unit
-putFieldUnknown (UnknownBits64 fieldNumber x) = Encode.encodeFixed64Field fieldNumber x
+putFieldUnknown (UnknownBits64 fieldNumber x) = Encode.encodeBytesField fieldNumber x
 
 putFieldUnknown (UnknownVarInt fieldNumber x) = Encode.encodeUint64Field fieldNumber x
 
 putFieldUnknown (UnknownLenDel fieldNumber x) = Encode.encodeBytesField fieldNumber x
 
-putFieldUnknown (UnknownBits32 fieldNumber x) = Encode.encodeFixed32Field fieldNumber x
+putFieldUnknown (UnknownBits32 fieldNumber x) = Encode.encodeBytesField fieldNumber x
 
 -- | Parse a length, then call a parser which takes one length as its argument.
 parseLenDel ::
