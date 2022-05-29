@@ -120,45 +120,54 @@ class Default a where
   default :: a
   isDefault :: a -> Boolean
 
-instance defaultString :: Default String where
+-- | `""`
+instance Default String where
   default = ""
   isDefault = String.null
 
+-- | *0*
 instance defaultInt :: Default Int where
   default = 0
   isDefault x = x == 0
 
+-- | *0.0*
 instance defaultNumber :: Default Number where
   default = 0.0
   isDefault x = x == 0.0
 
+-- | *0*
 instance defaultInt64 :: Default Int64 where
   default = zero
   isDefault x = x == default
 
+-- | *0*
 instance defaultUInt64 :: Default UInt64 where
   default = zero
   isDefault x = x == default
 
+-- | *0.0*
 instance defaultFloat32 :: Default Float32 where
   default = Float32.fromNumber' 0.0
   isDefault x = x == default
 
+-- | `false`
 instance defaultBoolean :: Default Boolean where
   default = false
   isDefault x = not x
 
+-- | *0*
 instance defaultUInt :: Default UInt where
   default = UInt.fromInt 0
   isDefault x = x == default
 
+-- | Zero-length
 instance defaultBytes :: Default Bytes where
   default = Bytes $ Buff $ unsafePerformEffect $ AB.empty 0
   isDefault (Bytes buf) = DV.byteLength (toView buf) == 0
 
 -- | Turns a “default” (zero) value into `Nothing`.
 fromDefault :: forall a. Default a => Eq a => a -> Maybe a
-fromDefault x = if x == default then Nothing else Just x
+fromDefault x = if isDefault x then Nothing else Just x
 
 -- | Turns `Nothing` into a “default” (zero) value.
 -- |

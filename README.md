@@ -246,7 +246,7 @@ for further examples of how to use the generated code.
    [conformance test program](https://github.com/xc-jp/purescript-protobuf/blob/master/conformance/Main.purs)
 
 The [Protobuf Decoder Explainer](http://jamesdbrock.github.io/protobuf-decoder-explainer/) shows an
-example of how to use this library to parse binary protobuf when we don’t
+example of how to use this library to parse binary Protobuf when we don’t
 have access to the `.proto` descriptor schema file and can’t generate
 message-reading code.
 
@@ -263,7 +263,9 @@ A message field will always be `Nothing` when the field is not present on the wi
 it’s a *no presence* field.
 If we want to interpret a missing *no presence* field as a
 [default value](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default) then
-we have the `Protobuf.Library.toDefault` function for that.
+we have the
+[`Protobuf.Library.toDefault`](https://pursuit.purescript.org/packages/purescript-protobuf/docs/Protobuf.Library#v:toDefault)
+ function for that.
 
 #### When serializing
 
@@ -275,17 +277,17 @@ It will be serialized when it is `Just` the default value.
 
 ### Interpreting invalid encoding parse failures
 
-When the parser encounters an invalid encoding in the protobuf input
+When the parser encounters an invalid encoding in the Protobuf input
 stream then it will fail to parse.
 
 When
-[`Text.Parsing.Parser.ParserT`](https://pursuit.purescript.org/packages/purescript-parsing/docs/Text.Parsing.Parser#t:ParserT)
+[`ParserT`](https://pursuit.purescript.org/packages/purescript-parsing/docs/Parsing#t:ParserT)
 fails it will return a `ParseError String (Position {index::Int,line::Int,column::Int})`.
 
-The byte offset at which the parse failure occured is given by the
+The byte offset at which the parse failure occurred is given by the
 `index`.
 
-The path to the protobuf definition which failed to parse will be included
+The path to the Protobuf definition which failed to parse will be included
 in the `ParseError String` and delimited by `'/'`, something
 like `"Message1 / string_field_1 / Invalid UTF8 encoding."`.
 
