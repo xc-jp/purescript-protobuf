@@ -1,20 +1,27 @@
 -- | Common utility definitions.
 module Protobuf.Internal.Common
-  ( FieldNumber
+  ( Bytes(..)
+  , FieldNumber
   , WireType(..)
-  , Bytes(..)
-  , label
   , class Default
   , default
-  , isDefault
   , fromDefault
-  , toDefault
+  , isDefault
+  , label
+  , manyArray
   , mkUint8Array
-  ) where
+  , toDefault
+  )
+  where
 
 import Prelude
 
+import Control.Alt (alt)
 import Control.Monad.Error.Class (throwError, catchError)
+import Control.Monad.Rec.Class (Step(..), tailRecM)
+import Control.Monad.ST.Class (liftST)
+import Control.Monad.Trans.Class (lift)
+import Data.Array.ST as Array.ST
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (DataBuff(..), toView)
 import Data.ArrayBuffer.DataView as DV
@@ -25,16 +32,17 @@ import Data.Float32 (Float32)
 import Data.Float32 as Float32
 import Data.Generic.Rep (class Generic)
 import Data.Int64 (Int64)
-import Data.UInt64 (UInt64)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Data.Show.Generic (genericShow)
 import Data.String as String
 import Data.UInt (UInt)
 import Data.UInt as UInt
+import Data.UInt64 (UInt64)
 import Effect (Effect)
 import Effect.Unsafe (unsafePerformEffect)
 import Parsing (ParserT, ParseError(..))
+import Parsing.Combinators (try)
 
 type FieldNumber
   = UInt
@@ -130,10 +138,10 @@ instance defaultInt :: Default Int where
   default = 0
   isDefault x = x == 0
 
--- | *0.0*
-instance defaultNumber :: Default Number where
-  default = 0.0
-  isDefault x = x == 0.0
+-- | *0*
+instance defaultUInt :: Default UInt where
+  default = UInt.fromInt 0
+  isDefault x = x == default
 
 -- | *0*
 instance defaultInt64 :: Default Int64 where
@@ -150,15 +158,15 @@ instance defaultFloat32 :: Default Float32 where
   default = Float32.fromNumber' 0.0
   isDefault x = x == default
 
+-- | *0.0*
+instance defaultNumber :: Default Number where
+  default = 0.0
+  isDefault x = x == 0.0
+
 -- | `false`
 instance defaultBoolean :: Default Boolean where
   default = false
   isDefault x = not x
-
--- | *0*
-instance defaultUInt :: Default UInt where
-  default = UInt.fromInt 0
-  isDefault x = x == default
 
 -- | Zero-length
 instance defaultBytes :: Default Bytes where
@@ -193,3 +201,23 @@ label messagePrefix p =
   catchError p
     $ \(ParseError message pos) ->
         throwError $ ParseError (messagePrefix <> message) pos
+
+
+-- | High-performance `many` combinator for producing `Array`.
+manyArray :: forall s a. ParserT s Effect a -> ParserT s Effect (Array a)
+-- See for generalization ideas:
+-- https://github.com/purescript/purescript-lists/blob/v7.0.0/src/Data/List.purs#L171-L177
+--
+-- This could also be
+--     manyArray :: forall s m r a. MonadST r m => ParserT s m a -> ParserT s m (Array a)
+--
+manyArray p = do
+  xs <- lift $ liftST Array.ST.new
+  flip tailRecM unit $ \_ -> alt
+    do
+      x <- try p
+      _ <- lift $ liftST $ Array.ST.push x xs
+      pure (Loop unit)
+    do
+      pure (Done unit)
+  lift $ liftST $ Array.ST.unsafeFreeze xs

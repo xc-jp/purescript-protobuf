@@ -127,13 +127,19 @@ manyLength p len = do
 -- | with this?
 foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
 
--- | Invariants:
+-- | A message field value from an unknown `.proto` definition.
 -- |
--- | - `UnknownBits64` must hold `Bytes` of length 8.
--- | - `UnknownBits32` must hold `Bytes` of length 4.
+-- | See [Message Structure](https://developers.google.com/protocol-buffers/docs/encoding#structure)
+-- | for an explanation.
 -- |
--- | We can produce `Bytes` values with
--- | functions in the __Protobuf.Internal.Encode__ module.
+-- | - __`UnknownVarInt`__ Use `Protobuf.Internal.Decode.decodeZigzag64` to
+-- |   to interpret this as a signed integer.
+-- | - __`UnknownLenDel`__ holds a variable-length `Bytes`.
+-- | - __`UnknownBits64`__ must hold `Bytes` of length 8.
+-- | - __`UnknownBits32`__ must hold `Bytes` of length 4.
+-- |
+-- | See the modules __Protobuf.Internal.Encode__
+-- | and __Protobuf.Internal.Decode__ for ways to operate on the `Bytes`.
 data UnknownField
   = UnknownVarInt FieldNumber UInt64
   | UnknownBits64 FieldNumber Bytes
