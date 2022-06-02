@@ -1,6 +1,9 @@
 # Unreleased
 
+# v4.0.0 2022-06-02
+
 - Change the values of `UnknownBits64` and `UnknownBits32` to `Bytes`.
+- Upgrade __int64__
 
 # v3.0.0 2022-05-27
 
