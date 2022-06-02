@@ -13,11 +13,11 @@ import Data.Foldable (for_)
 import Effect (Effect, forE)
 import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
+import Parsing (runParserT)
 import Performance.Minibench (bench, benchWith)
 import Protobuf.Internal.Decode as Decode
 import Protobuf.Internal.Encode as Encode
-import Protobuf.Library (manyLength)
-import Parsing (runParserT)
+import Protobuf.Internal.Runtime (manyLength)
 
 main :: Effect Unit
 main = do
