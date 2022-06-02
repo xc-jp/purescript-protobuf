@@ -109,3 +109,19 @@ let upstream =
         sha256:a75179fbe1f10b1baf9999dcde9ac0b50a5bc524e6430be88afb768a23a9b668
 
 in  upstream
+
+  with int64 =
+    { dependencies =
+      [ "prelude"
+      , "integers"
+      , "effect"
+      , "foreign"
+      , "nullable"
+      , "functions"
+      , "maybe"
+      , "quickcheck"
+      , "unsafe-coerce"
+      ]
+    , repo = "https://github.com/purescript-contrib/purescript-int64.git"
+    , version = "v2.0.0"
+    }

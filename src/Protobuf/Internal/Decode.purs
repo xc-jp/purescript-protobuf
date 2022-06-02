@@ -41,7 +41,6 @@ import Data.Float32 (Float32)
 import Data.Function.Uncurried (Fn2, mkFn2)
 import Data.Int64 (Int64)
 import Data.Int64 as Int64
-import Data.Int64.Internal as Int64.Internal
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Data.UInt (UInt)
@@ -117,7 +116,7 @@ decodeInt32 = do
 -- | __int64__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
 decodeInt64 :: forall m. MonadEffect m => ParserT DataView m Int64
-decodeInt64 = UInt64.toSigned <$> decodeVarint64
+decodeInt64 = Int64.toSigned <$> decodeVarint64
 
 -- | __uint32__
 -- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
@@ -326,7 +325,7 @@ decodeVarint32 = do
 
 -- | https://stackoverflow.com/questions/2210923/zig-zag-decoding
 decodeZigzag64 :: UInt64 -> Int64
-decodeZigzag64 n = let n' = UInt64.toSigned n in (n' `Int64.zshr` one) `Int64.xor` (lnegate (n' `Int64.and` one))
+decodeZigzag64 n = let n' = Int64.toSigned n in (n' `Int64.zshr` one) `Int64.xor` (lnegate (n' `Int64.and` one))
   where
   lnegate x = Int64.complement x + one
 
@@ -396,26 +395,26 @@ decodeVarint64 = do
   fromInt :: UInt -> UInt64
   fromInt = Int64.toUnsigned <<< Int64.fromInt <<< UInt.toInt
 
-  u7 = Int64.Internal.unsafeFromInt 7 :: UInt64
+  u7 = UInt64.unsafeFromInt 7 :: UInt64
 
-  u14 = Int64.Internal.unsafeFromInt 14 :: UInt64
+  u14 = UInt64.unsafeFromInt 14 :: UInt64
 
-  u21 = Int64.Internal.unsafeFromInt 21 :: UInt64
+  u21 = UInt64.unsafeFromInt 21 :: UInt64
 
-  u28 = Int64.Internal.unsafeFromInt 28 :: UInt64
+  u28 = UInt64.unsafeFromInt 28 :: UInt64
 
-  u35 = Int64.Internal.unsafeFromInt 35 :: UInt64
+  u35 = UInt64.unsafeFromInt 35 :: UInt64
 
-  u42 = Int64.Internal.unsafeFromInt 42 :: UInt64
+  u42 = UInt64.unsafeFromInt 42 :: UInt64
 
-  u49 = Int64.Internal.unsafeFromInt 49 :: UInt64
+  u49 = UInt64.unsafeFromInt 49 :: UInt64
 
-  u56 = Int64.Internal.unsafeFromInt 56 :: UInt64
+  u56 = UInt64.unsafeFromInt 56 :: UInt64
 
-  u63 = Int64.Internal.unsafeFromInt 63 :: UInt64
+  u63 = UInt64.unsafeFromInt 63 :: UInt64
 
-  u0x02 = Int64.Internal.unsafeFromInt 2 :: UInt64
+  u0x02 = UInt64.unsafeFromInt 2 :: UInt64
 
-  u0x7F = Int64.Internal.unsafeFromInt 0x7F :: UInt64
+  u0x7F = UInt64.unsafeFromInt 0x7F :: UInt64
 
-  u0x80 = Int64.Internal.unsafeFromInt 0x80 :: UInt64
+  u0x80 = UInt64.unsafeFromInt 0x80 :: UInt64

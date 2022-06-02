@@ -50,7 +50,6 @@ import Data.Int64 (Int64)
 import Data.Int64 as Int64
 import Data.UInt64 (UInt64)
 import Data.UInt64 as UInt64
-import Data.Int64.Internal as Int64.Internal
 import Web.Encoding.TextEncoder as TextEncoder
 import Data.UInt (UInt)
 import Data.UInt as UInt
@@ -398,9 +397,9 @@ encodeVarint64 n_0 = do
   contGroup :: UInt -> UInt
   contGroup n = u0x80 `UInt.or` n
 
-  u0 = Int64.Internal.unsafeFromInt 0 :: UInt64
+  u0 = UInt64.unsafeFromInt 0 :: UInt64
 
-  u7 = Int64.Internal.unsafeFromInt 7 :: UInt64
+  u7 = UInt64.unsafeFromInt 7 :: UInt64
 
   u0x7F = UInt.fromInt 0x7F
 

@@ -27,7 +27,6 @@ import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.Either (Either(..), either)
-import Data.Int64.Internal as Int64.Internal
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
 import Data.String as String
@@ -37,6 +36,7 @@ import Data.String.Regex.Flags as String.Regex.Flags
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..))
 import Data.UInt64 (UInt64)
+import Data.UInt64 as UInt64
 import Effect (Effect)
 import Effect.Aff (runAff_, throwError, error)
 import Effect.Class (liftEffect)
@@ -97,7 +97,7 @@ generate (CodeGeneratorRequest { proto_file }) = do
   where
   -- https://github.com/protocolbuffers/protobuf/blob/main/docs/implementing_proto3_presence.md#signaling-that-your-code-generator-supports-proto3-optional
   -- https://github.com/protocolbuffers/protobuf/blob/3f5fc4df1de8e12b2235c3006593e22d6993c3f5/src/google/protobuf/compiler/plugin.proto#L115
-  feature_proto3_optional = Int64.Internal.unsafeFromInt 1 :: UInt64
+  feature_proto3_optional = UInt64.unsafeFromInt 1 :: UInt64
 
 -- | Names of parent messages for a message or enum.
 type NameSpace
