@@ -252,7 +252,7 @@ message-reading code.
 
 ### Presence Discipline
 
-This is how [*field presence*](https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md) works
+This is how [*field presence*](https://github.com/protocolbuffers/protobuf/blob/main/docs/field_presence.md) works
 in our implementation.
 
 #### When deserializing
