@@ -331,6 +331,7 @@ Pull requests welcome.
 
 ## Other References
 
-* [__justifill__](https://pursuit.purescript.org/packages/purescript-justifill) package may be convenient for message construction.
+* [__justifill__](https://pursuit.purescript.org/packages/purescript-justifill) package may be useful for message construction.
+* [__morello__](https://pursuit.purescript.org/packages/purescript-morello) package may be useful for message validation.
 * [Third-Party Add-ons for Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/master/docs/third_party.md) Google’s list of Protocol Buffers language implementations.
 * [A vision for data interchange in Elm](https://gist.github.com/evancz/1c5f2cf34939336ecb79b97bb89d9da6) Comparison of JSON, ProtoBuf, GraphQL by Evan Czaplicki.
