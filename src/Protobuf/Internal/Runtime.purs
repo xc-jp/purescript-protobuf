@@ -22,27 +22,30 @@ import Prelude
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.Trans.Class (lift)
 import Data.Array (snoc)
+import Data.Array as Array
 import Data.ArrayBuffer.Builder (DataBuff(..), PutM, subBuilder)
 import Data.ArrayBuffer.Types (DataView, ByteLength)
 import Data.Enum (class BoundedEnum, fromEnum, toEnum)
 import Data.Foldable (foldl, traverse_)
 import Data.Generic.Rep (class Generic)
 import Data.Int64 as Int64
-import Data.UInt64 (UInt64)
-import Data.UInt64 as UInt64
+import Data.List (List, (:))
+import Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Data.Tuple (Tuple(..))
 import Data.UInt as UInt
+import Data.UInt64 (UInt64)
+import Data.UInt64 as UInt64
 import Effect.Class (class MonadEffect)
+import Parsing (ParserT, Position(..), fail, position)
+import Parsing.DataView (takeN)
 import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType(..), label)
 import Protobuf.Internal.Decode as Decode
 import Protobuf.Internal.Encode as Encode
 import Record.Builder (build, modify)
 import Record.Builder as RecordB
-import Parsing (ParserT, Position(..), fail, position)
-import Parsing.DataView (takeN)
-import Type.Proxy(Proxy(..))
+import Type.Proxy (Proxy(..))
 
 -- | The parseField argument is a parser which returns a Record builder which,
 -- | when applied to a Record, will modify the Record to add the parsed field.
@@ -82,38 +85,19 @@ manyLength ::
   ByteLength ->
   ParserT DataView m (Array a)
 manyLength p len = do
-  Position { index: posBegin' } <- position
-  begin posBegin'
-  pure mutablearray
-  where
-  mutablearray = [] :: Array a
-
-  begin :: Int -> ParserT DataView m Unit
-  begin posBegin = do
-    tailRecM go unit
-    where
-    go :: Unit -> ParserT DataView m (Step Unit Unit)
-    go _ = do
+  Position { index: posBegin } <- position
+  let
+    go :: List a -> ParserT DataView m (Step (List a) (List a))
+    go accum = do
       Position { index: pos } <- position
       case compare (pos - posBegin) len of
         GT -> fail "manyLength consumed too many bytes."
-        EQ -> lift $ pure (Done unit)
+        EQ -> lift $ pure (Done accum)
         LT -> do
           x <- p
-          _ <- pure $ unsafeArrayPush mutablearray [ x ]
-          lift $ pure (Loop unit)
-
--- | We are just going to exploit the high-performance Array push behavior
--- | of V8 here.
--- |
--- | Forego all of the guarantees of the type system and mutate
--- | The first array by concatenating the second array with Javascript
--- | [`push`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/push).
--- | Returns the length of the mutated array.
--- |
--- | With Purescript's strict semantics, we can probably get away
--- | with this?
-foreign import unsafeArrayPush :: forall a. Array a -> Array a -> Int
+          pure (Loop (x : accum))
+  -- https://github.com/purescript-contrib/purescript-parsing/pull/199#issuecomment-1145956271
+  Array.reverse <$> Array.fromFoldable <$> tailRecM go List.Nil
 
 -- | A message field value from an unknown `.proto` definition.
 -- |

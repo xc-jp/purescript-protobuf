@@ -18,6 +18,7 @@
   , "foldable-traversable"
   , "functions"
   , "int64"
+  , "lists"
   , "maybe"
   , "newtype"
   , "parsing"
