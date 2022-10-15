@@ -63,6 +63,11 @@ To compile PureScript .purs files from .proto files, run:
     protoc --purescript_out=path_to_output *.proto
 ```
 
+After building the protoc compiler plugin we can test out code generation immediately by
+generating `.purs` files for any of Google’s built-in “well-known types” in the
+[`google.protobuf`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf) package namespace. Try the command `protoc --purescript_out=. google/protobuf/any.proto`
+or `protoc --purescript_out=. google/protobuf/timestamp.proto`.
+
 If you don't want to use Nix, then install the PureScript toolchain and `protoc`,
 and add the executable script
 [`bin/protoc-gen-purescript`](bin/protoc-gen-purescript)
