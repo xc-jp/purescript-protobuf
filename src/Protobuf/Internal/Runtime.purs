@@ -5,9 +5,7 @@ module Protobuf.Internal.Runtime
   , parseFieldUnknown
   , putFieldUnknown
   , parseLenDel
-  , Pos
   , FieldNumberInt
-  , positionZero
   , manyLength
   , putLenDel
   , putOptional
@@ -68,21 +66,11 @@ parseMessage construct default parseField length = do
     else
       parseField (UInt.toInt fieldNumber) wireType
 
--- | Parse position, zero-based, unlike Text.Parsing.Parser.Position which is one-based.
-type Pos
-  = Int
-
 -- | We want an Int FieldNumber to pass to parseField so that we can pattern
 -- | match on Int literals. UInt doesn't export any constructors, so we can’t
 -- | pattern match on it.
 type FieldNumberInt
   = Int
-
--- | Zero-based position in the parser.
-positionZero :: forall s m. Monad m => ParserT s m Pos
-positionZero = do
-  Position { index } <- position
-  pure index
 
 -- | Call a parser repeatedly until exactly *N* bytes have been consumed.
 -- | Will fail if too many bytes are consumed.
@@ -94,7 +82,7 @@ manyLength ::
   ByteLength ->
   ParserT DataView m (Array a)
 manyLength p len = do
-  posBegin' <- positionZero
+  Position { index: posBegin' } <- position
   begin posBegin'
   pure mutablearray
   where
@@ -106,7 +94,7 @@ manyLength p len = do
     where
     go :: Unit -> ParserT DataView m (Step Unit Unit)
     go _ = do
-      pos <- positionZero
+      Position { index: pos } <- position
       case compare (pos - posBegin) len of
         GT -> fail "manyLength consumed too many bytes."
         EQ -> lift $ pure (Done unit)
