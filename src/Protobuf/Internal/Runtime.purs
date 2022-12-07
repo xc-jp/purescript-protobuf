@@ -104,7 +104,7 @@ manyLength p len = do
 -- | See [Message Structure](https://developers.google.com/protocol-buffers/docs/encoding#structure)
 -- | for an explanation.
 -- |
--- | - __`UnknownVarInt`__ Use `Protobuf.Internal.Decode.decodeZigzag64` to
+-- | - __`UnknownVarInt`__ Use `Protobuf.Internal.Decode.decodeZigzag64`
 -- |   to interpret this as a signed integer.
 -- | - __`UnknownLenDel`__ holds a variable-length `Bytes`.
 -- | - __`UnknownBits64`__ must hold `Bytes` of length 8.

@@ -68,6 +68,11 @@ generating `.purs` files for any of Google’s built-in “well-known types” i
 [`google.protobuf`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf) package namespace. Try the command `protoc --purescript_out=. google/protobuf/any.proto`
 or `protoc --purescript_out=. google/protobuf/timestamp.proto`.
 
+To see
+[all of the `.proto` definitions](https://github.com/protocolbuffers/protobuf/tree/main/src/google/protobuf)
+included with the Nix Protobuf installation including the “well-known types,”
+`ls -l $(nix-store -q $(which protoc))/src/google/protobuf/`.
+
 If you don't want to use Nix, then install the PureScript toolchain and `protoc`,
 and add the executable script
 [`bin/protoc-gen-purescript`](bin/protoc-gen-purescript)

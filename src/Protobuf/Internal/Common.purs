@@ -100,7 +100,7 @@ instance showWireType :: Show WireType where
 -- | received message I/O buffer.
 -- |
 -- | For messages which you intend to encode,
--- | You may set it the `DataBuff` to `DataView` or `ArrayBuffer`,
+-- | You may set the `DataBuff` to `DataView` or `ArrayBuffer`,
 -- | whichever seems best.
 -- |
 -- | The `ArrayBuffer` and `DataView` are mutable, so be careful not to mutate
