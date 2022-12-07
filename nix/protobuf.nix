@@ -58,6 +58,14 @@ let
       ref = "refs/tags/${ref}";
     };
   };
+  protobuf_repo_v21_10 = rec {
+    ref = "v21.10";
+    src = builtins.fetchGit {
+      url = "https://github.com/protocolbuffers/protobuf";
+      rev = "11bc195441adfbc87ff0349f1c4be7a239d1daad";
+      ref = "refs/tags/${ref}";
+    };
+  };
 
   # Builds `protoc`, plus the conformance test runners, and also copies
   # in the .proto files for the conformance test protocol,
@@ -103,11 +111,13 @@ in
   inherit protobuf_repo_v3_15_8;
   inherit protobuf_repo_v3_20_1;
   inherit protobuf_repo_v3_21_0;
+  inherit protobuf_repo_v21_10;
   protobuf_v3_9_2 = mkProtobuf protobuf_repo_v3_9_2;
   protobuf_v3_14_0 = mkProtobuf protobuf_repo_v3_14_0;
   protobuf_v3_15_8 = mkProtobuf protobuf_repo_v3_15_8;
   protobuf_v3_20_1 = mkProtobuf protobuf_repo_v3_20_1;
   protobuf_v3_21_0 = mkProtobuf protobuf_repo_v3_21_0;
+  protobuf_v21_10 = mkProtobuf protobuf_repo_v21_10;
 }
 
 
