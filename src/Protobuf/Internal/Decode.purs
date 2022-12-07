@@ -34,6 +34,7 @@ import Control.Alt ((<|>))
 import Control.Lazy (defer)
 import Control.Monad.Trans.Class (lift)
 import Data.ArrayBuffer.Builder (DataBuff(..))
+import Data.ArrayBuffer.Cast (toUint8Array)
 import Data.ArrayBuffer.Types (ByteLength, DataView)
 import Data.Either (Either(..))
 import Data.Enum (toEnum)
@@ -52,7 +53,7 @@ import Effect.Exception (catchException, message)
 import Effect.Unsafe (unsafePerformEffect)
 import Parsing (ParserT, fail)
 import Parsing.DataView as Parse
-import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType, label, mkUint8Array)
+import Protobuf.Internal.Common (Bytes(..), FieldNumber, WireType, label)
 import Web.Encoding.TextDecoder as TextDecoder
 import Web.Encoding.UtfLabel as UtfLabel
 
@@ -231,7 +232,7 @@ decodeString = do
     (Parse.takeN $ UInt.toInt stringlen)
     <|>
     (defer \_ -> fail $ "decodeString expected string of length " <> show stringlen)
-  stringarray <- lift $ liftEffect $ mkUint8Array stringview
+  stringarray <- lift $ liftEffect $ toUint8Array stringview
   result <- lift $ liftEffect $ catchException
     (\error -> pure $ Left $ message error)
     (Right <$> TextDecoder.decode stringarray textDecoder)

@@ -31,7 +31,6 @@
   , "tuples"
   , "uint"
   , "web-encoding"
-  , "st"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/Protobuf/**/*.purs" ]

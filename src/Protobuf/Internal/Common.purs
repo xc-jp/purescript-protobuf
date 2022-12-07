@@ -8,25 +8,18 @@ module Protobuf.Internal.Common
   , fromDefault
   , isDefault
   , label
-  , manyArray
-  , mkUint8Array
   , toDefault
   )
   where
 
 import Prelude
 
-import Control.Alt (alt)
 import Control.Monad.Error.Class (throwError, catchError)
-import Control.Monad.Rec.Class (Step(..), tailRecM)
-import Control.Monad.ST.Class (liftST)
-import Control.Monad.Trans.Class (lift)
-import Data.Array.ST as Array.ST
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (DataBuff(..), toView)
+import Data.ArrayBuffer.Cast (toUint8Array)
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
-import Data.ArrayBuffer.Types (DataView, Uint8Array)
 import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), fromEnum)
 import Data.Float32 (Float32)
 import Data.Float32 as Float32
@@ -39,10 +32,8 @@ import Data.String as String
 import Data.UInt (UInt)
 import Data.UInt as UInt
 import Data.UInt64 (UInt64)
-import Effect (Effect)
 import Effect.Unsafe (unsafePerformEffect)
 import Parsing (ParserT, ParseError(..))
-import Parsing.Combinators (try)
 
 type FieldNumber
   = UInt
@@ -116,8 +107,8 @@ instance eqBytes :: Eq Bytes where
   eq (Bytes l) (Bytes r) =
     unsafePerformEffect
       $ do
-          l' <- mkUint8Array $ toView l -- :: Effect Uint8Array
-          r' <- mkUint8Array $ toView r -- :: Effect Uint8Array
+          l' <- toUint8Array $ toView l -- :: Effect Uint8Array
+          r' <- toUint8Array $ toView r -- :: Effect Uint8Array
           TA.eq l' r'
 
 derive instance newtypeBytes :: Newtype Bytes _
@@ -188,11 +179,6 @@ toDefault :: forall a. Default a => Maybe a -> a
 toDefault Nothing = default
 toDefault (Just x) = x
 
--- | Make a `Uint8Array` Typed Array from a `DataView`. We can do this
--- | for the case of `Uint8` because byte arrays are always aligned.
-mkUint8Array :: DataView -> Effect Uint8Array
-mkUint8Array dv = TA.part (DV.buffer dv) (DV.byteOffset dv) (DV.byteLength dv)
-
 -- | If parsing fails inside this labelled context, then prepend the `String`
 -- | to the error `String` in the `ParseError`. Use this to establish
 -- | context for parsing failure error messages.
@@ -201,23 +187,3 @@ label messagePrefix p =
   catchError p
     $ \(ParseError message pos) ->
         throwError $ ParseError (messagePrefix <> message) pos
-
-
--- | High-performance `many` combinator for producing `Array`.
-manyArray :: forall s a. ParserT s Effect a -> ParserT s Effect (Array a)
--- See for generalization ideas:
--- https://github.com/purescript/purescript-lists/blob/v7.0.0/src/Data/List.purs#L171-L177
---
--- This could also be
---     manyArray :: forall s m r a. MonadST r m => ParserT s m a -> ParserT s m (Array a)
---
-manyArray p = do
-  xs <- lift $ liftST Array.ST.new
-  flip tailRecM unit $ \_ -> alt
-    do
-      x <- try p
-      _ <- lift $ liftST $ Array.ST.push x xs
-      pure (Loop unit)
-    do
-      pure (Done unit)
-  lift $ liftST $ Array.ST.unsafeFreeze xs

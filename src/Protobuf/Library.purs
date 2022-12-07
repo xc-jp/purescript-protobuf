@@ -22,8 +22,9 @@ import Data.Tuple (Tuple(..))
 import Data.UInt64 as UInt64
 import Effect (Effect)
 import Parsing (ParserT, fail)
+import Parsing.Combinators.Array as Array
 import Parsing.DataView (takeN)
-import Protobuf.Internal.Common (Bytes(..), WireType(..), manyArray)
+import Protobuf.Internal.Common (Bytes(..), WireType(..))
 import Protobuf.Internal.Common (class Default, Bytes(..), FieldNumber, label, toDefault) as ReCommon
 import Protobuf.Internal.Decode as Decode
 import Protobuf.Internal.Runtime (UnknownField(..))
@@ -88,4 +89,4 @@ parseAnyField = do
 -- | the field should be a nested message field, then you can
 -- | try to recursively `parseAnyMessage` on the `LenDel` field value.
 parseAnyMessage :: ParserT DataView Effect (Array UnknownField)
-parseAnyMessage = manyArray $ parseAnyField
+parseAnyMessage = Array.many $ parseAnyField
