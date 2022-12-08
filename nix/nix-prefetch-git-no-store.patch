@@ -1,0 +1,14 @@
+diff --git a/nix-prefetch-git b/nix-prefetch-git
+index 43f7c5a..a04566b 100755
+--- a/nix-prefetch-git
++++ b/nix-prefetch-git
+@@ -430,9 +430,6 @@ else
+         # Compute the hash.
+         hash=$(nix-hash --type $hashType --base32 "$tmpFile")
+
+-        # Add the downloaded file to the Nix store.
+-        finalPath=$(nix-store --add-fixed --recursive "$hashType" "$tmpFile")
+-
+         if test -n "$expHash" -a "$expHash" != "$hash"; then
+             echo "hash mismatch for URL \`$url'. Got \`$hash'; expected \`$expHash'." >&2
+             exit 1
