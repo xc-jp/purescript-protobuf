@@ -39,7 +39,7 @@ We also have our own unit tests, see `test/README.md` in this repository.
 
 ## Code Generation
 
-The `shell.nix` environment provides
+The `nix develop` environment provides
 
 * The PureScript toolchain: `purs`, `spago`, and `node`.
 * The [`protoc`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating) compiler.
@@ -47,7 +47,7 @@ The `shell.nix` environment provides
   [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
 
 ```
-$ nix-shell
+$ nix develop
 
 PureScript Protobuf development environment.
 libprotoc 3.21.10
@@ -58,12 +58,12 @@ To build the protoc compiler plugin, run:
 
     spago -x spago-plugin.dhall build
 
-To compile PureScript .purs files from .proto files, run:
+To compile PureScript .purs files from .proto files, run for example:
 
-    protoc --purescript_out=path_to_output *.proto
+    protoc --purescript_out=. google/protobuf/timestamp.proto
 ```
 
-After building the protoc compiler plugin we can test out code generation immediately by
+We can test out code generation immediately by
 generating `.purs` files for any of Google’s built-in “well-known types” in the
 [`google.protobuf`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf) package namespace. Try the command `protoc --purescript_out=. google/protobuf/any.proto`
 or `protoc --purescript_out=. google/protobuf/timestamp.proto`.
@@ -326,14 +326,23 @@ with the command-line tool
 
 ## Nix derivation
 
-If we want to run the `.proto` → `.purs` generation step as part of a pure Nix
-derivation, then `import` the top-level `default.nix` from this repository
-as a `nativeBuildInput`.
+The `flake.nix` provides a `packages.protoc-gen-purescript` so that we
+can run the `.proto` → `.purs` generation step as part of a pure Nix
+derivation. Include `protoc-gen-purescript` and `protobuf` as `nativeBuildInputs`.
 
 Then `protoc --purescript_out=path_to_output file.proto` will be runnable
 in our derivation phases.
 
-See the `nix/demo.nix` file for an example.
+(`protoc-gen-purescript` requires an impure build, so you’ll have to grant
+trust at the prompt.)
+
+The `flake.nix` provides the Google Protocol Buffers conformance tests
+as an `app`. To run the conformance tests right now without installing
+or cloning anything,
+
+```shell
+nix run github:xc-jp/purescript-protobuf#conformance
+```
 
 ## Contributing
 

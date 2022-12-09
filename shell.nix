@@ -16,6 +16,7 @@ pkgs.mkShell {
   shopt -s globstar # Need for globbing packagePath in vscode PureScript IDE
   export PATH="./bin:$PATH"   # PATH to protoc-gen-purescript
   source <(spago --bash-completion-script `which spago`)
+  echo "DEPRECATED use nix develop instead."
   echo "PureScript Protobuf development environment."
   protoc --version
   echo -n "purs "

@@ -23,7 +23,7 @@
   };
 
   outputs = { self, ... }@inputs:
-    inputs.flake-utils.lib.eachDefaultSystem (system:
+    inputs.flake-utils.lib.eachSystem ["x86_64-linux"] (system:
     let
 
       nixpkgs = inputs.nixpkgs.legacyPackages.${system};
@@ -39,7 +39,11 @@
       purs = easy-purescript-nix.purs-0_15_4;
       nodejs = nixpkgs.nodejs-18_x;
 
-      spago-packages-nix = nixpkgs.stdenv.mkDerivation {
+      spago-packages-nix = {
+        spago-dhall ? "spago.dhall", # the main spago.dhall file name, i.e. "spago.dhall"
+        srcs-dhall # array of .dhall files, i.e. [./spago.dhall ./packages.dhall]
+      }:
+        nixpkgs.stdenv.mkDerivation {
 
         # https://zimbatm.com/notes/nix-packaging-the-heretic-way
         # So that spago2nix can fetch packages from Github.
@@ -56,18 +60,14 @@
           spago2nix
           easy-purescript-nix.spago
         ];
-        srcs = [
-          ./spago-plugin.dhall
-          ./spago.dhall
-          ./packages.dhall
-        ];
+        srcs = srcs-dhall;
         unpackPhase = ''
           for _src in $srcs; do
             cp "$_src" $(stripHash "$_src")
           done
         '';
         buildPhase = ''
-          spago2nix generate 4 -- --config spago-plugin.dhall --global-cache skip
+          spago2nix generate 4 -- --config ${spago-dhall} --global-cache skip
           '';
         installPhase = ''
           mkdir $out
@@ -75,14 +75,22 @@
           '';
         };
 
+			spago-packages-nix-plugin = spago-packages-nix {
+        spago-dhall = "spago-plugin.dhall";
+        srcs-dhall = [
+          ./spago-plugin.dhall
+          ./spago.dhall
+          ./packages.dhall
+        ];
+      };
       # https://nixos.wiki/wiki/Import_From_Derivation
-      spago-packages = import "${spago-packages-nix}/spago-packages.nix" {pkgs=nixpkgs;};
+      spago-packages-plugin = import "${spago-packages-nix-plugin}/spago-packages.nix" {pkgs=nixpkgs;};
 
       protoc-gen-purescript = nixpkgs.stdenv.mkDerivation {
         name = "protoc-gen-purescript";
         buildInputs = [
-          spago-packages.installSpagoStyle
-          spago-packages.buildSpagoStyle
+          spago-packages-plugin.installSpagoStyle
+          spago-packages-plugin.buildSpagoStyle
         ];
         nativeBuildInputs = [
           nodejs
@@ -100,10 +108,55 @@
         installPhase = ''
            mkdir -p $out/bin
            mv output $out/
-           echo "node --input-type=module -e \"import {main} from '$out/output/ProtocPlugin.Main/index.js'; main();\"" >> $out/bin/protoc-gen-purescript
+           echo "#!/usr/bin/env bash" >> $out/bin/protoc-gen-purescript
+           echo "${nodejs}/bin/node --input-type=module -e \"import {main} from '$out/output/ProtocPlugin.Main/index.js'; main();\"" >> $out/bin/protoc-gen-purescript
            chmod +x $out/bin/protoc-gen-purescript
            '';
       };
+
+			spago-packages-nix-conformance = spago-packages-nix {
+        spago-dhall = "spago-conformance.dhall";
+        srcs-dhall = [
+          ./spago-conformance.dhall
+          ./spago.dhall
+          ./packages.dhall
+        ];
+      };
+      # https://nixos.wiki/wiki/Import_From_Derivation
+      spago-packages-conformance = import "${spago-packages-nix-conformance}/spago-packages.nix" {pkgs=nixpkgs;};
+      conformance-purescript = nixpkgs.stdenv.mkDerivation {
+        name = "conformance-purescript";
+        buildInputs = [
+          spago-packages-conformance.installSpagoStyle
+          spago-packages-conformance.buildSpagoStyle
+        ];
+        nativeBuildInputs = [
+          nodejs
+          purs
+          protoc-gen-purescript
+          protobuf
+        ];
+        src = nixpkgs.nix-gitignore.gitignoreSource [ ".git" ] ./.;
+        unpackPhase = ''
+          cp -r $src/src .
+          cp -r $src/conformance .
+          '';
+        buildPhase = ''
+          install-spago-style
+          mkdir generated
+          protoc --purescript_out=./generated --proto_path=${protobuf}/src --proto_path=${protobuf}/conformance ${protobuf}/conformance/conformance.proto
+          protoc --purescript_out=./generated --proto_path=${protobuf}/src --proto_path=${protobuf}/conformance ${protobuf}/src/google/protobuf/test_messages_proto3.proto
+          build-spago-style "./src/**/*.purs" "./conformance/**/*.purs" "./generated/**/*.purs"
+          '';
+        installPhase = ''
+           mkdir -p $out/bin
+           mv output $out/
+           echo "#!/usr/bin/env bash" >> $out/bin/conformance-purescript
+           echo "${nodejs}/bin/node --input-type=module --abort-on-uncaught-exception --trace-sigint --trace-uncaught --eval=\"import {main} from '$out/output/Conformance.Main/index.js'; main();\"" >> $out/bin/conformance-purescript
+           chmod +x $out/bin/conformance-purescript
+           '';
+      };
+
     in {
       devShells.default = nixpkgs.mkShell {
         nativeBuildInputs = [
@@ -121,6 +174,7 @@
         shellHook = ''
         # shopt -s globstar # Need for globbing packagePath in vscode PureScript IDE
         source <(spago --bash-completion-script `which spago`)
+        source <(node --completion-bash)
         echo "PureScript Protobuf development environment"
         protoc --version
         echo -n "purs "
@@ -141,6 +195,22 @@
       };
       packages = {
         inherit protoc-gen-purescript;
+        inherit protobuf;
+        inherit conformance-purescript;
+      };
+      apps = {
+        conformance =
+          let
+            conformance-run = nixpkgs.writeScriptBin "conformance" ''
+              set -e
+              set -x
+              ${protobuf}/bin/conformance-test-runner --enforce_recommended ${conformance-purescript}/bin/conformance-purescript
+              '';
+          in
+          {
+            type = "app";
+            program = "${conformance-run}/bin/conformance";
+          };
       };
     }
     );
