@@ -1,20 +1,18 @@
 { pkgs ? import <nixpkgs> { } }:
 
+# The protobuf derivation in nixpkgs does not include the conformance test
+# runners.
+# This protobuf derivation includes the conformance test runners.
+#
 # References
 #
 # https://github.com/protocolbuffers/protobuf/tags
 #
 # https://github.com/protocolbuffers/protobuf/blob/master/CHANGES.txt
 #
-# https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/libraries/protobuf/generic-v3.nix
+# https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/libraries/protobuf
 #
 # https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats
-
-
-# Path to the repo source code in the nix store
-#
-#     nix eval --raw -f nix/protobuf.nix protobuf_repo_v3_14_0.src.outPath
-#
 
 let
 
@@ -102,6 +100,17 @@ let
       cp ./conformance/conformance.proto $out/conformance/
     '';
     LC_ALL = "C.UTF-8";
+    meta = {
+      description = "purescript-protobuf build for Google’s Protobuf";
+      longDescription = ''
+        This Protobuf build includes the protoc compiler and the “well-known”
+        .proto definitions, as well as all of the conformance test runners
+        and conformance .proto definitions.
+        '';
+      homepage = "https://github.com/xc-jp/purescript-protobuf";
+      license = pkgs.lib.licenses.bsd3;
+      mainProgram = "protoc";
+    };
   };
 
 in

@@ -1,6 +1,5 @@
 # purescript-protobuf 💝
 
-[![Test](https://github.com/xc-jp/purescript-protobuf/workflows/Test/badge.svg?branch=master)](https://github.com/xc-jp/purescript-protobuf/actions)
 [![Pursuit](http://pursuit.purescript.org/packages/purescript-protobuf/badge)](http://pursuit.purescript.org/packages/purescript-protobuf/)
 
 PureScript library and code generator for
@@ -70,8 +69,9 @@ or `protoc --purescript_out=. google/protobuf/timestamp.proto`.
 
 To see
 [all of the `.proto` definitions](https://github.com/protocolbuffers/protobuf/tree/main/src/google/protobuf)
-included with the Nix Protobuf installation including the “well-known types,”
-`ls -l $(nix-store -q $(which protoc))/src/google/protobuf/`.
+included with the Nix PureScript Protobuf installation including
+the “well-known types,”
+`ls -l $(nix path-info .#protobuf)/include/google/protobuf/*.proto`
 
 If you don't want to use Nix, then install the PureScript toolchain and `protoc`,
 and add the executable script
@@ -326,19 +326,20 @@ with the command-line tool
 
 ## Nix derivation
 
-The `flake.nix` provides a `packages.protoc-gen-purescript` so that we
-can run the `.proto` → `.purs` generation step as part of a pure Nix
+The `flake.nix` provides a package `protoc-gen-purescript` so that we
+can run the `.proto` → `.purs` generation step as part of a Nix
 derivation. Include `protoc-gen-purescript` and `protobuf` as `nativeBuildInputs`.
-
 Then `protoc --purescript_out=path_to_output file.proto` will be runnable
 in our derivation phases.
 
-(`protoc-gen-purescript` requires an impure build, so you’ll have to grant
-trust at the prompt.)
+(`protoc-gen-purescript` requires an impure build for the `spago2nix` step,
+so you’ll have to grant
+trust at the prompt or configure a relaxed Nix sandbox.)
 
 The `flake.nix` provides the Google Protocol Buffers conformance tests
-as an `app`. To run the conformance tests right now without installing
-or cloning anything,
+as an `app`. To run the conformance tests right now
+[without installing or cloning](https://determinate.systems/posts/nix-run)
+anything,
 
 ```shell
 nix run github:xc-jp/purescript-protobuf#conformance

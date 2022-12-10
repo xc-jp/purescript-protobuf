@@ -5,8 +5,7 @@
 From the top directory of this repo,
 
 ```
-nix-shell nix/conformance.nix
-run
+nix run .#conformance
 ```
 
 ## About the conformance test runner

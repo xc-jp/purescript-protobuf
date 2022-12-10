@@ -1,5 +1,13 @@
 # Unreleased
 
+# v4.1.0 2022-12-10
+
+- Nix flake. With one-step spago2nix.
+- Upgrade dependencies.
+- Delete `manyArray` `mkUint8Array`. Upstreamed these to dependencies.
+- Refactor `manyLength`. Get rid of the FFI, and a slight speedup in the benchmarks.
+- Delete `Runtime.positionZero`.
+
 # v4.0.0 2022-06-02
 
 - Change the values of `UnknownBits64` and `UnknownBits32` to `Bytes`.
