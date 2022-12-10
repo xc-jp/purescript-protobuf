@@ -148,9 +148,9 @@ We'll also import modules for reading and writing `ArrayBuffer`s.
 
 
 ```purescript
-import Protobuf.Library (Bytes(..), parseMaybe)
+import Protobuf.Library (Bytes(..))
 import Interproc.Shapes (Rectangle, mkRectangle, putRectangle, parseRectangle)
-import Text.Parsing.Parser (runParserT, ParseError)
+import Text.Parsing.Parser (runParserT, ParseError, liftMaybe)
 import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView (whole)
 import Data.ArrayBuffer.ArrayBuffer (byteLength)
@@ -204,13 +204,11 @@ on the `Rectangle` message type works well, so we could validate this way:
             _ -> fail "Missing required width or height"
 ```
 
-Or we might want to use `parseMaybe`, one of the
-convenience parsing functions exported by `Protobuf.Library`,
-for more fine-grained validation:
+Or we might want to use `liftMaybe` for more fine-grained validation:
 
 ```purescript
-        width <- parseMaybe "Missing required width" (unwrap rectangle).width
-        height <- parseMaybe "Missing required height" (unwrap rectangle).height
+        width <- liftMaybe "Missing required width" (unwrap rectangle).width
+        height <- liftMaybe "Missing required height" (unwrap rectangle).height
         pure $ Tuple width height
 ```
 

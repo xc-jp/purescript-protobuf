@@ -4,7 +4,8 @@
 
 - Nix flake. With one-step spago2nix.
 - Upgrade dependencies.
-- Delete `manyArray` `mkUint8Array`. Upstreamed these to dependencies.
+- Delete `mkUint8Array`. Upstreamed this to purescript-arraybuffer.
+- Delete `manyArray`, `parseMaybe`, `parseEither`, `parseExceptT`. Upstreamed these to purescript-parsing.
 - Refactor `manyLength`. Get rid of the FFI, and a slight speedup in the benchmarks.
 - Delete `Runtime.positionZero`.
 
