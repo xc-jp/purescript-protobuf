@@ -21,14 +21,15 @@ module ProtocPlugin.Main (main) where
 import Prelude
 
 import Control.Monad.Rec.Class (tailRecM, Step(..))
-import Data.Array (catMaybes, concatMap, fold)
+import Data.Array (catMaybes, concat, fold, mapWithIndex)
 import Data.Array as Array
+import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView as DV
-import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
+import Data.String (Pattern(..), Replacement(..))
 import Data.String as String
 import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
@@ -42,7 +43,7 @@ import Effect.Aff (runAff_, throwError, error)
 import Effect.Class (liftEffect)
 import Effect.Console as Console
 import Google.Protobuf.Compiler.Plugin (CodeGeneratorRequest(..), CodeGeneratorResponse, CodeGeneratorResponse_File(..), mkCodeGeneratorResponse, parseCodeGeneratorRequest, putCodeGeneratorResponse)
-import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FieldOptions(..), FileDescriptorProto(..), OneofDescriptorProto(..))
+import Google.Protobuf.Descriptor (DescriptorProto(..), EnumDescriptorProto(..), EnumValueDescriptorProto(..), FieldDescriptorProto(..), FieldDescriptorProto_Label(..), FieldDescriptorProto_Type(..), FieldOptions(..), FileDescriptorProto(..), OneofDescriptorProto(..), SourceCodeInfo(..), SourceCodeInfo_Location(..))
 import Node.Buffer (Buffer, toArrayBuffer, fromArrayBuffer)
 import Node.Buffer as Buffer
 import Node.Path (basenameWithoutExt)
@@ -106,13 +107,15 @@ type NameSpace
 -- | Protobuf package name.
 type PackageName = Array String
 
--- | A message descriptor, plus the names of all parent messages.
+-- | * the names of all parent messages
+-- | * The “path attribute”
+-- | * A message descriptor
 data ScopedMsg
-  = ScopedMsg NameSpace DescriptorProto
+  = ScopedMsg NameSpace Path DescriptorProto
 
 -- | An enum descriptor, plus the names of all parent messages.
 data ScopedEnum
-  = ScopedEnum NameSpace EnumDescriptorProto
+  = ScopedEnum NameSpace Path EnumDescriptorProto
 
 -- | Scoped field name which has the qualified package namespace and the field name.
 data ScopedField
@@ -122,6 +125,10 @@ data ScopedField
 type Resp a
   = Either String a
 
+-- | Best way to parse SourceCodeInfo Data From Protobuf Files
+-- | https://groups.google.com/g/protobuf/c/AyOQvhtwvYc
+type Path = Array Int
+
 genFile :: Array FileDescriptorProto -> FileDescriptorProto -> Resp CodeGeneratorResponse_File
 genFile proto_file ( FileDescriptorProto
     { name: fileName
@@ -129,6 +136,7 @@ genFile proto_file ( FileDescriptorProto
   , dependency
   , message_type
   , enum_type
+  , source_code_info
   }
 ) = do
   let
@@ -139,8 +147,8 @@ genFile proto_file ( FileDescriptorProto
       Nothing -> "Generated"
       Just "" -> "Generated"
       Just n -> basenameWithoutExt n ".proto"
-  messages :: Array ScopedMsg <- sequence $ flattenMessages [] message_type
-  enums :: Array ScopedEnum <- Right (ScopedEnum [] <$> enum_type) <> sequence (flattenEnums [] message_type)
+  messages :: Array ScopedMsg <- sequence $ flattenMessages [] [4] message_type
+  enums :: Array ScopedEnum <- Right (mapWithIndex (\i e -> ScopedEnum [] [5,i] e) enum_type) <> sequence (flattenEnums [] [4] message_type)
   let
     fileNameOut = baseName <> "." <> (String.joinWith "." ((map capitalize packageName))) <> ".purs"
   -- We have to import the modules qualified in the way because
@@ -197,14 +205,14 @@ genFile proto_file ( FileDescriptorProto
       isLocalMessageName fname =
         maybe false (const true)
           $ flip Array.find messages
-          $ \(ScopedMsg _ (DescriptorProto { name })) ->
+          $ \(ScopedMsg _ _ (DescriptorProto { name })) ->
               maybe false (fname == _) name
 
       isLocalEnumName :: String -> Boolean
       isLocalEnumName ename =
         maybe false (const true)
           $ flip Array.find enums
-          $ \(ScopedEnum _ (EnumDescriptorProto { name })) ->
+          $ \(ScopedEnum _ _ (EnumDescriptorProto { name })) ->
               maybe false (ename == _) name
 
       parseFieldName :: String -> ScopedField
@@ -220,6 +228,21 @@ genFile proto_file ( FileDescriptorProto
 
       beginsWith :: Array String -> Array String -> Boolean
       beginsWith xs x = x == Array.take (Array.length x) xs
+
+  let
+    -- Find source code comments
+    --
+    -- Best way to parse SourceCodeInfo Data From Protobuf Files
+    -- https://groups.google.com/g/protobuf/c/AyOQvhtwvYc
+    commentsLeading :: Path -> Maybe String
+    commentsLeading path' = do
+      (SourceCodeInfo {location}) <- source_code_info
+      (SourceCodeInfo_Location info) <- Array.find (\(SourceCodeInfo_Location {path}) -> path == path') location
+      comments <- String.replaceAll (Pattern "\n") (Replacement "\n-- | > ")
+        <$> String.trim
+        <$> info.leading_comments
+      pure $ "\n-- |\n-- | > " <> comments
+
   -- We have an r and we're merging an l.
   -- About merging: https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md
   let
@@ -1194,7 +1217,7 @@ genFile proto_file ( FileDescriptorProto
     genFieldRecord _ _ = Left "Failed genFieldRecord missing FieldDescriptorProtocol name or number or label or type"
   let
     genMessageExport :: ScopedMsg -> Resp String
-    genMessageExport (ScopedMsg namespace (DescriptorProto { name: Just msgName, oneof_decl, field })) =
+    genMessageExport (ScopedMsg namespace path (DescriptorProto { name: Just msgName, oneof_decl, field })) =
       ( Right
           $ tname
           <> "(..), "
@@ -1229,7 +1252,7 @@ genFile proto_file ( FileDescriptorProto
   -- | And so that we can assign instances.
   let
     genMessage :: ScopedMsg -> Resp String
-    genMessage (ScopedMsg nameSpace (DescriptorProto { name: Just msgName, field, oneof_decl })) =
+    genMessage (ScopedMsg nameSpace path (DescriptorProto { name: Just msgName, field, oneof_decl })) =
       let
         tname = mkTypeName $ nameSpace <> [ msgName ]
         pname = String.joinWith "." $ packageName <> nameSpace <> [ msgName ]
@@ -1248,6 +1271,7 @@ genFile proto_file ( FileDescriptorProto
         map (String.joinWith "\n")
           $ sequence
               [ Right $ "\n-- | Message generated by __protobuf__ from `" <> pname <> "`"
+                  <> fromMaybe "" (commentsLeading path)
               , Right $ "newtype " <> tname <> " = " <> tname <> " " <> tname <> "R"
               , Right $ "type " <> tname <> "Row ="
               , Right "  ( "
@@ -1315,7 +1339,7 @@ genFile proto_file ( FileDescriptorProto
     genMessage _ = Left "Failed genMessage no DescriptorProto name"
 
     genEnum :: ScopedEnum -> Resp String
-    genEnum (ScopedEnum namespace (EnumDescriptorProto { name: Just eName, value })) = do
+    genEnum (ScopedEnum namespace path (EnumDescriptorProto { name: Just eName, value })) = do
       let
         tname = mkTypeName $ namespace <> [ eName ]
         pname = String.joinWith "." $ packageName <> namespace <> [ eName ]
@@ -1333,6 +1357,7 @@ genFile proto_file ( FileDescriptorProto
           _ -> Left $ "No enum valueZero\n" <> show eName
       Right $ String.joinWith "\n"
         $ [ "\n-- | Enum generated by __protobuf__ from `" <> pname <> "`"
+            <> fromMaybe "" (commentsLeading path)
           , "data " <> tname
           , "  = " <> String.joinWith "\n  | " enumConstruct
           , "derive instance generic" <> tname <> " :: Prelude.Generic " <> tname <> " _"
@@ -1445,15 +1470,15 @@ import Protobuf.Internal.Prelude as Prelude
 
   -- | Pull all of the enums out of of the nested messages and bring them
   -- | to the top, with their namespace.
-  flattenEnums :: NameSpace -> Array DescriptorProto -> Array (Resp ScopedEnum)
-  flattenEnums namespace msgarray = concatMap go msgarray
+  flattenEnums :: NameSpace -> Path -> Array DescriptorProto -> Array (Resp ScopedEnum)
+  flattenEnums namespace path msgarray = concatMapWithIndex go msgarray
     where
-    go :: DescriptorProto -> Array (Resp ScopedEnum)
-    go (DescriptorProto { name: Just msgName, nested_type, enum_type: msgEnums }) =
-      (Right <$> ScopedEnum (namespace <> [ msgName ]) <$> msgEnums)
-        <> flattenEnums (namespace <> [ msgName ]) nested_type
+    go :: Int -> DescriptorProto -> Array (Resp ScopedEnum)
+    go i (DescriptorProto { name: Just msgName, nested_type, enum_type: msgEnums }) =
+      (Right <$> mapWithIndex (\i' e -> ScopedEnum (namespace <> [ msgName ]) (path <> [i,4,i']) e) msgEnums)
+        <> flattenEnums (namespace <> [ msgName ]) (path <> [i,3]) nested_type
 
-    go _ = [ Left "Failed flattenEnums missing DescriptorProto name" ]
+    go _ _ = [ Left "Failed flattenEnums missing DescriptorProto name" ]
 
   -- The `oneof_decl` array annotated with which fields belong to it,
   -- excluding optional synthetic Oneofs.
@@ -1473,22 +1498,21 @@ import Protobuf.Internal.Prelude as Prelude
             _ -> Just $ Tuple o fields
 
   genEnumExport :: ScopedEnum -> Resp String
-  genEnumExport (ScopedEnum namespace (EnumDescriptorProto { name: Just eName })) = Right $ (mkTypeName $ namespace <> [ eName ]) <> "(..)"
+  genEnumExport (ScopedEnum namespace _ (EnumDescriptorProto { name: Just eName })) = Right $ (mkTypeName $ namespace <> [ eName ]) <> "(..)"
 
   genEnumExport _ = Left "Failed genEnumExport missing EnumDescriptorProto name"
 
-
   -- | Pull all of the nested messages out of of the messages and bring them
   -- | to the top, with their namespace.
-  flattenMessages :: NameSpace -> Array DescriptorProto -> Array (Resp ScopedMsg)
-  flattenMessages namespace msgarray = concatMap go msgarray
+  flattenMessages :: NameSpace -> Path -> Array DescriptorProto -> Array (Resp ScopedMsg)
+  flattenMessages namespace path msgarray = concatMapWithIndex go msgarray
     where
-    go :: DescriptorProto -> Array (Resp ScopedMsg)
-    go (DescriptorProto r@{ name: Just msgName, nested_type }) =
-      [ Right $ ScopedMsg namespace (DescriptorProto r) ]
-        <> flattenMessages (namespace <> [ msgName ]) nested_type
+    go :: Int -> DescriptorProto -> Array (Resp ScopedMsg)
+    go i (DescriptorProto r@{ name: Just msgName, nested_type }) =
+      [ Right $ ScopedMsg namespace (path <> [i]) (DescriptorProto r) ]
+        <> flattenMessages (namespace <> [ msgName ]) (path <> [i,3]) nested_type
 
-    go _ = [ Left "Failed flattenMessages missing DescriptorProto name" ]
+    go _ _ = [ Left "Failed flattenMessages missing DescriptorProto name" ]
 
   -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
   -- “A oneof cannot be repeated.”
@@ -1523,3 +1547,6 @@ import Protobuf.Internal.Prelude as Prelude
   genFieldDefaultOneof (Tuple (OneofDescriptorProto { name: Just oname }) _) = Right $ decapitalize oname <> ": Prelude.Nothing"
 
   genFieldDefaultOneof _ = Left "Failed genFieldDefaultOneof missing name"
+
+concatMapWithIndex :: forall a b. (Int -> a -> Array b) -> Array a -> Array b
+concatMapWithIndex f xs = concat $ mapWithIndex f xs
