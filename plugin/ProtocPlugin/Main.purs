@@ -29,7 +29,7 @@ import Data.ArrayBuffer.DataView as DV
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
-import Data.String (Pattern(..), Replacement(..))
+import Data.String (Pattern(..))
 import Data.String as String
 import Data.String.Pattern as String.Pattern
 import Data.String.Regex as String.Regex
@@ -238,10 +238,8 @@ genFile proto_file ( FileDescriptorProto
     commentsLeading path' = do
       (SourceCodeInfo {location}) <- source_code_info
       (SourceCodeInfo_Location info) <- Array.find (\(SourceCodeInfo_Location {path}) -> path == path') location
-      comments <- String.replaceAll (Pattern "\n") (Replacement "\n-- | > ")
-        <$> String.trim
-        <$> info.leading_comments
-      pure $ "\n-- |\n-- | > " <> comments
+      commentlines <- Array.filter (not <<< String.null) <$> map String.trim <$> String.split (Pattern "\n") <$> info.leading_comments
+      Just $ String.joinWith "\n" $ append ["\n-- | "] $ append "-- | " <$> commentlines
 
   -- We have an r and we're merging an l.
   -- About merging: https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md
@@ -1217,7 +1215,7 @@ genFile proto_file ( FileDescriptorProto
     genFieldRecord _ _ = Left "Failed genFieldRecord missing FieldDescriptorProtocol name or number or label or type"
   let
     genMessageExport :: ScopedMsg -> Resp String
-    genMessageExport (ScopedMsg namespace path (DescriptorProto { name: Just msgName, oneof_decl, field })) =
+    genMessageExport (ScopedMsg namespace _ (DescriptorProto { name: Just msgName, oneof_decl, field })) =
       ( Right
           $ tname
           <> "(..), "
