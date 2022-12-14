@@ -71,7 +71,7 @@ To see
 [all of the `.proto` definitions](https://github.com/protocolbuffers/protobuf/tree/main/src/google/protobuf)
 included with the Nix PureScript Protobuf installation including
 the “well-known types,”
-`ls -l $(nix path-info .#protobuf)/include/google/protobuf/*.proto`
+`ls $(nix path-info .#protobuf)/include/google/protobuf/*.proto`
 
 If you don't want to use Nix, then install the PureScript toolchain and `protoc`,
 and add the executable script

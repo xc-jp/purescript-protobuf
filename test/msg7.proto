@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pack7;
+
+// test import from google.
+// Make sure that we don't import anything from conformance because it will
+// conflict in the development environment.
+
+import "google/protobuf/empty.proto";
+
+message Msg7 {
+  google.protobuf.Empty nothing = 1;
+}

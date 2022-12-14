@@ -23,7 +23,7 @@
   };
 
   outputs = { self, ... }@inputs:
-    inputs.flake-utils.lib.eachSystem ["x86_64-linux"] (system:
+    inputs.flake-utils.lib.eachDefaultSystem (system:
     let
 
       nixpkgs = inputs.nixpkgs.legacyPackages.${system};
@@ -192,6 +192,9 @@
         echo ""
         '';
         LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507
+        # TODO
+        # https://github.com/nwolverson/purescript-language-server/pull/75
+        # PURS_IDE_SOURCES = "src/ test/ conformance/";
       };
       packages = {
         inherit protoc-gen-purescript;
