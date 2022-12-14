@@ -16,7 +16,38 @@
         "type": "github"
       }
     },
+    "easy-purescript-nix_2": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1670198178,
+        "narHash": "sha256-5KkyNpPakv4xIP2ba0S5GX+dcmd3AcO9kPhwa482BbA=",
+        "owner": "justinwoo",
+        "repo": "easy-purescript-nix",
+        "rev": "7a4cb3cd6ca53566ea1675692eab0aa13907ff09",
+        "type": "github"
+      },
+      "original": {
+        "owner": "justinwoo",
+        "repo": "easy-purescript-nix",
+        "type": "github"
+      }
+    },
     "flake-utils": {
+      "locked": {
+        "lastModified": 1667395993,
+        "narHash": "sha256-nuEHfE/LcWyuSWnS8t12N1wc105Qtau+/OdUAjtQ0rA=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "5aed5285a952e0b949eb3ba02c12fa4fcfef535f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_2": {
       "locked": {
         "lastModified": 1667395993,
         "narHash": "sha256-nuEHfE/LcWyuSWnS8t12N1wc105Qtau+/OdUAjtQ0rA=",
@@ -47,6 +78,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1670929434,
+        "narHash": "sha256-n5UBO6XBV4h3TB7FYu2yAuNQMEYOrQyKeODUwKe06ow=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1710ed1f6f8ceb75cf7d1cf55ee0cc21760e1c7a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "easy-purescript-nix": "easy-purescript-nix",
@@ -56,17 +103,21 @@
       }
     },
     "spago2nix": {
-      "flake": false,
+      "inputs": {
+        "easy-purescript-nix": "easy-purescript-nix_2",
+        "flake-utils": "flake-utils_2",
+        "nixpkgs": "nixpkgs_2"
+      },
       "locked": {
-        "lastModified": 1641236534,
-        "narHash": "sha256-a5cBQdkFg98NC8mpKzfVm5Iv2DtMSLlr9IclWp5D8mI=",
-        "owner": "justinwoo",
+        "lastModified": 1670976475,
+        "narHash": "sha256-wNG71nooTCrwRPkKIITzvRnga2UHq3Kq+bOZpx+QWZ4=",
+        "owner": "jamesdbrock",
         "repo": "spago2nix",
-        "rev": "1c834738a8216a4c89d9defac9bf1c331d302a6a",
+        "rev": "780780be5c369c521559f55b2bffcca101ad70d8",
         "type": "github"
       },
       "original": {
-        "owner": "justinwoo",
+        "owner": "jamesdbrock",
         "repo": "spago2nix",
         "type": "github"
       }

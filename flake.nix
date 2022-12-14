@@ -13,8 +13,7 @@
       flake = false;
     };
     spago2nix = {
-      url = "github:justinwoo/spago2nix";
-      flake = false;
+      url = "github:jamesdbrock/spago2nix";
     };
     # flake-compat = {
     #   url = "github:edolstra/flake-compat";
@@ -30,72 +29,24 @@
       easy-purescript-nix = import inputs.easy-purescript-nix {pkgs = nixpkgs;};
       protobuf = (import ./nix/protobuf.nix {pkgs = nixpkgs;}).protobuf_v21_10;
       nix-prefetch-git-patched = import ./nix/nix-prefetch-git-patched.nix nixpkgs;
-      spago2nix = import inputs.spago2nix {
-        pkgs = nixpkgs // {
-          nix-prefetch-git = nix-prefetch-git-patched;
-        };
-      };
 
       purs = easy-purescript-nix.purs-0_15_4;
       nodejs = nixpkgs.nodejs-18_x;
 
-      spago-packages-nix = {
-        spago-dhall ? "spago.dhall", # the main spago.dhall file name, i.e. "spago.dhall"
-        srcs-dhall # array of .dhall files, i.e. [./spago.dhall ./packages.dhall]
-      }:
-        nixpkgs.stdenv.mkDerivation {
-
-        # https://zimbatm.com/notes/nix-packaging-the-heretic-way
-        # So that spago2nix can fetch packages from Github.
-        __noChroot = true;
-
-        # We need HTTPS to fetch from github.
-        SYSTEM_CERTIFICATE_PATH = "${nixpkgs.cacert}/etc/ssl/certs";
-        SSL_CERT_FILE = "${nixpkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-        NIX_SSL_CERT_FILE = "${nixpkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-        GIT_SSL_CAINFO = "${nixpkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-
-        name = "spago-packages";
-        nativeBuildInputs = [
-          spago2nix
-          easy-purescript-nix.spago
-        ];
-        srcs = srcs-dhall;
-        unpackPhase = ''
-          for _src in $srcs; do
-            cp "$_src" $(stripHash "$_src")
-          done
-        '';
-        buildPhase = ''
-          spago2nix generate 4 -- --config ${spago-dhall} --global-cache skip
-          '';
-        installPhase = ''
-          mkdir $out
-          cp spago-packages.nix $out/
-          '';
-        };
-
-			spago-packages-nix-plugin = spago-packages-nix {
-        spago-dhall = "spago-plugin.dhall";
-        srcs-dhall = [
-          ./spago-plugin.dhall
-          ./spago.dhall
-          ./packages.dhall
-        ];
-      };
-      # https://nixos.wiki/wiki/Import_From_Derivation
-      spago-packages-plugin = import "${spago-packages-nix-plugin}/spago-packages.nix" {pkgs=nixpkgs;};
-
       protoc-gen-purescript = nixpkgs.stdenv.mkDerivation {
         name = "protoc-gen-purescript";
-        buildInputs = [
-          spago-packages-plugin.installSpagoStyle
-          spago-packages-plugin.buildSpagoStyle
-        ];
         nativeBuildInputs = [
           nodejs
           purs
-        ];
+        ] ++ (
+          inputs.spago2nix.packages.${system}.spago2nix_nativeBuildInputs {
+            spago-dhall = "spago-plugin.dhall";
+            srcs-dhall = [
+              ./spago-plugin.dhall
+              ./spago.dhall
+              ./packages.dhall
+            ];
+        });
         src = nixpkgs.nix-gitignore.gitignoreSource [ ".git" ] ./.;
         unpackPhase = ''
           cp -r $src/src .
@@ -114,28 +65,22 @@
            '';
       };
 
-			spago-packages-nix-conformance = spago-packages-nix {
-        spago-dhall = "spago-conformance.dhall";
-        srcs-dhall = [
-          ./spago-conformance.dhall
-          ./spago.dhall
-          ./packages.dhall
-        ];
-      };
-      # https://nixos.wiki/wiki/Import_From_Derivation
-      spago-packages-conformance = import "${spago-packages-nix-conformance}/spago-packages.nix" {pkgs=nixpkgs;};
       conformance-purescript = nixpkgs.stdenv.mkDerivation {
         name = "conformance-purescript";
-        buildInputs = [
-          spago-packages-conformance.installSpagoStyle
-          spago-packages-conformance.buildSpagoStyle
-        ];
         nativeBuildInputs = [
           nodejs
           purs
           protoc-gen-purescript
           protobuf
-        ];
+        ] ++ (
+          inputs.spago2nix.packages.${system}.spago2nix_nativeBuildInputs {
+            spago-dhall = "spago-conformance.dhall";
+            srcs-dhall = [
+              ./spago-conformance.dhall
+              ./spago.dhall
+              ./packages.dhall
+            ];
+        });
         src = nixpkgs.nix-gitignore.gitignoreSource [ ".git" ] ./.;
         unpackPhase = ''
           cp -r $src/src .
