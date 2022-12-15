@@ -138,6 +138,8 @@
         LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507
         # https://github.com/nwolverson/vscode-ide-purescript/issues/104
         # https://github.com/nwolverson/purescript-language-server/pull/75
+        # https://github.com/nwolverson/purescript-language-server/issues/175
+        # PURS_IDE_SOURCES = "$(${easy-purescript-nix.spago}/bin/spago -x spago-dev.dhall sources)";
         PURS_IDE_SOURCES = "'src/**/*.purs plugin/**/*.purs test/**/*.purs conformance/**/*.purs .spago/**/*.purs'";
       };
       packages = {
