@@ -117,7 +117,6 @@
           protoc-gen-purescript
         ];
         shellHook = ''
-        shopt -s globstar # Need for globbing sourcePath in vscode PureScript IDE
         source <(spago --bash-completion-script `which spago`)
         source <(node --completion-bash)
         echo "PureScript Protobuf development environment"
