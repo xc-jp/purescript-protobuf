@@ -748,6 +748,7 @@ mergeEnumDescriptorProto (EnumDescriptorProto l) (EnumDescriptorProto r) = EnumD
 -- | 
 -- | Range of reserved numeric values. Reserved values may not be used by
 -- | entries in the same enum. Reserved ranges may not overlap.
+-- | 
 -- | Note that this is distinct from DescriptorProto.ReservedRange in that it
 -- | is inclusive such that it can appropriately represent the entire int32
 -- | domain.

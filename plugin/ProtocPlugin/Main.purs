@@ -26,6 +26,7 @@ import Data.Array as Array
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView as DV
+import Data.CodePoint.Unicode as Unicode
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
@@ -238,8 +239,23 @@ genFile proto_file ( FileDescriptorProto
     commentsLeading path' = do
       (SourceCodeInfo {location}) <- source_code_info
       (SourceCodeInfo_Location info) <- Array.find (\(SourceCodeInfo_Location {path}) -> path == path') location
-      commentlines <- Array.filter (not <<< String.null) <$> map String.trim <$> String.split (Pattern "\n") <$> info.leading_comments
+      commentlines <- arraytrim <$> map trimws <$> String.split (Pattern "\n") <$> info.leading_comments
       Just $ String.joinWith "\n" $ append ["\n-- | "] $ append "-- | " <$> commentlines
+        where
+        arraytrim :: Array String -> Array String
+        arraytrim = trimhead <<< trimtail
+          where
+          trimhead xs' = case Array.uncons xs' of
+            Just {head,tail} | String.null head -> tail
+            _ -> xs'
+          trimtail xs' = case Array.unsnoc xs' of
+            Just {init,last} | String.null last -> init
+            _ -> xs'
+        trimws :: String -> String
+        trimws s = case String.uncons s of
+          Just {head,tail} | Unicode.isSpace head -> tail
+          _ -> s
+
 
   -- We have an r and we're merging an l.
   -- About merging: https://github.com/protocolbuffers/protobuf/blob/master/docs/field_presence.md
