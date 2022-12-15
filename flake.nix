@@ -137,9 +137,9 @@
         echo ""
         '';
         LC_ALL = "C.UTF-8"; # https://github.com/purescript/spago/issues/507
-        # TODO
+        # https://github.com/nwolverson/vscode-ide-purescript/issues/104
         # https://github.com/nwolverson/purescript-language-server/pull/75
-        # PURS_IDE_SOURCES = "src/ test/ conformance/";
+        PURS_IDE_SOURCES = "'src/**/*.purs plugin/**/*.purs test/**/*.purs conformance/**/*.purs .spago/**/*.purs'";
       };
       packages = {
         inherit protoc-gen-purescript;

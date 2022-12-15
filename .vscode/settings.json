@@ -1,7 +1,3 @@
 {
-  "purescript.addSpagoSources": true,
   "purescript.buildCommand": "spago -x spago-dev.dhall build --purs-args --json-errors",
-  "purescript.sourcePath": "{src/,test/,conformance/}",
-  "purescript.packagePath": ".spago/",
-  "purescript.addNpmPath": true
 }
