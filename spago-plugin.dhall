@@ -17,9 +17,9 @@ in conf //
     , "node-buffer"
     , "node-path"
     , "node-process"
-    -- , "node-streams"
     , "node-streams-aff"
     , "console"
+    , "unicode"
     , "unsafe-coerce"
     ]
   }
