@@ -1,5 +1,12 @@
 # Unreleased
 
+# v4.2.0 2022-12-27
+
+- Add doc comments from the `.proto` messages and enums to the generated `.purs` code.
+- Improved dev environment for __purescript-language-server__ and __ide-purescript__
+  with `PURS_IDE_SOURCES`.
+- Use `spago2nix_nativeBuildInputs`.
+
 # v4.1.0 2022-12-10
 
 - Nix flake. With one-step spago2nix.
