@@ -21,5 +21,6 @@ in conf //
     , "node-streams-aff"
     , "aff"
     , "unsafe-coerce"
+    , "unicode"
     ]
   }
