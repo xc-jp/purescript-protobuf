@@ -118,6 +118,7 @@
         shellHook = ''
         source <(spago --bash-completion-script `which spago`)
         source <(node --completion-bash)
+        export PURS_IDE_SOURCES=$(${easy-purescript-nix.spago}/bin/spago -x spago-dev.dhall sources)
         echo "PureScript Protobuf development environment"
         protoc --version
         echo -n "purs "
@@ -138,8 +139,7 @@
         # https://github.com/nwolverson/vscode-ide-purescript/issues/104
         # https://github.com/nwolverson/purescript-language-server/pull/75
         # https://github.com/nwolverson/purescript-language-server/issues/175
-        # PURS_IDE_SOURCES = "$(${easy-purescript-nix.spago}/bin/spago -x spago-dev.dhall sources)";
-        PURS_IDE_SOURCES = "'src/**/*.purs plugin/**/*.purs test/**/*.purs conformance/**/*.purs .spago/**/*.purs'";
+        # PURS_IDE_SOURCES = "'src/**/*.purs plugin/**/*.purs test/**/*.purs conformance/**/*.purs .spago/**/*.purs'";
       };
       packages = {
         inherit protoc-gen-purescript;
