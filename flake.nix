@@ -28,7 +28,6 @@
       nixpkgs = inputs.nixpkgs.legacyPackages.${system};
       easy-purescript-nix = import inputs.easy-purescript-nix {pkgs = nixpkgs;};
       protobuf = (import ./nix/protobuf.nix {pkgs = nixpkgs;}).protobuf_v21_10;
-      nix-prefetch-git-patched = import ./nix/nix-prefetch-git-patched.nix nixpkgs;
 
       purs = easy-purescript-nix.purs-0_15_4;
       nodejs = nixpkgs.nodejs-18_x;
