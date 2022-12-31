@@ -71,7 +71,7 @@ To see
 [all of the `.proto` definitions](https://github.com/protocolbuffers/protobuf/tree/main/src/google/protobuf)
 included with the Nix PureScript Protobuf installation including
 the “well-known types,”
-`ls $(nix path-info .#protobuf)/include/google/protobuf/*.proto`
+`ls $(nix path-info .#protobuf)/src/google/protobuf/*.proto`
 
 If you don't want to use Nix, then install the PureScript toolchain and `protoc`,
 and add the executable script
@@ -119,7 +119,7 @@ generated `shapes.Interproc.purs` file.
    There are some extra type constraints, not shown here, which will cause a
    compiler error if we try to add a field which is not in the message data type.
 
-   If we want the compiler to check that we've explicitly supplied all the fields,
+   If we want the compiler to check that we’ve explicitly supplied all the fields,
    then we can use the ordinary message data type constructor `Rectangle`.
 
 3. A message serializer which works with
@@ -150,7 +150,7 @@ We'll also import modules for reading and writing `ArrayBuffer`s.
 ```purescript
 import Protobuf.Library (Bytes(..))
 import Interproc.Shapes (Rectangle, mkRectangle, putRectangle, parseRectangle)
-import Text.Parsing.Parser (runParserT, ParseError, liftMaybe)
+import Parsing (runParserT, ParseError, liftMaybe)
 import Data.ArrayBuffer.Builder (execPutM)
 import Data.ArrayBuffer.DataView (whole)
 import Data.ArrayBuffer.ArrayBuffer (byteLength)
@@ -169,7 +169,7 @@ do
         }
 ```
 
-Next we'll deserialize `Rectangle` from the `ArrayBuffer` that we just made.
+Next we’ll deserialize `Rectangle` from the `ArrayBuffer` that we just made.
 
 ```purescript
     result :: Either ParseError (Tuple Number Number)
@@ -178,8 +178,8 @@ Next we'll deserialize `Rectangle` from the `ArrayBuffer` that we just made.
         rectangle :: Rectangle <- parseRectangle (byteLength arraybuffer)
 ```
 
-At this point we've consumed all of the parser input and constructed our
-`Rectangle` message, but we're not finished parsing.
+At this point we’ve consumed all of the parser input and constructed our
+`Rectangle` message, but we’re not finished parsing.
 We want to “validate” the `Rectangle` message to make sure it has all of the
 fields that we require, because in
 [*proto3*, all fields are optional](https://github.com/protocolbuffers/protobuf/issues/2497).
