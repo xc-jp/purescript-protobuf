@@ -29,7 +29,7 @@
       easy-purescript-nix = import inputs.easy-purescript-nix {pkgs = nixpkgs;};
       protobuf = (import ./nix/protobuf.nix {pkgs = nixpkgs;}).protobuf_v21_10;
 
-      purs = easy-purescript-nix.purs-0_15_4;
+      purs = easy-purescript-nix.purs-0_15_7;
       nodejs = nixpkgs.nodejs-18_x;
 
       protoc-gen-purescript = nixpkgs.stdenv.mkDerivation {

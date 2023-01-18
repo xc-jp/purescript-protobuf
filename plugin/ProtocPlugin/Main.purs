@@ -63,7 +63,7 @@ main = runAff_ (either (unsafeCoerce >>> Console.error) (\_ -> pure unit)) do
   -- So we read and parse in a loop until we have enough bytes that the
   -- parse succeeds.
   flip tailRecM [] \bs -> do
-    Tuple b readagain <- readSome stdin
+    {buffers:b,readagain} <- readSome stdin
     let bs' = bs <> b
     ab <- liftEffect $ toArrayBuffer =<< Buffer.concat bs'
     runParserT (DV.whole ab) (parseCodeGeneratorRequest (AB.byteLength ab)) >>= case _ of

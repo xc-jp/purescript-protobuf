@@ -7,25 +7,24 @@ import Conformance.Conformance (ConformanceRequest(..), ConformanceResponse, Con
 import Conformance.Conformance as C
 import Control.Monad.Rec.Class (class MonadRec, untilJust)
 import Control.Monad.Writer (tell)
-import Data.ArrayBuffer.Types (ArrayBuffer)
+import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.Builder (DataBuff(..), execPutM, putInt32le, subBuilder, toView)
 import Data.ArrayBuffer.Builder as Builder
 import Data.ArrayBuffer.DataView as DV
-import Data.ArrayBuffer.ArrayBuffer as AB
+import Data.ArrayBuffer.Types (ArrayBuffer)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple(..))
 import Effect (Effect)
+import Effect.Aff (error, runAff_, throwError)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Aff (runAff_, throwError, error)
+import Effect.Console as Console
 import Node.Buffer (Buffer, concat, fromArrayBuffer, toArrayBuffer)
 import Node.Process (stdin, stdout)
-import Node.Stream.Aff(readN, write)
+import Node.Stream.Aff (readN, write)
 import Parsing (runParserT)
 import Parsing.DataView (anyInt32le)
 import Protobuf.Library (Bytes(..))
 import ProtobufTestMessages.Proto3.TestMessagesProto3 as T3
-import Effect.Console as Console
 import Unsafe.Coerce (unsafeCoerce)
 
 
@@ -41,7 +40,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 main :: Effect Unit
 main = runAff_ (either (unsafeCoerce >>> Console.error) (\_ -> pure unit)) $ untilJust do
-  Tuple msgLenBuf readagain1 <- readN stdin 4
+  {buffers:msgLenBuf, readagain:readagain1} <- readN stdin 4
   msgLenAB :: ArrayBuffer <- liftEffect $ toArrayBuffer =<< concat msgLenBuf
   if AB.byteLength msgLenAB == 0 || not readagain1 then
     pure (Just unit)
@@ -51,7 +50,7 @@ main = runAff_ (either (unsafeCoerce >>> Console.error) (\_ -> pure unit)) $ unt
       Right msgLen | msgLen < 0 || msgLen > 1000000000 -> do
         throwError $ error $ "Error msgLen " <> show msgLen
       Right msgLen -> do
-        Tuple msgBuf _ <- readN stdin msgLen
+        {buffers:msgBuf} <- readN stdin msgLen
         msgAB <- liftEffect $ toArrayBuffer =<< concat msgBuf
         runParserT (DV.whole msgAB) (parseConformanceRequest msgLen) >>= case _ of
           Left err -> throwError $ unsafeCoerce err
