@@ -97,7 +97,7 @@ Upgraded from Protobuf v3.9.2 to v3.14.0.
 
 To conform with v3.14.0, we’ve added a new type class `Default` for
 awareness of Protobuf
-[default values](https://developers.google.com/protocol-buffers/docs/proto3#default).
+[default values](https://protobuf.dev/programming-guides/proto3#default).
 
 # v1.5.0
 

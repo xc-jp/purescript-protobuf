@@ -58,15 +58,15 @@ import Effect.Unsafe (unsafePerformEffect)
 import Protobuf.Internal.Common (FieldNumber, WireType(..), Bytes(..))
 
 encodeDoubleField :: forall m. MonadEffect m => FieldNumber -> Number -> Builder.PutM m Unit
--- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+-- https://protobuf.dev/programming-guides/encoding#non-varint_numbers
 encodeDoubleField fieldNumber n = do
   encodeTag32 fieldNumber Bits64
   encodeDouble n
 
 -- | __double__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeDouble :: forall m. MonadEffect m => Number -> Builder.PutM m Unit
--- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+-- https://protobuf.dev/programming-guides/encoding#non-varint_numbers
 encodeDouble n = do
   Builder.putFloat64le n
 
@@ -76,7 +76,7 @@ encodeFloatField fieldNumber n = do
   encodeFloat n
 
 -- | __float__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeFloat :: forall m. MonadEffect m => Float32 -> Builder.PutM m Unit
 encodeFloat n = do
   Builder.putFloat32le n
@@ -84,34 +84,34 @@ encodeFloat n = do
 encodeInt32Field :: forall m. MonadEffect m => FieldNumber -> Int -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
--- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+-- https://protobuf.dev/programming-guides/encoding#signed_integers
 encodeInt32Field fieldNumber n = do
   encodeTag32 fieldNumber VarInt
   encodeInt32 n
 
 -- | __int32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeInt32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
--- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+-- https://protobuf.dev/programming-guides/encoding#signed_integers
 encodeInt32 n = do
   encodeVarint64 $ Int64.toUnsigned $ Int64.fromInt n
 
 encodeInt64Field :: forall m. MonadEffect m => FieldNumber -> Int64 -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
--- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+-- https://protobuf.dev/programming-guides/encoding#signed_integers
 encodeInt64Field fieldNumber n = do
   encodeTag32 fieldNumber VarInt
   encodeInt64 n
 
 -- | __int64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeInt64 :: forall m. MonadEffect m => Int64 -> Builder.PutM m Unit
 -- “If you use int32 or int64 as the type for a negative number, the resulting
 -- varint is always ten bytes long”
--- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+-- https://protobuf.dev/programming-guides/encoding#signed_integers
 encodeInt64 n = do
   encodeVarint64 $ Int64.toUnsigned n
 
@@ -121,7 +121,7 @@ encodeUint32Field fieldNumber n = do
   encodeUint32 n
 
 -- | __uint32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeUint32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
 encodeUint32 n = do
   encodeVarint32 n
@@ -132,7 +132,7 @@ encodeUint64Field fieldNumber n = do
   encodeUint64 n
 
 -- | __uint64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeUint64 :: forall m. MonadEffect m => UInt64 -> Builder.PutM m Unit
 encodeUint64 n = do
   encodeVarint64 n
@@ -143,7 +143,7 @@ encodeSint32Field fieldNumber n = do
   encodeSint32 n
 
 -- | __sint32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeSint32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
 encodeSint32 n = do
   encodeVarint32 $ encodeZigzag32 n
@@ -154,21 +154,21 @@ encodeSint64Field fieldNumber n = do
   encodeSint64 n
 
 -- | __sint64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeSint64 :: forall m. MonadEffect m => Int64 -> Builder.PutM m Unit
 encodeSint64 n = do
   encodeVarint64 $ encodeZigzag64 n
 
 encodeFixed32Field :: forall m. MonadEffect m => FieldNumber -> UInt -> Builder.PutM m Unit
--- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+-- https://protobuf.dev/programming-guides/encoding#non-varint_numbers
 encodeFixed32Field fieldNumber n = do
   encodeTag32 fieldNumber Bits32
   encodeFixed32 n
 
 -- | __fixed32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeFixed32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
--- https://developers.google.com/protocol-buffers/docs/encoding#non-varint_numbers
+-- https://protobuf.dev/programming-guides/encoding#non-varint_numbers
 encodeFixed32 n = do
   Builder.putUint32le n
 
@@ -178,7 +178,7 @@ encodeFixed64Field fieldNumber n = do
   encodeFixed64 n
 
 -- | __fixed64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeFixed64 :: forall m. MonadEffect m => UInt64 -> Builder.PutM m Unit
 encodeFixed64 n = do
   Builder.putInt32le $ UInt64.lowBits n
@@ -190,7 +190,7 @@ encodeSfixed32Field fieldNumber n = do
   encodeSfixed32 n
 
 -- | __sfixed32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeSfixed32 :: forall m. MonadEffect m => Int -> Builder.PutM m Unit
 encodeSfixed32 n = do
   Builder.putInt32le n
@@ -201,7 +201,7 @@ encodeSfixed64Field fieldNumber n = do
   encodeSfixed64 n
 
 -- | __sfixed64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeSfixed64 :: forall m. MonadEffect m => Int64 -> Builder.PutM m Unit
 encodeSfixed64 n = do
   Builder.putInt32le $ Int64.lowBits n
@@ -213,15 +213,15 @@ encodeBoolField fieldNumber n = do
   encodeBool n
 
 -- | __bool__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeBool :: forall m. MonadEffect m => Boolean -> Builder.PutM m Unit
 encodeBool n = do
   if n then Builder.putInt8 1 else Builder.putInt8 0
 
 -- | __string__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeStringField :: forall m. MonadEffect m => FieldNumber -> String -> Builder.PutM m Unit
--- https://developers.google.com/protocol-buffers/docs/encoding#strings
+-- https://protobuf.dev/programming-guides/encoding#strings
 encodeStringField fieldNumber s = do
   encodeTag32 fieldNumber LenDel
   let
@@ -233,7 +233,7 @@ textEncoder :: TextEncoder.TextEncoder
 textEncoder = unsafePerformEffect TextEncoder.new
 
 -- | __bytes__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 encodeBytesField :: forall m. MonadEffect m => FieldNumber -> Bytes -> Builder.PutM m Unit
 encodeBytesField fieldNumber (Bytes buf) = do
   encodeTag32 fieldNumber LenDel
@@ -247,11 +247,11 @@ encodeBuilder fieldNumber s = do
   encodeVarint32 $ UInt.fromInt $ Builder.length s
   tell s
 
--- | https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+-- | https://protobuf.dev/programming-guides/encoding#signed_integers
 encodeZigzag32 :: Int -> UInt
 encodeZigzag32 n = let n' = UInt.fromInt n in (n' `UInt.shl` (UInt.fromInt 1)) `UInt.xor` (n' `UInt.shr` (UInt.fromInt 31))
 
--- | https://developers.google.com/protocol-buffers/docs/encoding#structure
+-- | https://protobuf.dev/programming-guides/encoding#structure
 encodeTag32 :: forall m. MonadEffect m => FieldNumber -> WireType -> Builder.PutM m Unit
 encodeTag32 fieldNumber wireType = encodeVarint32 $ (fieldNumber `UInt.shl` (UInt.fromInt 3)) `UInt.or` (UInt.fromInt $ fromEnum wireType)
 
@@ -264,7 +264,7 @@ encodeTag32 fieldNumber wireType = encodeVarint32 $ (fieldNumber `UInt.shl` (UIn
 -- | `UInt64` is a composite library type, so we expect the
 -- | performance difference to be significant.
 -- |
--- | https://developers.google.com/protocol-buffers/docs/encoding#varints
+-- | https://protobuf.dev/programming-guides/encoding#varints
 encodeVarint32 :: forall m. MonadEffect m => UInt -> Builder.PutM m Unit
 encodeVarint32 n_0 = do
   let
@@ -309,7 +309,7 @@ encodeVarint32 n_0 = do
 
   u0x80 = UInt.fromInt 0x80
 
--- | https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+-- | https://protobuf.dev/programming-guides/encoding#signed_integers
 encodeZigzag64 :: Int64 -> UInt64
 encodeZigzag64 n = Int64.toUnsigned $ (n `Int64.shl` (Int64.fromInt 1)) `Int64.xor` (n `Int64.shr` (Int64.fromInt 63))
 

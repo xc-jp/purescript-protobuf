@@ -38,7 +38,7 @@ import Parsing (ParserT, ParseError(..))
 type FieldNumber
   = UInt
 
--- | https://developers.google.com/protocol-buffers/docs/encoding#structure
+-- | https://protobuf.dev/programming-guides/encoding#structure
 data WireType
   = VarInt
   | Bits64
@@ -82,7 +82,7 @@ instance showWireType :: Show WireType where
   show = genericShow
 
 -- | Representation of a __bytes__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 -- | field.
 -- |
 -- | On a message which has been decoded,
@@ -113,7 +113,7 @@ instance eqBytes :: Eq Bytes where
 
 derive instance newtypeBytes :: Newtype Bytes _
 
--- | In Protobuf, [zero values are “default values”](https://developers.google.com/protocol-buffers/docs/proto3#default)
+-- | In Protobuf, [zero values are “default values”](https://protobuf.dev/programming-guides/proto3#default)
 -- | and have special semantics.
 class Default a where
   default :: a

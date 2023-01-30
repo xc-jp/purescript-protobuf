@@ -58,7 +58,7 @@ import Web.Encoding.TextDecoder as TextDecoder
 import Web.Encoding.UtfLabel as UtfLabel
 
 -- | __double__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeDouble :: forall m. MonadEffect m => ParserT DataView m Number
 decodeDouble = Parse.anyFloat64le
 
@@ -75,7 +75,7 @@ decodeDoubleArray len = label "decodeDoubleArray / " do
 foreign import unsafeCopyFloat64le :: DataView -> Int -> Array Number
 
 -- | __float__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeFloat :: forall m. MonadEffect m => ParserT DataView m Float32
 decodeFloat = Parse.anyFloat32le
 
@@ -92,14 +92,14 @@ decodeFloatArray len = label "decodeFloatArray / " do
 foreign import unsafeCopyFloat32le :: DataView -> Int -> Array Float32
 
 -- | __int32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeInt32 :: forall m. MonadEffect m => ParserT DataView m Int
 decodeInt32 = do
   n <- decodeVarint64
   -- But this is a problem with the Protobuf spec?
   -- “If you use int32 or int64 as the type for a negative number, the resulting
   -- varint is always ten bytes long”
-  -- https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+  -- https://protobuf.dev/programming-guides/encoding#signed_integers
   -- So what are we supposed to do if the field type is int32 but the
   -- decoded varint is too big? There is no guarantee that either negative
   -- or positive numbers encoded as varints will be in range.
@@ -115,36 +115,36 @@ decodeInt32 = do
   pure $ UInt64.lowBits n
 
 -- | __int64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeInt64 :: forall m. MonadEffect m => ParserT DataView m Int64
 decodeInt64 = Int64.toSigned <$> decodeVarint64
 
 -- | __uint32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeUint32 :: forall m. MonadEffect m => ParserT DataView m UInt
 decodeUint32 = do
   n <- decodeVarint64
   pure $ UInt.fromInt $ UInt64.lowBits n
 
 -- | __uint64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeUint64 :: forall m. MonadEffect m => ParserT DataView m UInt64
 decodeUint64 = decodeVarint64
 
 -- | __sint32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeSint32 :: forall m. MonadEffect m => ParserT DataView m Int
 decodeSint32 = do
   n <- decodeZigzag32 <$> decodeVarint32
   pure n
 
 -- | __sint64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeSint64 :: forall m. MonadEffect m => ParserT DataView m Int64
 decodeSint64 = decodeZigzag64 <$> decodeVarint64
 
 -- | __fixed32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeFixed32 :: forall m. MonadEffect m => ParserT DataView m UInt
 decodeFixed32 = Parse.anyUint32le
 
@@ -162,7 +162,7 @@ decodeFixed32Array len = label "decodeFixed32Array / " do
 foreign import unsafeCopyUInt32le :: DataView -> Int -> Array UInt
 
 -- | __fixed64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeFixed64 :: forall m. MonadEffect m => ParserT DataView m UInt64
 decodeFixed64 = UInt64.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
 
@@ -181,7 +181,7 @@ decodeFixed64Array len = label "decodeFixed64Array / " do
 foreign import unsafeCopyInt64le :: forall a. (Fn2 Int Int a) -> DataView -> Int -> Array a
 
 -- | __sfixed32__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeSfixed32 :: forall m. MonadEffect m => ParserT DataView m Int
 decodeSfixed32 = Parse.anyInt32le
 
@@ -199,7 +199,7 @@ decodeSfixed32Array len = label "decodeSfixed32Array / " do
 foreign import unsafeCopyInt32le :: DataView -> Int -> Array Int
 
 -- | __sfixed64__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeSfixed64 :: forall m. MonadEffect m => ParserT DataView m Int64
 decodeSfixed64 = Int64.fromLowHighBits <$> Parse.anyInt32le <*> Parse.anyInt32le
 
@@ -214,7 +214,7 @@ decodeSfixed64Array len = label "decodeSfixed64Array / " do
   pure $ unsafeCopyInt64le (mkFn2 Int64.fromLowHighBits) dv (len `div` 8)
 
 -- | __bool__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeBool :: forall m. MonadEffect m => ParserT DataView m Boolean
 decodeBool = do
   x <- decodeVarint64
@@ -224,7 +224,7 @@ decodeBool = do
     pure true
 
 -- | __string__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeString :: forall m. MonadEffect m => ParserT DataView m String
 decodeString = do
   stringlen <- decodeVarint32
@@ -244,7 +244,7 @@ textDecoder :: TextDecoder.TextDecoder
 textDecoder = unsafePerformEffect $ TextDecoder.new UtfLabel.utf8
 
 -- | __bytes__
--- | [Scalar Value Type](https://developers.google.com/protocol-buffers/docs/proto3#scalar)
+-- | [Scalar Value Type](https://protobuf.dev/programming-guides/proto3#scalar)
 decodeBytes :: forall m. MonadEffect m => ParserT DataView m Bytes
 decodeBytes = do
   len <- UInt.toInt <$> decodeVarint32
@@ -259,7 +259,7 @@ decodeZigzag32 n = UInt.toInt $ (n `UInt.zshr` (UInt.fromInt 1)) `UInt.xor` (une
   unegate = UInt.fromInt <<< negate <<< UInt.toInt
 
 -- | Parse the field number and wire type of the next field.
--- | https://developers.google.com/protocol-buffers/docs/encoding#structure
+-- | https://protobuf.dev/programming-guides/encoding#structure
 decodeTag32 :: forall m. MonadEffect m => ParserT DataView m (Tuple FieldNumber WireType)
 decodeTag32 = do
   n <- decodeVarint32
@@ -278,7 +278,7 @@ decodeTag32 = do
 -- | `UInt64` is a composite library type, so we expect the
 -- | performance difference to be significant.
 -- |
--- | https://developers.google.com/protocol-buffers/docs/encoding#varints
+-- | https://protobuf.dev/programming-guides/encoding#varints
 decodeVarint32 :: forall m. MonadEffect m => ParserT DataView m UInt
 decodeVarint32 = do
   n_0 <- Parse.anyUint8
@@ -330,7 +330,7 @@ decodeZigzag64 n = let n' = Int64.toSigned n in (n' `Int64.zshr` one) `Int64.xor
   where
   lnegate x = Int64.complement x + one
 
--- | https://developers.google.com/protocol-buffers/docs/encoding#varints
+-- | https://protobuf.dev/programming-guides/encoding#varints
 decodeVarint64 :: forall m. MonadEffect m => ParserT DataView m UInt64
 decodeVarint64 = do
   n_0 <- fromInt <$> Parse.anyUint8

@@ -14,8 +14,8 @@
 -- |     protoc --purescript_out=./plugin/ProtocPlugin google/protobuf/compiler/plugin.proto
 -- |
 -- | See
--- | * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
--- | * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.descriptor.pb
+-- | * https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin.pb/
+-- | * https://protobuf.dev/reference/cpp/api-docs/google.protobuf.descriptor.pb
 module ProtocPlugin.Main (main) where
 
 import Prelude
@@ -141,7 +141,7 @@ genFile proto_file ( FileDescriptorProto
   }
 ) = do
   let
-    packageName = case package of -- Optional package, https://developers.google.com/protocol-buffers/docs/proto3#packages
+    packageName = case package of -- Optional package, https://protobuf.dev/programming-guides/proto3#packages
       Nothing -> []
       Just ps -> String.split (String.Pattern.Pattern ".") ps
     baseName = case fileName of
@@ -417,7 +417,7 @@ genFile proto_file ( FileDescriptorProto
       ) = go ftype type_name
        where
         -- If you set a oneof field to the default value (such as setting an int32 oneof field to 0), the "case" of that oneof field will be set, and the value will be serialized on the wire.
-        -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
+        -- https://protobuf.dev/programming-guides/proto3/#oneof-features
         go FieldDescriptorProto_Type_TYPE_DOUBLE _ = Right $ "    Prelude.Just (" <> mkTypeName (nameSpace <> [ oname, name' ]) <> " x) -> Prelude.putOptional " <> show fnumber <> " (Prelude.Just x) (\\_ -> false) Prelude.encodeDoubleField"
 
         go FieldDescriptorProto_Type_TYPE_FLOAT _ = Right $ "    Prelude.Just (" <> mkTypeName (nameSpace <> [ oname, name' ]) <> " x) -> Prelude.putOptional " <> show fnumber <> " (Prelude.Just x) (\\_ -> false) Prelude.encodeFloatField"
@@ -478,7 +478,7 @@ genFile proto_file ( FileDescriptorProto
 
       -- For repeated fields of primitive numeric types, always put the packed
       -- encoding.
-      -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
+      -- https://protobuf.dev/programming-guides/encoding?hl=en#packed
       -- For optional synthetic Oneofs, write even if it's the default value.
       go FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ (Just (FieldOptions { packed: Just false })) = Right $ "  Prelude.putRepeated " <> show fnumber <> " r." <> fname <> " Prelude.encodeDoubleField"
 
@@ -675,7 +675,7 @@ genFile proto_file ( FileDescriptorProto
 
       -- For repeated fields of primitive numeric types, also parse the packed
       -- encoding.
-      -- https://developers.google.com/protocol-buffers/docs/encoding?hl=en#packed
+      -- https://protobuf.dev/programming-guides/encoding?hl=en#packed
       go _ FieldDescriptorProto_Label_LABEL_REPEATED FieldDescriptorProto_Type_TYPE_DOUBLE _ =
         Right
           $ String.joinWith "\n"
@@ -1068,8 +1068,8 @@ genFile proto_file ( FileDescriptorProto
         Right
           $ String.joinWith "\n"
               -- “merge all input elements if it's a message type field”
-              -- https://developers.google.com/protocol-buffers/docs/proto3#updating
-              -- https://developers.google.com/protocol-buffers/docs/encoding#optional
+              -- https://.google.com/protocol-buffers/docs/proto3#updating
+              -- https://protobuf.dev/programming-guides/encoding#optional
               [ "  parseField " <> show fnumber <> " Prelude.LenDel = Prelude.label \"" <> name' <> " / \" $ do"
               , "    x <- Prelude.parseLenDel " <> mkFieldType "parse" tname
               , "    pure $ Prelude.modify (Prelude.Proxy :: Prelude.Proxy \"" <> fname <> "\") $ Prelude.Just Prelude.<<< Prelude.maybe x (" <> mkFieldType "merge" tname <> " x)"
@@ -1137,7 +1137,7 @@ genFile proto_file ( FileDescriptorProto
 
     genFieldParser _ _ _ = Left "Failed genFieldParser missing FieldDescriptorProto name or number or label or type"
   -- | For embedded message fields, the parser merges multiple instances of the same field,
-  -- | https://developers.google.com/protocol-buffers/docs/encoding?hl=en#optional
+  -- | https://protobuf.dev/programming-guides/encoding?hl=en#optional
   let
     genFieldRecord :: NameSpace -> FieldDescriptorProto -> Resp (Maybe String)
     genFieldRecord _ ( FieldDescriptorProto
@@ -1361,7 +1361,7 @@ genFile proto_file ( FileDescriptorProto
       enumTo <- traverse genEnumTo value
       enumFrom <- traverse genEnumFrom value
       -- Protobuf Enumerations “There must be a zero value, so that we can use 0 as a numeric default value.”
-      -- https://developers.google.com/protocol-buffers/docs/proto3#enum
+      -- https://protobuf.dev/programming-guides/proto3#enum
       -- But that isn't actually true?
       -- If there is no enum value with number=0, then we just take the first enum value.
       valueZero <- case Array.find (\x -> maybe false (eq 0) (unwrap x).number) value of
@@ -1528,7 +1528,7 @@ import Protobuf.Internal.Prelude as Prelude
 
     go _ _ = [ Left "Failed flattenMessages missing DescriptorProto name" ]
 
-  -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
+  -- https://protobuf.dev/programming-guides/proto3#oneof_features
   -- “A oneof cannot be repeated.”
   -- See also genFieldRecord
   genFieldRecordOneof :: NameSpace -> (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) -> Resp String
@@ -1555,7 +1555,7 @@ import Protobuf.Internal.Prelude as Prelude
 
   genFieldDefault _ = Left "Failed genFieldDefault missing FieldDescriptorProto name or label"
 
-  -- https://developers.google.com/protocol-buffers/docs/proto3#oneof_features
+  -- https://protobuf.dev/programming-guides/proto3#oneof_features
   -- “A oneof cannot be repeated.”
   genFieldDefaultOneof :: (Tuple OneofDescriptorProto (Array FieldDescriptorProto)) -> Resp String
   genFieldDefaultOneof (Tuple (OneofDescriptorProto { name: Just oname }) _) = Right $ decapitalize oname <> ": Prelude.Nothing"

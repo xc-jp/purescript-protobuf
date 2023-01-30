@@ -101,7 +101,7 @@ manyLength p len = do
 
 -- | A message field value from an unknown `.proto` definition.
 -- |
--- | See [Message Structure](https://developers.google.com/protocol-buffers/docs/encoding#structure)
+-- | See [Message Structure](https://protobuf.dev/programming-guides/encoding#structure)
 -- | for an explanation.
 -- |
 -- | - __`UnknownVarInt`__ Use `Protobuf.Internal.Decode.decodeZigzag64`
@@ -250,7 +250,7 @@ parseEnum :: forall m a. MonadEffect m => BoundedEnum a => ParserT DataView m a
 parseEnum = do
   -- “Enumerator constants must be in the range of a 32-bit integer.”
   -- Protobuf Enums can be negative.
-  -- https://developers.google.com/protocol-buffers/docs/proto3#enum
+  -- https://protobuf.dev/programming-guides/proto3#enum
   x <- Decode.decodeVarint64
   case toEnum (UInt64.lowBits x) of
     Nothing -> fail $ "Enum " <> show x <> " out of bounds."

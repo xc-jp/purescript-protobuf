@@ -3,7 +3,7 @@
 [![Pursuit](http://pursuit.purescript.org/packages/purescript-protobuf/badge)](http://pursuit.purescript.org/packages/purescript-protobuf/)
 
 PureScript library and code generator for
-[Google Protocol Buffers version 3](https://developers.google.com/protocol-buffers/docs/proto3).
+[Google Protocol Buffers version 3](https://protobuf.dev/programming-guides/proto3/).
 
 This library operates on
 [`ArrayBuffer`](https://pursuit.purescript.org/packages/purescript-arraybuffer-types/docs/Data.ArrayBuffer.Types#t:ArrayBuffer), so it will run both
@@ -17,15 +17,15 @@ We aim to support binary-encoded protobuf for
 
 Many `syntax = "proto2";` descriptor files will
 also work, as long as they don't use `"proto2"` features, especially
-[groups](https://developers.google.com/protocol-buffers/docs/proto#groups),
+[groups](https://protobuf.dev/programming-guides/proto/#groups),
 which we do not support. We also do not support `"proto2"`
-[extensions](https://developers.google.com/protocol-buffers/docs/proto?hl=en#extensions).
+[extensions](https://protobuf.dev/programming-guides/proto/#extensions).
 
 We do not support
-[services](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#services).
+[services](https://protobuf.dev/programming-guides/proto3/#services).
 
 We do not support
-[JSON encoding](https://developers.google.com/protocol-buffers/docs/proto3#json).
+[JSON Mapping](https://protobuf.dev/programming-guides/proto3/#json).
 
 ### Conformance and Testing
 
@@ -41,9 +41,9 @@ We also have our own unit tests, see `test/README.md` in this repository.
 The `nix develop` environment provides
 
 * The PureScript toolchain: `purs`, `spago`, and `node`.
-* The [`protoc`](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#generating) compiler.
+* The [`protoc`](https://protobuf.dev/programming-guides/proto3/#generating) compiler.
 * The `protoc-gen-purescript` executable plugin for `protoc` on the `PATH` so that
-  [`protoc` can find it](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin).
+  [`protoc` can find it](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin/).
 
 ```
 $ nix develop
@@ -64,7 +64,7 @@ To compile PureScript .purs files from .proto files, run for example:
 
 We can test out code generation immediately by
 generating `.purs` files for any of Google’s built-in “well-known types” in the
-[`google.protobuf`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf) package namespace. Try the command `protoc --purescript_out=. google/protobuf/any.proto`
+[`google.protobuf`](https://protobuf.dev/reference/protobuf/google.protobuf/) package namespace. Try the command `protoc --purescript_out=. google/protobuf/any.proto`
 or `protoc --purescript_out=. google/protobuf/timestamp.proto`.
 
 To see
@@ -138,7 +138,7 @@ generated `shapes.Interproc.purs` file.
 
    The message parser needs an argument which tells it the
    length of the message which it’s about to parse, because
-   [“the Protocol Buffer wire format is not self-delimiting.”](https://developers.google.com/protocol-buffers/docs/techniques#streaming)
+   [“the Protocol Buffer wire format is not self-delimiting.”](https://protobuf.dev/programming-guides/techniques/#streaming)
 
 In our program, our imports will look something like this.
 The only module from this package which we will import into our program
@@ -270,7 +270,7 @@ A message field will always be `Just` when the field is present on the wire.
 A message field will always be `Nothing` when the field is not present on the wire, even if
 it’s a *no presence* field.
 If we want to interpret a missing *no presence* field as a
-[default value](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#default) then
+[default value](https://protobuf.dev/programming-guides/proto3/#default) then
 we have the
 [`Protobuf.Library.toDefault`](https://pursuit.purescript.org/packages/purescript-protobuf/docs/Protobuf.Library#v:toDefault)
  function for that.
@@ -302,7 +302,7 @@ like `"Message1 / string_field_1 / Invalid UTF8 encoding."`.
 ### Protobuf Imports
 
 The Protobuf
-[`import`](https://developers.google.com/protocol-buffers/docs/proto3#importing_definitions)
+[`import`](https://protobuf.dev/programming-guides/proto3/#importing-definitions)
 statement allows Protobuf messages to have fields
 consisting of Protobuf messages imported from another file, and qualified
 by the package name in that file. In order to generate
@@ -311,7 +311,7 @@ fields, the code generator must be able to lookup the package name
 statement in the imported file.
 
 For that reason, we can only use top-level
-(not [nested](https://developers.google.com/protocol-buffers/docs/proto3#nested))
+(not [nested](https://protobuf.dev/programming-guides/proto3/#nested))
 `message` and `enum` types from a Protobuf `import`.
 
 ### PureScript Imports
