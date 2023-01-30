@@ -30,8 +30,8 @@ We do not support
 ### Conformance and Testing
 
 In this version, we pass all 651 of the
-[Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/master/conformance)
-of binary-wire-format *proto3* for [Protocol Buffers v21.10](https://github.com/protocolbuffers/protobuf/blob/master/CHANGES.txt).
+[Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/main/conformance)
+of binary-wire-format *proto3* for [Protocol Buffers v21.10](https://github.com/protocolbuffers/protobuf/releases/tag/v21.10).
 See the `conformance/README.md` in this repository for details.
 
 We also have our own unit tests, see `test/README.md` in this repository.
@@ -351,5 +351,5 @@ Pull requests welcome.
 
 * [__justifill__](https://pursuit.purescript.org/packages/purescript-justifill) package may be useful for message construction.
 * [__morello__](https://pursuit.purescript.org/packages/purescript-morello) package may be useful for message validation.
-* [Third-Party Add-ons for Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/master/docs/third_party.md) Google’s list of Protocol Buffers language implementations.
+* [Third-Party Add-ons for Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/main/docs/third_party.md) Google’s list of Protocol Buffers language implementations.
 * [A vision for data interchange in Elm](https://gist.github.com/evancz/1c5f2cf34939336ecb79b97bb89d9da6) Comparison of JSON, ProtoBuf, GraphQL by Evan Czaplicki.
