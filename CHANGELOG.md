@@ -1,5 +1,9 @@
 # Unreleased
 
+# v4.3.0 2023-01-30
+
+- Development: purs v0.15.7, node-streams-aff v5.0.0, assorted improvements.
+
 # v4.2.0 2022-12-27
 
 - Add doc comments from the `.proto` messages and enums to the generated `.purs` code.
