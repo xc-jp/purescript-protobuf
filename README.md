@@ -188,7 +188,7 @@ Fortunately we are already in the `ParserT` monad,
 so we can do better than to “validate”:
 [Parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/).
 
-We will construct a `Tuple Number Number`
+We will construct a record `{width::Number, height::Number}`
 with the width and height of the `Rectangle`. If the width or height
 are missing from the `Rectangle` message, then we will fail in the `ParserT`
 monad.
@@ -200,7 +200,7 @@ on the `Rectangle` message type works well, so we could validate this way:
 ```purescript
         case rectangle of
             Rectangle { width: Just width, height: Just height } ->
-                pure $ Tuple width height
+                pure {width, height}
             _ -> fail "Missing required width or height"
 ```
 
@@ -209,7 +209,7 @@ Or we might want to use `liftMaybe` for more fine-grained validation:
 ```purescript
         width <- liftMaybe "Missing required width" (unwrap rectangle).width
         height <- liftMaybe "Missing required height" (unwrap rectangle).height
-        pure $ Tuple width height
+        pure {width, height}
 ```
 
 And now the `result` is either a parsing error or a fully validated rectangle.
