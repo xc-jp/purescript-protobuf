@@ -163,19 +163,18 @@ We must be in a `MonadEffect`.
 
 ```purescript
 do
-    arraybuffer <- execPutM $ putRectangle $ mkRectangle
-        { width: Just 3.0
-        , height: Just 4.0
-        }
+  arraybuffer <- execPutM $ putRectangle $ mkRectangle
+    { width: Just 3.0
+    , height: Just 4.0
+    }
 ```
 
 Next we’ll deserialize `Rectangle` from the `ArrayBuffer` that we just made.
 
 ```purescript
-    result :: Either ParseError (Tuple Number Number)
-      <- runParserT (whole arraybuffer) $ do
-
-        rectangle :: Rectangle <- parseRectangle (byteLength arraybuffer)
+  result :: Either ParseError {width :: Number, height :: Number}
+    <- runParserT (whole arraybuffer) do
+      rectangle :: Rectangle <- parseRectangle (byteLength arraybuffer)
 ```
 
 At this point we’ve consumed all of the parser input and constructed our
@@ -198,18 +197,18 @@ For this validation step,
 on the `Rectangle` message type works well, so we could validate this way:
 
 ```purescript
-        case rectangle of
-            Rectangle { width: Just width, height: Just height } ->
-                pure {width, height}
-            _ -> fail "Missing required width or height"
+      case rectangle of
+        Rectangle { width: Just width, height: Just height } ->
+          pure {width, height}
+        _ -> fail "Missing required width or height"
 ```
 
 Or we might want to use `liftMaybe` for more fine-grained validation:
 
 ```purescript
-        width <- liftMaybe "Missing required width" (unwrap rectangle).width
-        height <- liftMaybe "Missing required height" (unwrap rectangle).height
-        pure {width, height}
+      width <- liftMaybe "Missing required width" (unwrap rectangle).width
+      height <- liftMaybe "Missing required height" (unwrap rectangle).height
+      pure {width, height}
 ```
 
 And now the `result` is either a parsing error or a fully validated rectangle.
