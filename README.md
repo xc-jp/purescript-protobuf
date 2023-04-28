@@ -218,8 +218,8 @@ And now the `result` is either a parsing error or a fully validated rectangle.
 The generated code modules will import modules from this
 package.
 
-The generated code depends on packages which are all in
-[__package-sets__](https://github.com/purescript/package-sets).
+The generated code depends on packages which are all in the
+[PureScript Registry](https://github.com/purescript/registry).
 
 If the runtime environment is *Node.js*, then it must be at least *v11*,
 because that is the version in which
@@ -288,7 +288,7 @@ When the parser encounters an invalid encoding in the Protobuf input
 stream then it will fail to parse.
 
 When
-[`ParserT`](https://pursuit.purescript.org/packages/purescript-parsing/docs/Parsing#t:ParserT)
+[`runParserT`](https://pursuit.purescript.org/packages/purescript-parsing/docs/Parsing#v:runParserT)
 fails it will return a `ParseError String (Position {index::Int,line::Int,column::Int})`.
 
 The byte offset at which the parse failure occurred is given by the
