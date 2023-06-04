@@ -5,20 +5,15 @@
   nixConfig.sandbox = "relaxed";
 
   inputs = {
-
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     flake-utils.url = "github:numtide/flake-utils";
     easy-purescript-nix = {
       url = "github:justinwoo/easy-purescript-nix";
-      flake = false;
+      # inputs.nixpkgs.follow = "nixpkgs";
     };
     spago2nix = {
-      url = "github:jamesdbrock/spago2nix";
+      url = "github:justinwoo/spago2nix";
     };
-    # flake-compat = {
-    #   url = "github:edolstra/flake-compat";
-    #   flake = false;
-    # };
   };
 
   outputs = { self, ... }@inputs:
@@ -27,9 +22,10 @@
 
       nixpkgs = inputs.nixpkgs.legacyPackages.${system};
       easy-purescript-nix = import inputs.easy-purescript-nix {pkgs = nixpkgs;};
-      protobuf = (import ./nix/protobuf.nix {pkgs = nixpkgs;}).protobuf_v21_10;
+      protobufs = (import ./nix/protobuf.nix {pkgs = nixpkgs;});
+      protobuf = protobufs.protobuf_v23_2;
 
-      purs = easy-purescript-nix.purs-0_15_7;
+      purs = easy-purescript-nix.purs-0_15_8;
       nodejs = nixpkgs.nodejs-18_x;
 
       protoc-gen-purescript = nixpkgs.stdenv.mkDerivation {
@@ -145,6 +141,8 @@
         inherit protoc-gen-purescript;
         inherit protobuf;
         inherit conformance-purescript;
+        inherit (protobufs) protobuf_v21_10;
+        inherit (protobufs) protobuf_v23_2;
       };
       apps = {
         conformance =

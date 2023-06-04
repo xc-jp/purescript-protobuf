@@ -64,6 +64,16 @@ let
       ref = "refs/tags/${ref}";
     };
   };
+  protobuf_repo_v23_2 = rec {
+    ref = "v23.2";
+    src = pkgs.fetchFromGitHub {
+      owner = "protocolbuffers";
+      repo = "protobuf";
+      rev = "v23.2";
+      hash = "sha256-kYiT7MIhKH28YwZqaIj0ri/fJ5sOaUA4z9jM64o2iqg=";
+      fetchSubmodules = true;
+    };
+  };
 
   # Builds `protoc`, plus the conformance test runners, and also copies
   # in the .proto files for the conformance test protocol,
@@ -113,6 +123,43 @@ let
     };
   };
 
+  cmakeProtobuf = repo: pkgs.stdenv.mkDerivation {
+    name = "protobuf-${repo.ref}";
+    nativeBuildInputs = with pkgs; [ cmake rsync ];
+    src = repo.src;
+    # https://github.com/protocolbuffers/protobuf/blob/main/src/README.md#c-installation---unix
+    cmakeFlags = [ "-Dprotobuf_BUILD_CONFORMANCE=ON" ];
+    postInstall =
+      let
+        conformance_rpath = pkgs.lib.makeLibraryPath [
+          pkgs.stdenv.cc.cc.lib
+        ];
+      in
+      ''
+      # Recursive copy all the .proto files
+      rsync -am --include='*.proto' --include='*/' --exclude='*' $src/src $out/
+      mkdir -p $out/conformance
+      cp $src/conformance/conformance.proto $out/conformance/
+
+      # Conformance test runner
+      cp ./conformance_test_runner $out/bin/conformance_test_runner
+      # https://nixos.wiki/wiki/Packaging/Binaries#Creating_the_Derivation_for_upstream_Packaging
+      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" --set-rpath "$out/lib:${conformance_rpath}" $out/bin/conformance_test_runner
+      ln -s $out/bin/conformance_test_runner $out/bin/conformance-test-runner
+      '';
+    meta = {
+      description = "Google’s Protobuf built for purescript-protobuf";
+      longDescription = ''
+        This Protobuf build includes the protoc compiler and the “well-known”
+        .proto definitions, as well as all of the conformance test runners
+        and conformance .proto definitions.
+        '';
+      homepage = "https://github.com/xc-jp/purescript-protobuf";
+      license = pkgs.lib.licenses.bsd3;
+      mainProgram = "protoc";
+    };
+  };
+
 in
 {
   inherit protobuf_repo_v3_9_2;
@@ -121,12 +168,14 @@ in
   inherit protobuf_repo_v3_20_1;
   inherit protobuf_repo_v3_21_0;
   inherit protobuf_repo_v21_10;
+  inherit protobuf_repo_v23_2;
   protobuf_v3_9_2 = mkProtobuf protobuf_repo_v3_9_2;
   protobuf_v3_14_0 = mkProtobuf protobuf_repo_v3_14_0;
   protobuf_v3_15_8 = mkProtobuf protobuf_repo_v3_15_8;
   protobuf_v3_20_1 = mkProtobuf protobuf_repo_v3_20_1;
   protobuf_v3_21_0 = mkProtobuf protobuf_repo_v3_21_0;
   protobuf_v21_10 = mkProtobuf protobuf_repo_v21_10;
+  protobuf_v23_2 = cmakeProtobuf protobuf_repo_v23_2;
 }
 
 

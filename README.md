@@ -31,7 +31,7 @@ We do not support
 
 In this version, we pass all 651 of the
 [Google conformance tests](https://github.com/protocolbuffers/protobuf/tree/main/conformance)
-of binary-wire-format *proto3* for [Protocol Buffers v21.10](https://github.com/protocolbuffers/protobuf/releases/tag/v21.10).
+of binary-wire-format *proto3* for [Protocol Buffers v23.2](https://github.com/protocolbuffers/protobuf/releases/).
 See the `conformance/README.md` in this repository for details.
 
 We also have our own unit tests, see `test/README.md` in this repository.
@@ -48,10 +48,10 @@ The `nix develop` environment provides
 ```
 $ nix develop
 
-PureScript Protobuf development environment.
-libprotoc 3.21.10
-purs 0.15.6
-node v17.1.0
+PureScript Protobuf development environment
+libprotoc 23.2
+purs 0.15.8
+node v18.16.0
 
 To build the protoc compiler plugin, run:
 
