@@ -153,6 +153,10 @@
           type = "app";
           program = "${protoc-gen-purescript}/bin/protoc-gen-purescript";
         };
+        conformance_test_runner = {
+          type = "app";
+          program = "${protobuf}/bin/conformance_test_runner";
+        };
         conformance =
           let
             conformance-run = nixpkgs.writeScriptBin "conformance" ''
