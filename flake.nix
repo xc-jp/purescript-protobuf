@@ -140,7 +140,6 @@
       packages = {
         inherit protoc-gen-purescript;
         inherit protobuf;
-        inherit conformance-purescript;
         inherit (protobufs) protobuf_v21_10;
         inherit (protobufs) protobuf_v23_2;
       };
