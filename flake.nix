@@ -150,7 +150,7 @@
             conformance-run = nixpkgs.writeScriptBin "conformance" ''
               set -e
               set -x
-              ${protobuf}/bin/conformance-test-runner --enforce_recommended ${conformance-purescript}/bin/conformance-purescript
+              ${protobuf}/bin/conformance_test_runner --enforce_recommended ${conformance-purescript}/bin/conformance-purescript
               '';
           in
           {

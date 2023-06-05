@@ -144,8 +144,11 @@ let
       # Conformance test runner
       cp ./conformance_test_runner $out/bin/conformance_test_runner
       # https://nixos.wiki/wiki/Packaging/Binaries#Creating_the_Derivation_for_upstream_Packaging
-      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" --set-rpath "$out/lib:${conformance_rpath}" $out/bin/conformance_test_runner
-      ln -s $out/bin/conformance_test_runner $out/bin/conformance-test-runner
+      patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" --set-rpath "$out/lib:${conformance_rpath}" $out/bin/conformance_test_runner
+
+      # Distribute the cpp conformance program as a test case
+      cp ./conformance_cpp $out/bin/conformance_cpp
+      patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" --set-rpath "$out/lib:${conformance_rpath}" $out/bin/conformance_cpp
       '';
     meta = {
       description = "Google’s Protobuf built for purescript-protobuf";
