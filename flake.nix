@@ -145,6 +145,14 @@
         inherit (protobufs) protobuf_v23_2;
       };
       apps = {
+        protoc = {
+          type = "app";
+          program = "${protobuf}/bin/protoc";
+        };
+        protoc-gen-purescript = {
+          type = "app";
+          program = "${protoc-gen-purescript}/bin/protoc-gen-purescript";
+        };
         conformance =
           let
             conformance-run = nixpkgs.writeScriptBin "conformance" ''
