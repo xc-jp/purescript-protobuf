@@ -17,9 +17,9 @@ We aim to support binary-encoded protobuf for
 
 Many `syntax = "proto2";` descriptor files will
 also work, as long as they don't use `"proto2"` features, especially
-[groups](https://protobuf.dev/programming-guides/proto/#groups),
+[groups](https://protobuf.dev/programming-guides/proto2/#groups),
 which we do not support. We also do not support `"proto2"`
-[extensions](https://protobuf.dev/programming-guides/proto/#extensions).
+[extensions](https://protobuf.dev/programming-guides/proto2/#extensions).
 
 We do not support
 [services](https://protobuf.dev/programming-guides/proto3/#services).
